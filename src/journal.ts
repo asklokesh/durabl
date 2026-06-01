@@ -302,14 +302,71 @@ export function forkRun(args: {
 }
 
 /**
+ * Direct child forks of `parentRunId` — runs whose `parent_run` is this run.
+ * Ordered by creation time. The read side of the lineage the fork wedge needs.
+ */
+export function childRuns(parentRunId: string): RunMeta[] {
+  const d = open();
+  try {
+    const rows = d
+      .prepare(`SELECT * FROM run_meta WHERE parent_run = ? ORDER BY created_at, run_id`)
+      .all(parentRunId) as unknown as Array<{
+      schema: number;
+      run_id: string;
+      parent_run: string | null;
+      forked_at_seq: number | null;
+      trajectory: string;
+      created_at: string;
+    }>;
+    return rows.map((r) => ({
+      schema: JOURNAL_SCHEMA_VERSION,
+      runId: r.run_id,
+      parentRun: r.parent_run,
+      forkedAtSeq: r.forked_at_seq,
+      trajectory: r.trajectory,
+      createdAt: r.created_at,
+    }));
+  } finally {
+    d.close();
+  }
+}
+
+/** All run ids known to the journal (runs that have at least a run_meta row). */
+export function allRunIds(): string[] {
+  const d = open();
+  try {
+    const rows = d
+      .prepare(`SELECT run_id FROM run_meta ORDER BY created_at, run_id`)
+      .all() as unknown as Array<{ run_id: string }>;
+    return rows.map((r) => r.run_id);
+  } finally {
+    d.close();
+  }
+}
+
+/**
  * Export a run's trajectory as neutral JSONL — substrate-detail-free. This is
  * the "your journal, in your infra, exportable" surface. Each line is a
  * {@link JournalEntry}; no Restate/engine fields leak.
+ *
+ * When `includeMeta` is set, the FIRST line is a `RunMeta` record (tagged
+ * `record: "run_meta"`) so the fork lineage (parentRun, forkedAtSeq, trajectory)
+ * travels WITH the portable export — fork metadata is part of the portable
+ * journal, not a substrate-side detail (M2 neutrality requirement).
  */
-export function exportJsonl(runId: string): string {
-  return trajectory(runId)
-    .map((e) => JSON.stringify(e))
-    .join("\n");
+export function exportJsonl(runId: string, includeMeta = false): string {
+  const steps = trajectory(runId);
+  if (!includeMeta) {
+    // Backward-compatible M1 shape: one bare JournalEntry per line.
+    return steps.map((e) => JSON.stringify(e)).join("\n");
+  }
+  // M2 portable export: a tagged run_meta line first (lineage travels with the
+  // export), then tagged step lines. Self-describing and substrate-detail-free.
+  const lines: string[] = [];
+  const meta = runMeta(runId);
+  if (meta) lines.push(JSON.stringify({ record: "run_meta", ...meta }));
+  for (const e of steps) lines.push(JSON.stringify({ record: "step", ...e }));
+  return lines.join("\n");
 }
 
 /** Test/harness utility: wipe the journal. Never call in production paths. */

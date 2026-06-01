@@ -1,0 +1,136 @@
+
+> durabl@0.1.0 gate:m2
+> npm run build && node --enable-source-maps dist/harness/run-m2-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json
+
+Starting restate-server (single self-hostable binary)...
+restate-server healthy.
+[restate][2026-06-01T21:28:48.354Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:48.355Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:48.642Z][AgentRun/m2-src-1780349328635/run][inv_1aOFVkfwhadt1EhsosEM3gaoDUGDEyRRmU] INFO: Starting invocation.
+[restate][2026-06-01T21:28:48.651Z][AgentRun/m2-src-1780349328635/run][inv_1aOFVkfwhadt1EhsosEM3gaoDUGDEyRRmU] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:48.660Z][AgentRun/m2-fork-1780349328653/run][inv_1j7SsEyqOaOs2Pybr9KW7D7uCRE7SLluVJ] INFO: Starting invocation.
+[restate][2026-06-01T21:28:48.663Z][AgentRun/m2-fork-1780349328653/run][inv_1j7SsEyqOaOs2Pybr9KW7D7uCRE7SLluVJ] INFO: Invocation completed successfully.
+
+[GATE PASS] fork-no-refire
+  seeded=2(expect 2) src_effects=1(expect 1) fork_NEW_effects=0(expect 0) diverged_answer=true first_divergence_seq=3(expect 3) fork_seededSeqs=[1,2](expect 1,2) lineage_ok=true src_answer="answer[main]<<plan-for(original-prompt)|tool-result(effectId=52)|prompt=original-prompt>>" fork_answer="answer[what-if]<<plan-for(original-prompt)|tool-result(effectId=52)|prompt=what-if-prompt>>"
+[restate][2026-06-01T21:28:48.980Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:48.982Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:49.249Z][AgentRun/m2-ml-root-1780349329244/run][inv_1bLqOsKPU6Ak3XxQTGJLCXZTqs5MTbaGdr] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.258Z][AgentRun/m2-ml-root-1780349329244/run][inv_1bLqOsKPU6Ak3XxQTGJLCXZTqs5MTbaGdr] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.263Z][AgentRun/m2-ml-l1-1780349329259/run][inv_1fpjdowI5UkP1MSD98thJIU5cZdUsJAjvj] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.267Z][AgentRun/m2-ml-l1-1780349329259/run][inv_1fpjdowI5UkP1MSD98thJIU5cZdUsJAjvj] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.273Z][AgentRun/m2-ml-l2-1780349329268/run][inv_12hbhSPKAS4q6oft4AhFLs2JHWxmFe8fop] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.276Z][AgentRun/m2-ml-l2-1780349329268/run][inv_12hbhSPKAS4q6oft4AhFLs2JHWxmFe8fop] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.282Z][AgentRun/m2-ml-l3-1780349329277/run][inv_19FMtwSWcch842Sd9cR3hvJtEYcj89ssIV] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.285Z][AgentRun/m2-ml-l3-1780349329277/run][inv_19FMtwSWcch842Sd9cR3hvJtEYcj89ssIV] INFO: Invocation completed successfully.
+
+[GATE PASS] multi-level-fork
+  lineage=m2-ml-root-1780349329244->m2-ml-l1-1780349329259->m2-ml-l2-1780349329268->m2-ml-l3-1780349329277 (expect m2-ml-root-1780349329244->l1->l2->l3 shape) chain_ok=true effects[root=1,l1=0,l2=0,l3=0] (expect 1,0,0,0) distinct_answers=3(expect 3) seeded_step2_identical_all_levels=true
+[restate][2026-06-01T21:28:49.603Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:49.604Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:49.866Z][AgentRun/m2-cc-parent-1780349329862/run][inv_1bImlqC2VRRp5PdsnH865lvpPxwYzidz4M] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.874Z][AgentRun/m2-cc-parent-1780349329862/run][inv_1bImlqC2VRRp5PdsnH865lvpPxwYzidz4M] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.895Z][AgentRun/m2-cc-fork-0-1780349329876/run][inv_1d2nIRdO5Bdg7m7Ktt7atd8qg8HQO4URl9] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.896Z][AgentRun/m2-cc-fork-1-1780349329876/run][inv_13JybG3x0RkS4CVBWvfT8p9WrZQ537hR53] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.898Z][AgentRun/m2-cc-fork-2-1780349329876/run][inv_13Py3dRXNGyw51RWOHU9A6Gbr1l4SiDaJI] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.900Z][AgentRun/m2-cc-fork-3-1780349329876/run][inv_1iwLEoGF0aGL4RuwUTiztlkcDSRGnQb6V4] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.902Z][AgentRun/m2-cc-fork-4-1780349329876/run][inv_1jtTsUS1RbOd7dK01EmPRVD96zWvsj9bNr] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.904Z][AgentRun/m2-cc-fork-5-1780349329876/run][inv_11YgabRpeWQt1sg6gbQgAAEho9U7VHEFKT] INFO: Starting invocation.
+[restate][2026-06-01T21:28:49.908Z][AgentRun/m2-cc-fork-0-1780349329876/run][inv_1d2nIRdO5Bdg7m7Ktt7atd8qg8HQO4URl9] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.909Z][AgentRun/m2-cc-fork-1-1780349329876/run][inv_13JybG3x0RkS4CVBWvfT8p9WrZQ537hR53] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.910Z][AgentRun/m2-cc-fork-2-1780349329876/run][inv_13Py3dRXNGyw51RWOHU9A6Gbr1l4SiDaJI] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.911Z][AgentRun/m2-cc-fork-3-1780349329876/run][inv_1iwLEoGF0aGL4RuwUTiztlkcDSRGnQb6V4] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.912Z][AgentRun/m2-cc-fork-4-1780349329876/run][inv_1jtTsUS1RbOd7dK01EmPRVD96zWvsj9bNr] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:49.912Z][AgentRun/m2-cc-fork-5-1780349329876/run][inv_11YgabRpeWQt1sg6gbQgAAEho9U7VHEFKT] INFO: Invocation completed successfully.
+
+[GATE PASS] concurrent-forks
+  forks=6 parent_effects=1(expect 1) per_fork_NEW_effects=[0,0,0,0,0,0](expect all 0) distinct_answers=6(expect 6) all_journals_3steps=true family_total_step2_effects=1(expect 1)
+[restate][2026-06-01T21:28:50.230Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:50.232Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:50.513Z][AgentRun/m2-cdf-src-1780349330508/run][inv_138VwTOYxn4t4BH5yUPR4vIycHP9Y2j5jT] INFO: Starting invocation.
+[restate][2026-06-01T21:28:50.524Z][AgentRun/m2-cdf-src-1780349330508/run][inv_138VwTOYxn4t4BH5yUPR4vIycHP9Y2j5jT] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:50.941Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:50.942Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:51.228Z][AgentRun/m2-cdf-fork-1780349330826/run][inv_1gX7r2jH49Jt0lDTz2ARZKxI2pOkxzEXfA] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=m2-cdf-fork-1780349330826 pid=14139
+2026-06-01T21:28:51.238454Z WARN restate_invoker_impl
+  Invocation error, retrying in 519ms 417µs 446ns.
+    error: unexpected error while reading the response body: error reading a body from connection
+    restate.invocation.id: inv_1gX7r2jH49Jt0lDTz2ARZKxI2pOkxzEXfA
+    restate.invocation.target: AgentRun/m2-cdf-fork-1780349330826/run
+    restate.deployment.id: dp_15ELr9gO3vxWxk1vTArTo7T
+    restate.error.code: RT0010
+    Visit https://docs.restate.dev/references/errors#RT0010 for more info and suggestions.
+on rt:pp-8
+2026-06-01T21:28:51.760541Z WARN restate_invoker_impl
+  Invocation error, retrying in 1s 34ms 606µs 773ns.
+    error: unexpected closed request stream while trying to write a message
+    restate.invocation.id: inv_1gX7r2jH49Jt0lDTz2ARZKxI2pOkxzEXfA
+    restate.invocation.target: AgentRun/m2-cdf-fork-1780349330826/run
+    restate.deployment.id: dp_15ELr9gO3vxWxk1vTArTo7T
+    restate.error.code: RT0010
+    Visit https://docs.restate.dev/references/errors#RT0010 for more info and suggestions.
+on rt:pp-8
+[restate][2026-06-01T21:28:51.779Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:51.782Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:52.806Z][AgentRun/m2-cdf-fork-1780349330826/run][inv_1gX7r2jH49Jt0lDTz2ARZKxI2pOkxzEXfA] INFO: Replaying invocation.
+[restate][2026-06-01T21:28:52.817Z][AgentRun/m2-cdf-fork-1780349330826/run][inv_1gX7r2jH49Jt0lDTz2ARZKxI2pOkxzEXfA] INFO: Invocation completed successfully.
+
+[GATE PASS] crash-during-fork(new-effect)
+  seeded=1(expect 1) service_really_died=true forked_effect_fires=1(expect 1 exactly-once) source_effects_unchanged=1(expect 1) seq1_seeded_from_source=true journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[crash-fork]<<plan-for(src)|tool-result(effectId=56)|prompt=diverge>>"
+[restate][2026-06-01T21:28:53.141Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:53.142Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:53.391Z][AgentRun/m2-cdfs-src-1780349333386/run][inv_1hcuNUyMmXwj7hQXxVmu11vEFPFTtL9zUH] INFO: Starting invocation.
+[restate][2026-06-01T21:28:53.400Z][AgentRun/m2-cdfs-src-1780349333386/run][inv_1hcuNUyMmXwj7hQXxVmu11vEFPFTtL9zUH] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:28:53.820Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:53.822Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:54.145Z][AgentRun/m2-cdfs-fork-1780349333702/run][inv_1aU841YJnXjQ0GgLauJtzukIt1anQkc675] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step3 run=m2-cdfs-fork-1780349333702 pid=14193
+2026-06-01T21:28:54.159488Z WARN restate_invoker_impl
+  Invocation error, retrying in 528ms 717µs 833ns.
+    error: unexpected error while reading the response body: error reading a body from connection
+    restate.invocation.id: inv_1aU841YJnXjQ0GgLauJtzukIt1anQkc675
+    restate.invocation.target: AgentRun/m2-cdfs-fork-1780349333702/run
+    restate.deployment.id: dp_15ELr9gO3vxWxk1vTArTo7T
+    restate.error.code: RT0010
+    Visit https://docs.restate.dev/references/errors#RT0010 for more info and suggestions.
+on rt:pp-13
+2026-06-01T21:28:54.691961Z WARN restate_invoker_impl
+  Invocation error, retrying in 1s 222ms 467µs 390ns.
+    error: unexpected closed request stream while trying to write a message
+    restate.invocation.id: inv_1aU841YJnXjQ0GgLauJtzukIt1anQkc675
+    restate.invocation.target: AgentRun/m2-cdfs-fork-1780349333702/run
+    restate.deployment.id: dp_15ELr9gO3vxWxk1vTArTo7T
+    restate.error.code: RT0010
+    Visit https://docs.restate.dev/references/errors#RT0010 for more info and suggestions.
+on rt:pp-13
+[restate][2026-06-01T21:28:54.692Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:54.693Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:55.926Z][AgentRun/m2-cdfs-fork-1780349333702/run][inv_1aU841YJnXjQ0GgLauJtzukIt1anQkc675] INFO: Replaying invocation.
+[restate][2026-06-01T21:28:55.939Z][AgentRun/m2-cdfs-fork-1780349333702/run][inv_1aU841YJnXjQ0GgLauJtzukIt1anQkc675] INFO: Invocation completed successfully.
+
+[GATE PASS] crash-during-fork(seeded-no-refire)
+  seeded=2(expect 2) service_really_died=true fork_NEW_effects=0(expect 0 even across crash) source_effects_unchanged=1(expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[crash-seeded]<<plan-for(src)|tool-result(effectId=58)|prompt=diverge>>"
+[restate][2026-06-01T21:28:56.263Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:56.265Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:56.541Z][AgentRun/m2-val-src-1780349336536/run][inv_1fiqhJL1A8NC1O8JvCps02gBH7uBkA8iAo] INFO: Starting invocation.
+[restate][2026-06-01T21:28:56.552Z][AgentRun/m2-val-src-1780349336536/run][inv_1fiqhJL1A8NC1O8JvCps02gBH7uBkA8iAo] INFO: Invocation completed successfully.
+
+[GATE PASS] fork-validation
+  unknown-source=rejected out-of-range-seq=rejected self-fork=rejected collision-target=rejected valid_plan_accepted=true
+
+================ M2 GATE SUMMARY ================
+PASS  fork-no-refire
+PASS  multi-level-fork
+PASS  concurrent-forks
+PASS  crash-during-fork(new-effect)
+PASS  crash-during-fork(seeded-no-refire)
+PASS  fork-validation
+-------------------------------------------------
+6/6 gates passed
+VERDICT: GATE PASSED
+=================================================

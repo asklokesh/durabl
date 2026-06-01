@@ -24,9 +24,38 @@ export {
   runMeta,
   ensureRunMeta,
   forkRun,
+  childRuns,
+  allRunIds,
   exportJsonl,
   type RecordResult,
 } from "./journal.js";
+
+// M2 — trajectory branching: fork API + read-only inspection surface.
+export {
+  validateForkPlan,
+  seedFork,
+  forkAndRun,
+  ForkError,
+  type ForkDecision,
+  type ForkPlan,
+  type ForkResult,
+  type SubstrateInvoke,
+} from "./fork.js";
+
+export {
+  inspectRun,
+  lineage,
+  listForks,
+  forkTree,
+  diffTrajectories,
+  type RunInspection,
+  type EffectView,
+  type LineageNode,
+  type ForkTreeNode,
+  type StepDiff,
+  type StepDiffStatus,
+  type TrajectoryDiff,
+} from "./inspect.js";
 
 export {
   fireEffect,

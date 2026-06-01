@@ -10,13 +10,20 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "durabl": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist *.tsbuildinfo",
     "service": "node --enable-source-maps dist/service.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "gate": "npm run build && node --enable-source-maps dist/harness/run-gate.js",
-    "test": "npm run gate"
+    "gate:m2": "npm run build && node --enable-source-maps dist/harness/run-m2-gate.js",
+    "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
+    "cli": "npm run build && node --enable-source-maps dist/cli.js",
+    "test": "npm run gate",
+    "test:m2": "npm run gate:m2"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",

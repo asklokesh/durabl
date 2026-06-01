@@ -1,0 +1,68 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACT 1 — Kill an agent mid-run. It must NOT double-fire its side effect.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Starting agent run demo-1780349312269; it will be SIGKILLed at the dangerous
+"effect fired, journal not yet committed" window (point=after-effect:step2).
+[restate][2026-06-01T21:28:32.376Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:32.378Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:32.709Z][AgentRun/demo-1780349312269/run][inv_1cWGfAtK7Dje0a7qUnLY9d2geVtUVj09L3] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=demo-1780349312269 pid=13786
+2026-06-01T21:28:32.718330Z WARN restate_invoker_impl
+  → service really died (uncatchable SIGKILL): true
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACT 2 — Resume from the exact step. Exactly-once preserved.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[restate][2026-06-01T21:28:33.253Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:33.255Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:28:33.291Z][AgentRun/demo-1780349312269/run][inv_1cWGfAtK7Dje0a7qUnLY9d2geVtUVj09L3] INFO: Replaying invocation.
+[restate][2026-06-01T21:28:33.301Z][AgentRun/demo-1780349312269/run][inv_1cWGfAtK7Dje0a7qUnLY9d2geVtUVj09L3] INFO: Invocation completed successfully.
+  → run recovered and completed: "answer[main]<<plan-for(ship-the-invoice)|tool-result(effectId=49)|prompt=ship-the-invoice>>"
+  → side-effect fire count (read from REAL effect sink): 1 (expect 1)
+  → EXACTLY-ONCE across crash: YES ✓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACT 3 — Open the trajectory from the portable journal.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  seq 1 step1-plan [plan] → "plan-for(ship-the-invoice)"
+  seq 2 step2-tool_call [tool_call] (side-effect) → "tool-result(effectId=49)"
+  seq 3 step3-summarize [summarize] → "answer[main]<<plan-for(ship-the-invoice)|tool-result(effectId=49)|prompt=ship-the-invoice>>"
+  effects fired by this run: 1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACT 4 — Fork from an earlier step onto an alternate path (new decision).
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[restate][2026-06-01T21:28:33.948Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:28:33.950Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+Forking demo-1780349312269 at seq 1 (BEFORE the tool call) → demo-fork-1780349314202
+with a NEW decision/prompt. The forked path will make its OWN tool call.
+  → seeded 1 step(s) from the original (seq <= 1), no re-execution
+[restate][2026-06-01T21:28:34.211Z][AgentRun/demo-fork-1780349314202/run][inv_106ccrVnYxtP7EpeeFwHqUAWykVnNdomKl] INFO: Starting invocation.
+[restate][2026-06-01T21:28:34.218Z][AgentRun/demo-fork-1780349314202/run][inv_106ccrVnYxtP7EpeeFwHqUAWykVnNdomKl] INFO: Invocation completed successfully.
+  → forked run completed: "answer[what-if]<<plan-for(ship-the-invoice)|tool-result(effectId=51)|prompt=what-if-we-refund-instead>>"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACT 5 — Compare the two trajectories. Prove no cross-fire.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  original effect fires (unchanged by the fork): 1 (expect 1)
+  forked path effect fires (its OWN new effect):  1 (expect 1)
+  first divergence at seq: 2
+    seq 1 step1-plan: same
+    seq 2 step2-tool_call: changed
+    seq 3 step3-summarize: changed
+  lineage of fork: demo-1780349312269[main] → demo-fork-1780349314202[what-if]
+
+  portable export of the fork (lineage travels with it):
+    {"record":"run_meta","schema":1,"runId":"demo-fork-1780349314202","parentRun":"demo-1780349312269","forkedAtSeq":1,"trajectory":"what-if","createdAt":"2026-06-01T21:28:34.205Z"}
+    {"record":"step","schema":1,"runId":"demo-fork-1780349314202","seq":1,"stepName":"step1-plan","kind":"plan","idemKey":"demo-1780349312269:step1-plan","output":"plan-for(ship-the-invoice)","sideEffect":false,"seededFrom":"demo-1780349312269","recordedAt":"2026-06-01T21:28:34.205Z"}
+    {"record":"step","schema":1,"runId":"demo-fork-1780349314202","seq":2,"stepName":"step2-tool_call","kind":"tool_call","idemKey":"demo-fork-1780349314202:step2-tool_call","output":"tool-result(effectId=51)","sideEffect":true,"seededFrom":null,"recordedAt":"2026-06-01T21:28:34.216Z"}
+    {"record":"step","schema":1,"runId":"demo-fork-1780349314202","seq":3,"stepName":"step3-summarize","kind":"summarize","idemKey":"demo-fork-1780349314202:step3-summarize","output":"answer[what-if]<<plan-for(ship-the-invoice)|tool-result(effectId=51)|prompt=what-if-we-refund-instead>>","sideEffect":false,"seededFrom":null,"recordedAt":"2026-06-01T21:28:34.217Z"}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEMO RESULT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Crash → exact-step resume, no double-fire:       PASS
+Open trajectory, fork from earlier step, explore: PASS
+
+VERDICT: DEMO PASSED — this is the single demo that proves the company.
