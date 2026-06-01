@@ -10,3 +10,6 @@ dist/
 !docs/m1-evidence/gate-evidence.log
 !docs/m2-evidence/
 !docs/m2-evidence/*.log
+!docs/m3-evidence/
+!docs/m3-evidence/**
+.gstack/

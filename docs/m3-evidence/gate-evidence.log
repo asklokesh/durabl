@@ -1,0 +1,41 @@
+[restate][2026-06-01T21:59:47.004Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T21:59:47.005Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T21:59:47.279Z][AgentRun/m3-root-1780351186918/run][inv_1ffv8q8Je4bw1Qcz6PVsr0kYwrDI1Jy9Ib] INFO: Starting invocation.
+[restate][2026-06-01T21:59:47.287Z][AgentRun/m3-root-1780351186918/run][inv_1ffv8q8Je4bw1Qcz6PVsr0kYwrDI1Jy9Ib] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:59:47.293Z][AgentRun/m3-forkA-1780351186918/run][inv_1lDQkrLtkqgt0lOzxw5Mjgh1ixvItbla4q] INFO: Starting invocation.
+[restate][2026-06-01T21:59:47.296Z][AgentRun/m3-forkA-1780351186918/run][inv_1lDQkrLtkqgt0lOzxw5Mjgh1ixvItbla4q] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:59:47.301Z][AgentRun/m3-forkB-1780351186918/run][inv_1bKVJaV2hnL22HY3UeFGaTsuCyYLTysibn] INFO: Starting invocation.
+[restate][2026-06-01T21:59:47.305Z][AgentRun/m3-forkB-1780351186918/run][inv_1bKVJaV2hnL22HY3UeFGaTsuCyYLTysibn] INFO: Invocation completed successfully.
+[restate][2026-06-01T21:59:47.309Z][AgentRun/m3-subforkB-1780351186918/run][inv_13ejnluyNwZe3CUyLWamTcf7oZQElEfdvK] INFO: Starting invocation.
+[restate][2026-06-01T21:59:47.312Z][AgentRun/m3-subforkB-1780351186918/run][inv_13ejnluyNwZe3CUyLWamTcf7oZQElEfdvK] INFO: Invocation completed successfully.
+[GATE PASS] G1 reconstruct-matches-reality
+  reconstructed_from=live-sqlite-journal steps=[step1-plan,step2-tool_call,step3-summarize] effects=1(expect 1) outcome_matches_substrate_result=true replay_divergence=none outcome="answer[main]<<plan-for(original-prompt)|tool-result(effectId=94)|prompt=original-prompt>>"
+
+# exported portable bundle (18 lines) → /Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl
+
+# substrate killed: restate_health_unreachable=true service_pids_dead=true
+
+[GATE PASS] G2 offline-from-export (portability proof)
+  substrate_dead=true reconstructed_from=imported:portable-bundle.jsonl root_divergence=none forkA_divergence=none forkB_divergence=none subforkB_divergence=none forkB_own_effect=1(expect 1 — fork@1 fires own effect) forkA_seeded_no_refire=2seeded
+
+[GATE PASS] G3 time-travel-correctness
+  at_step2: steps=2(expect 2) currentOutput_matches=true effects_as_of_2=1(expect 1) diverged=[@1:m3-forkB-1780351186918,@2:m3-forkA-1780351186918] at_step1: effects=0(expect 0) diverged_has_forkB=true out_of_range_rejected=true
+
+[GATE PASS] G4 fork-tree-and-diff
+  tree=m3-root-1780351186918->[m3-forkA-1780351186918,m3-forkB-1780351186918], m3-forkB-1780351186918->[m3-subforkB-1780351186918] tree_ok=true diff(root,forkA): first_divergence=3(expect 3) seq_status=[1:same,2:same,3:changed] diff_ok=true
+
+# replay UI serving OFFLINE export at http://127.0.0.1:7879
+
+[GATE PASS] G5 ui-api-offline
+  origin=imported:/Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl origin_imported=true /api/runs=4runs(true) /api/replay steps=3 effects=1 from=imported:/Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl(true) /api/tree children=2(true) /api/diff firstDiv=3(true) /api/state-at n=2 steps=2(true) — UI data path fully offline, no substrate
+
+================ M3 GATE SUMMARY ================
+PASS  G1 reconstruct-matches-reality
+PASS  G2 offline-from-export (portability proof)
+PASS  G3 time-travel-correctness
+PASS  G4 fork-tree-and-diff
+PASS  G5 ui-api-offline
+------------------------------------------------
+5/5 gates passed
+VERDICT: GATE PASSED
+================================================

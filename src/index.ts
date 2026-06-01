@@ -27,8 +27,43 @@ export {
   childRuns,
   allRunIds,
   exportJsonl,
+  exportJsonlWithEffects,
+  exportBundleJsonl,
   type RecordResult,
 } from "./journal.js";
+
+// M3 — observability / replay / time-travel (read surface).
+export {
+  liveJournalSource,
+  importJournalSource,
+  parseExport,
+  type JournalSource,
+  type ImportedJournal,
+} from "./journal-source.js";
+
+export {
+  reconstruct,
+  stateAt,
+  divergencePoints,
+  assertReplayMatches,
+  compareSources,
+  type ReplayedRun,
+  type ReplayStep,
+  type ReplayEffect,
+  type StateAsOf,
+  type DivergencePoint,
+  type ReplayDivergence,
+} from "./replay.js";
+
+export {
+  lineageFrom,
+  listForksFrom,
+  forkTreeFrom,
+  diffTrajectoriesFrom,
+  rootRuns,
+} from "./inspect-source.js";
+
+export { startServer, type ServerOptions } from "./server.js";
 
 // M2 — trajectory branching: fork API + read-only inspection surface.
 export {

@@ -5,10 +5,31 @@ A neutral, self-hostable **replay / time-travel debugging** product over a
 as the step-journal substrate, using **logical step-level fork** (never
 CRIU/process snapshot). TypeScript-first.
 
-This repository currently contains **M1 — the thin vertical slice**: the first
-production milestone and the durable foundation that M2 (replay/time-travel UI)
-and M3 (logical trajectory fork) build on. See `docs/phase0/` for the validation
-report, build plan, and the M0 feasibility findings that this milestone realizes.
+Milestones shipped:
+- **M1** — portable step journal + structural exactly-once on Restate ([`docs/m1-slice.md`](docs/m1-slice.md)).
+- **M2** — logical step-level trajectory **fork** + read APIs ([`docs/m2-trajectory-branching.md`](docs/m2-trajectory-branching.md)).
+- **M3** — **observability / replay / time-travel** read surface: reconstruct any
+  run from its journal, time-travel to any step, visualize the fork tree, diff
+  trajectories — including **fully offline from a portable JSONL export with no
+  substrate running**. Web UI + CLI. ([`docs/m3-observability-replay.md`](docs/m3-observability-replay.md)).
+
+See `docs/phase0/` for the validation report, build plan, and M0 findings.
+
+## M3 quick start — replay & time-travel
+
+```bash
+npm run gate:m3            # adversarial M3 gate (kills Restate, replays from export)
+npm run ui                 # local replay UI over the live journal (http://127.0.0.1:7878)
+node dist/cli.js export-bundle <rootRunId> > run.jsonl
+node dist/cli.js ui --from run.jsonl       # the SAME UI, fully offline (no substrate)
+node dist/cli.js replay <runId> --from run.jsonl
+node dist/cli.js state-at <runId> --n 2 --from run.jsonl
+npm run capture:ui         # headless UI screenshots (gstack browse) → docs/m3-evidence/screenshots
+```
+
+The replay engine reads only a `JournalSource` (live SQLite **or** imported JSONL),
+so reconstruction never depends on live Restate state. The web server binds
+`127.0.0.1` by default and is strictly read-only.
 
 ## What M1 is
 

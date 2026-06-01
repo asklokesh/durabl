@@ -19,6 +19,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { config } from "./config.js";
+import { effectsFor } from "./effect-sink.js";
 import {
   asIdempotencyKey,
   deriveIdempotencyKey,
@@ -367,6 +368,56 @@ export function exportJsonl(runId: string, includeMeta = false): string {
   if (meta) lines.push(JSON.stringify({ record: "run_meta", ...meta }));
   for (const e of steps) lines.push(JSON.stringify({ record: "step", ...e }));
   return lines.join("\n");
+}
+
+/**
+ * M3 portable export: like {@link exportJsonl}(runId, true) but also emits the
+ * side effects this run fired as tagged `effect` lines. This lets a fully
+ * OFFLINE replay (imported export, no substrate, no effect sink) reconstruct the
+ * effect set as well as the step sequence. Still substrate-detail-free — an
+ * effect line is a neutral subset (runId, stepName, idemKey, payload, firedAt).
+ */
+export function exportJsonlWithEffects(runId: string): string {
+  const lines: string[] = [];
+  const meta = runMeta(runId);
+  if (meta) lines.push(JSON.stringify({ record: "run_meta", ...meta }));
+  for (const e of trajectory(runId)) lines.push(JSON.stringify({ record: "step", ...e }));
+  for (const r of effectsFor(runId)) {
+    lines.push(
+      JSON.stringify({
+        record: "effect",
+        id: r.id,
+        runId: r.run_id,
+        trajectory: r.trajectory,
+        stepName: r.step_name,
+        idemKey: r.idem_key,
+        payload: JSON.parse(r.payload) as unknown,
+        firedAt: r.fired_at,
+        pid: r.pid,
+      }),
+    );
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Export a run AND its entire descendant fork tree as one portable JSONL bundle
+ * (each run's run_meta + steps + effects). This is the offline-portability unit:
+ * import the bundle with NO substrate running and reconstruct the run plus all
+ * its forks, the fork tree, and trajectory diffs entirely from the file.
+ */
+export function exportBundleJsonl(rootRunId: string): string {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const visit = (runId: string): void => {
+    if (seen.has(runId)) return;
+    seen.add(runId);
+    const body = exportJsonlWithEffects(runId);
+    if (body) out.push(body);
+    for (const c of childRuns(runId)) visit(c.runId);
+  };
+  visit(rootRunId);
+  return out.join("\n");
 }
 
 /** Test/harness utility: wipe the journal. Never call in production paths. */
