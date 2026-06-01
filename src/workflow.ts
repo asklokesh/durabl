@@ -17,10 +17,11 @@
 
 import * as restate from "@restatedev/restate-sdk";
 import { fireEffect } from "./effect-sink.js";
-import { ensureRunMeta, recordStep } from "./journal.js";
+import { ensureRunMeta, recordStep, recordStepAsync } from "./journal.js";
 import type { WorkflowInput, WorkflowOutput } from "./step-model.js";
 import { maybeCrash } from "./crash-inject.js";
 import { config } from "./config.js";
+import { getModelProvider } from "./providers/registry.js";
 
 /** Stable logical step names — the basis of the deterministic idempotency key. */
 const STEP = {
@@ -42,18 +43,36 @@ export const agentRun = restate.workflow({
 
       maybeCrash(runId, "before:step1");
 
-      // STEP 1 — plan (pure, no side effect).
-      const plan = await ctx.run(
-        STEP.plan.name,
-        () =>
-          recordStep({
-            runId,
-            seq: STEP.plan.seq,
-            stepName: STEP.plan.name,
-            kind: "plan",
-            sideEffect: false,
-            producer: () => `plan-for(${input.prompt})`,
-          }).value,
+      // STEP 1 — MODEL/PROVIDER CALL (the model-neutrality seam, M4).
+      //
+      // The active provider is chosen by configuration (DURABL_MODEL_PROVIDER)
+      // via getModelProvider(); this code never names a concrete provider, so
+      // switching providers is config-only — no code change (the M4 bar).
+      //
+      // DETERMINISM CONTRACT: the (non-deterministic) model call runs INSIDE the
+      // durable journaled step (ctx.run -> recordStepAsync). Its output is
+      // recorded ONCE into the portable journal; on replay/fork the recorded
+      // output short-circuits and the provider is NEVER re-invoked. So a
+      // provider switch cannot corrupt exactly-once or replay.
+      const plan = await ctx.run(STEP.plan.name, () =>
+        recordStepAsync({
+          runId,
+          seq: STEP.plan.seq,
+          stepName: STEP.plan.name,
+          kind: "plan",
+          sideEffect: false,
+          producer: async () => {
+            const provider = getModelProvider();
+            const completion = await provider.complete({
+              system: "You are a planning step in a durable agent. Be terse.",
+              prompt: `plan-for(${input.prompt})`,
+              maxTokens: 64,
+            });
+            // Record the model output AND a redacted, key-free provider tag so
+            // the journal is self-describing across a provider switch.
+            return `${completion.text}@${completion.meta.provider}:${completion.meta.mode}`;
+          },
+        }).then((r) => r.value),
       );
 
       maybeCrash(runId, "after:step1");

@@ -1,0 +1,266 @@
+
+> durabl@0.1.0 gate:m4
+> npm run build && node --enable-source-maps dist/harness/run-m4-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+M4 neutrality gate — starting local restate-server (target A)...
+restate-server healthy.
+
+registered providers: fake-echo, fake-upper, openai, anthropic
+[restate][2026-06-01T22:26:20.394Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T22:26:20.396Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T22:26:20.662Z][AgentRun/m4-g1-A-1780352780656/run][inv_1azeYWVAlQaQ7mrqK7N4FgRBW4Ze74GMlM] INFO: Starting invocation.
+[restate][2026-06-01T22:26:20.670Z][AgentRun/m4-g1-A-1780352780656/run][inv_1azeYWVAlQaQ7mrqK7N4FgRBW4Ze74GMlM] INFO: Invocation completed successfully.
+[restate][2026-06-01T22:26:21.086Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T22:26:21.087Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T22:26:21.349Z][AgentRun/m4-g1-B-1780352781345/run][inv_18RC1lKjSSAT7qYJ4Eu1jBOdKRhNWCocEq] INFO: Starting invocation.
+[restate][2026-06-01T22:26:21.357Z][AgentRun/m4-g1-B-1780352781345/run][inv_18RC1lKjSSAT7qYJ4Eu1jBOdKRhNWCocEq] INFO: Invocation completed successfully.
+
+[GATE PASS] G1 model-neutrality (config-only)
+  providerA=fake-echo(real=false) providerB=fake-upper(real=false) agent_source_sha256_identical=true (4377cf06534d…) both_runs_completed=true model_output_differs_per_provider=true provider_recorded_in_journal=true planA="echo[plan-for(neutral-prompt)]@fake-echo:simulated" planB="UPPER<PLAN-FOR(NEUTRAL-PROMPT)>@fake-upper:simulated" real_providers_with_keys=[none]
+[restate][2026-06-01T22:26:21.777Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T22:26:21.778Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T22:26:22.034Z][AgentRun/m4-g2-1780352781665/run][inv_19XLDwsMFoXp44LtfU2YrxTqXHv6VdiIzb] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=m4-g2-1780352781665 pid=27707
+[2m2026-06-01T22:26:22.042793Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 585ms 525µs 889ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_19XLDwsMFoXp44LtfU2YrxTqXHv6VdiIzb[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/m4-g2-1780352781665/run[0m[33m
+    restate.deployment.id: dp_16uZpTEeJRdoiGGj2Fw1I1X[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-11
+[restate][2026-06-01T22:26:22.593Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T22:26:22.595Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T22:26:22.637Z][AgentRun/m4-g2-1780352781665/run][inv_19XLDwsMFoXp44LtfU2YrxTqXHv6VdiIzb] INFO: Replaying invocation.
+[restate][2026-06-01T22:26:22.645Z][AgentRun/m4-g2-1780352781665/run][inv_19XLDwsMFoXp44LtfU2YrxTqXHv6VdiIzb] INFO: Invocation completed successfully.
+
+[GATE PASS] G2 durability-under-provider-switch (REAL SIGKILL)
+  provider=fake-upper crash_point=after-effect:step2 service_really_died=true effect_fires=1(expect 1 exactly-once) completed=true model_output_replayed_from_journal=true journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<UPPER<PLAN-FOR(CRASHY-UNDER-B)>@fake-upper:simulated|tool-result(effectId=117)|prompt=crashy-under-B>>"
+[restate][2026-06-01T22:26:23.158Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T22:26:23.159Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T22:26:23.418Z][AgentRun/m4-g3-local-1780352783414/run][inv_1lJLFWOfXAGz6dB8rHQMnhwKBaxR2wr8Ys] INFO: Starting invocation.
+[restate][2026-06-01T22:26:23.426Z][AgentRun/m4-g3-local-1780352783414/run][inv_1lJLFWOfXAGz6dB8rHQMnhwKBaxR2wr8Ys] INFO: Invocation completed successfully.
+[2m2026-06-01T22:26:23.961650Z[0m [32mINFO[0m [1;3;32mrestate_server[0m[32m[32m
+  [1;32mStarting Restate Server 1.6.2 (76acff9 aarch64-unknown-linux-gnu 2026-02-13)[0m[32m
+    node_name: "3ccf8748b90f"
+    config_source: [default]
+    base_dir: /restate-data/3ccf8748b90f/[0m[32m[0m
+[2;3mon[0m main
+[2m2026-06-01T22:26:23.991485Z[0m [32mINFO[0m [1;3;32mrestate_core::network::net_util[0m[32m[32m
+  [1;32mServer listening[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-0
+  [2;3min[0m [1;3mrestate_core::network::net_util::server[0m
+    server_name: message-fabric-server 
+    uds.path: "restate-data/3ccf8748b90f/fabric.sock" 
+    server.address: "0.0.0.0" 
+    server.port: 5122
+[2m2026-06-01T22:26:23.991522Z[0m [32mINFO[0m [1;3;32mrestate_node::init[0m[32m[32m
+  [1;32mTrying to join the cluster 'localcluster'[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-0
+[2m2026-06-01T22:26:23.993216Z[0m [32mINFO[0m [1;3;32mrestate_metadata_server::raft::server::member[0m[32m[32m
+  [1;32mRun as member of the metadata cluster[0m[32m
+    configuration: v1; [N1][0m[32m[0m
+[2;3mon[0m rs:worker-0
+  [2;3min[0m [1;3mrestate_metadata_server::raft::server::member::run[0m
+    member_id: N1:9678
+[2m2026-06-01T22:26:23.994029Z[0m [32mINFO[0m [1;3;32mrestate_metadata_server::raft::server::member[0m[32m[32m
+  [1;32mWon metadata cluster leadership[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-0
+  [2;3min[0m [1;3mrestate_metadata_server::raft::server::member::run[0m
+    member_id: N1:9678
+[2m2026-06-01T22:26:23.995723Z[0m [32mINFO[0m [1;3;32mrestate_node[0m[32m[32m
+  [1;32mCluster 'localcluster' has been automatically provisioned[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-3
+[2m2026-06-01T22:26:24.059257Z[0m [32mINFO[0m [1;3;32mrestate_node[0m[32m[32m
+  [1;32mMy Node ID is N1:2[0m[32m
+    node_name: 3ccf8748b90f
+    roles: http-ingress | admin | worker | log-server | metadata-server
+    address: http://172.17.0.2:5122/
+    location: 
+    nodes_config_version: v2
+    cluster_name: localcluster
+    cluster_fingerprint: Some(ClusterFingerprint(18200627465274423785))
+    partition_table_version: v1
+    logs_version: v1[0m[32m[0m
+[2;3mon[0m rs:worker-9
+[2m2026-06-01T22:26:24.102152Z[0m [32mINFO[0m [1;3;32mrestate_ingress_http::server[0m[32m[32m
+  [1;32mIngress HTTP listening[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-9
+  [2;3min[0m [1;3mrestate_ingress_http::server::server[0m
+    server_name: http-ingress-server 
+    uds.path: "restate-data/3ccf8748b90f/ingress.sock" 
+    server.address: "0.0.0.0" 
+    server.port: 8080
+[2m2026-06-01T22:26:24.102171Z[0m [32mINFO[0m [1;3;32mrestate_node[0m[32m[32m
+  [1;32mRestate node roles [http-ingress | admin | worker | log-server | metadata-server] were started[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-9
+[2m2026-06-01T22:26:24.102186Z[0m [32mINFO[0m [1;3;32mrestate_node::failure_detector[0m[32m[32m
+  [1;32mFailure Detector Started[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-9
+[2m2026-06-01T22:26:24.103987Z[0m [32mINFO[0m [1;3;32mrestate_admin::service[0m[32m[32m
+  [1;32mAdmin API starting on: http://172.17.0.2:9070/[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-5
+[2m2026-06-01T22:26:24.104005Z[0m [32mINFO[0m [1;3;32mrestate_core::network::net_util[0m[32m[32m
+  [1;32mServer listening[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-5
+  [2;3min[0m [1;3mrestate_core::network::net_util::server[0m
+    server_name: admin-api-server 
+    uds.path: "restate-data/3ccf8748b90f/admin.sock" 
+    server.address: "0.0.0.0" 
+    server.port: 9070
+[2m2026-06-01T22:26:24.204939Z[0m [32mINFO[0m [1;3;32mrestate_node::failure_detector::node_state[0m[32m[32m
+  [1;32mN1:2 transitioned from Dead to Alive (gossip-age=0)[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-7
+[2m2026-06-01T22:26:24.205012Z[0m [32mINFO[0m [1;3;32mrestate_admin::cluster_controller::service::cluster_controller_state[0m[32m[32m
+  [1;32mCluster controller switching to leader mode[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-3
+[restate][2026-06-01T22:26:24.222Z] INFO: Restate SDK started listening on 9081...
+[restate][2026-06-01T22:26:24.223Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[2m2026-06-01T22:26:24.263358Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 0 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-0
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 0
+[2m2026-06-01T22:26:24.312455Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 1 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-1
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 1
+[2m2026-06-01T22:26:24.339588Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 2 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-2
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 2
+[2m2026-06-01T22:26:24.339642Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 3 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-3
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 3
+[2m2026-06-01T22:26:24.350158Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 5 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-5
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 5
+[2m2026-06-01T22:26:24.350163Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 6 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-6
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 6
+[2m2026-06-01T22:26:24.352632Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 4 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-4
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 4
+[2m2026-06-01T22:26:24.355837Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 7 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-7
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 7
+[2m2026-06-01T22:26:24.367808Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 9 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-9
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 9
+[2m2026-06-01T22:26:24.367827Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 8 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-8
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 8
+[2m2026-06-01T22:26:24.372327Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 10 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-10
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 10
+[2m2026-06-01T22:26:24.375138Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 11 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-11
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 11
+[2m2026-06-01T22:26:24.381924Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 12 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-12
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 12
+[2m2026-06-01T22:26:24.385060Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 13 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-13
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 13
+[2m2026-06-01T22:26:24.391948Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 14 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-14
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 14
+[2m2026-06-01T22:26:24.397600Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 15 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-15
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 15
+[2m2026-06-01T22:26:24.400741Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 16 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-16
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 16
+[2m2026-06-01T22:26:24.423239Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 18 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-18
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 18
+[2m2026-06-01T22:26:24.423243Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 17 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-17
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 17
+[2m2026-06-01T22:26:24.429049Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 19 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-19
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 19
+[2m2026-06-01T22:26:24.476000Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 20 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-20
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 20
+[2m2026-06-01T22:26:24.491305Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 21 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-21
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 21
+[2m2026-06-01T22:26:24.499294Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 22 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-22
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 22
+[2m2026-06-01T22:26:24.547104Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 23 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-23
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 23
+[restate][2026-06-01T22:26:24.566Z][AgentRun/m4-g3-docker-1780352784496/run][inv_1a5IpxKp4RfO2axImGRxiArfcFAopFKzeo] INFO: Starting invocation.
+[restate][2026-06-01T22:26:24.579Z][AgentRun/m4-g3-docker-1780352784496/run][inv_1a5IpxKp4RfO2axImGRxiArfcFAopFKzeo] INFO: Invocation completed successfully.
+
+[GATE PASS] G3 deploy-target-neutrality (config-only)
+  targetA=local(launch=external, ingress=http://localhost:8080) ran=true targetB=docker(launch=docker, ingress=http://localhost:8081) ran=true agent_source_sha256_identical=true (4377cf06534d…) RAN: containerized restate (restatedev/restate:1.6) on http://localhost:8081; answer="answer[main]<<echo[plan-for(target-neutral)]@fake-echo:simulated|tool-result(effectId=120)|prompt=target-neutral>>"
+[restate][2026-06-01T22:26:25.433Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T22:26:25.434Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T22:26:25.713Z][AgentRun/m4-port-B-1780352785709/run][inv_19bSOEHgyKIi4KMyE2Db72P8rIPBuBzX9V] INFO: Starting invocation.
+[restate][2026-06-01T22:26:25.722Z][AgentRun/m4-port-B-1780352785709/run][inv_19bSOEHgyKIi4KMyE2Db72P8rIPBuBzX9V] INFO: Invocation completed successfully.
+
+[GATE PASS] G4 journal-portability (offline, across providers+targets)
+  runs=3 m4-g3-local-1780352783414: offline_divergence=none | m4-g3-docker-1780352784496: offline_divergence=none | m4-port-B-1780352785709: offline_divergence=none
+
+================ M4 GATE SUMMARY ================
+PASS  G1 model-neutrality (config-only)
+PASS  G2 durability-under-provider-switch (REAL SIGKILL)
+PASS  G3 deploy-target-neutrality (config-only)
+PASS  G4 journal-portability (offline, across providers+targets)
+-------------------------------------------------
+4/4 gates passed
+VERDICT: GATE PASSED
+=================================================

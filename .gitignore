@@ -12,4 +12,6 @@ dist/
 !docs/m2-evidence/*.log
 !docs/m3-evidence/
 !docs/m3-evidence/**
+!docs/m4-evidence/
+!docs/m4-evidence/**
 .gstack/

@@ -102,3 +102,26 @@ export {
 
 export { agentRun, type AgentRunService } from "./workflow.js";
 export { config } from "./config.js";
+
+// M4 — neutrality seams (model provider + deploy target), config-driven.
+export {
+  type ModelProvider,
+  type ModelRequest,
+  type ModelCompletion,
+  type ModelCallMeta,
+  type ProviderDescriptor,
+} from "./providers/provider.js";
+export {
+  getModelProvider,
+  configuredProviderId,
+  PROVIDER_IDS,
+  DEFAULT_PROVIDER_ID,
+} from "./providers/registry.js";
+export {
+  getDeployTarget,
+  configuredDeployTargetId,
+  DEFAULT_DEPLOY_TARGET,
+  type DeployTarget,
+  type LaunchKind,
+} from "./deploy-target.js";
+export { recordStepAsync } from "./journal.js";

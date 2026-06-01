@@ -163,6 +163,73 @@ export function recordStep<T>(args: {
   }
 }
 
+/**
+ * Async variant of {@link recordStep} for steps whose producer is asynchronous
+ * (e.g. a model-provider network call — M4). Identical idempotency/replay
+ * contract: if (runId, seq) is already journaled, the stored output is returned
+ * WITHOUT invoking the async producer (so a model call is never re-issued on
+ * replay/fork — the determinism contract: record once, replay from journal).
+ * Otherwise the async producer runs ONCE, its output is journaled under the
+ * deterministic idempotency key, and the value is returned.
+ *
+ * This is the seam that lets a NON-DETERMINISTIC provider call become a
+ * DETERMINISTIC journaled step: switching providers changes what is recorded on
+ * a first run, but replay always reads the recorded output and never re-calls.
+ */
+export async function recordStepAsync<T>(args: {
+  runId: string;
+  seq: number;
+  stepName: string;
+  kind: StepKind;
+  sideEffect: boolean;
+  producer: (idemKey: IdempotencyKey) => Promise<T>;
+}): Promise<RecordResult<T>> {
+  const idemKey = deriveIdempotencyKey(args.runId, args.stepName);
+  {
+    const d = open();
+    try {
+      const existing = d
+        .prepare(`SELECT output FROM step_journal WHERE run_id = ? AND seq = ?`)
+        .get(args.runId, args.seq) as { output: string } | undefined;
+      if (existing) {
+        return {
+          value: JSON.parse(existing.output) as T,
+          replayed: true,
+          idemKey,
+        };
+      }
+    } finally {
+      d.close();
+    }
+  }
+
+  // Miss: run the async producer exactly once OUTSIDE an open DB handle (the
+  // network call may take time; do not hold the SQLite connection across it).
+  const value = await args.producer(idemKey);
+
+  const d = open();
+  try {
+    d.prepare(
+      `INSERT INTO step_journal
+         (schema, run_id, seq, step_name, kind, idem_key, output, side_effect, seeded_from, recorded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`,
+    ).run(
+      JOURNAL_SCHEMA_VERSION,
+      args.runId,
+      args.seq,
+      args.stepName,
+      args.kind,
+      idemKey,
+      JSON.stringify(value),
+      args.sideEffect ? 1 : 0,
+      new Date().toISOString(),
+    );
+    return { value, replayed: false, idemKey };
+  } finally {
+    d.close();
+  }
+}
+
 export function getEntry(runId: string, seq: number): JournalEntry | undefined {
   const d = open();
   try {
