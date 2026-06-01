@@ -11,8 +11,22 @@ import type { IdempotencyKey } from "./idempotency.js";
 /** Journal schema version. Bump on any breaking change to the record shape. */
 export const JOURNAL_SCHEMA_VERSION = 1 as const;
 
-/** Kind of a journaled step. Neutral across providers/frameworks. */
-export type StepKind = "plan" | "tool_call" | "summarize";
+/**
+ * Kind of a journaled step. Neutral across providers/frameworks.
+ *
+ * M5 adds two HITL kinds. They are ordinary journaled steps — they reuse the
+ * SAME idempotency/replay contract as every other step:
+ *   - `hitl_pause`: records that the run durably suspended awaiting human input.
+ *     Its presence in the journal IS the durable "paused" state (not in memory).
+ *   - `hitl_input`: records the human-supplied input exactly once, keyed
+ *     `runId:<stepName>`; supplying input twice dedups to one logical step.
+ */
+export type StepKind =
+  | "plan"
+  | "tool_call"
+  | "summarize"
+  | "hitl_pause"
+  | "hitl_input";
 
 /**
  * One immutable journal entry: the recorded OUTPUT of a single logical step in a
@@ -57,6 +71,31 @@ export interface WorkflowOutput {
   readonly runId: string;
   readonly trajectory: string;
   readonly plan: string;
+  readonly toolResult: string;
+  readonly answer: string;
+}
+
+/** Input to the M5 HITL reference workflow (same shape as the M1 input). */
+export interface HitlWorkflowInput {
+  readonly prompt: string;
+  readonly trajectory?: string;
+}
+
+/**
+ * Human input supplied to resume a paused HITL run. `decision` is the operator's
+ * answer; it is journaled (exactly once) and folded into the post-resume steps.
+ */
+export interface HitlInput {
+  readonly decision: string;
+}
+
+/** Output of the M5 HITL reference workflow. */
+export interface HitlWorkflowOutput {
+  readonly runId: string;
+  readonly trajectory: string;
+  readonly plan: string;
+  /** The human decision that was supplied to resume the run. */
+  readonly humanDecision: string;
   readonly toolResult: string;
   readonly answer: string;
 }

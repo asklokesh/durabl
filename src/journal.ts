@@ -487,6 +487,28 @@ export function exportBundleJsonl(rootRunId: string): string {
   return out.join("\n");
 }
 
+/**
+ * HITL PAUSE STATE (M5), derived purely from the portable journal — no live
+ * process, no substrate. A run is "paused awaiting human input" iff it has a
+ * `hitl_pause` step journaled but no `hitl_input` step yet. Once the human input
+ * is journaled the run is no longer paused (it resumed). This makes "paused" a
+ * durable, exported, replayable fact rather than an in-memory flag.
+ */
+export type HitlState = "paused" | "resumed" | "none";
+
+export function hitlState(runId: string): HitlState {
+  const steps = trajectory(runId);
+  const hasPause = steps.some((s) => s.kind === "hitl_pause");
+  const hasInput = steps.some((s) => s.kind === "hitl_input");
+  if (!hasPause) return "none";
+  return hasInput ? "resumed" : "paused";
+}
+
+/** All runs currently paused awaiting human input (journal-derived). */
+export function pausedRuns(): string[] {
+  return allRunIds().filter((r) => hitlState(r) === "paused");
+}
+
 /** Test/harness utility: wipe the journal. Never call in production paths. */
 export function resetJournal(): void {
   const d = open();

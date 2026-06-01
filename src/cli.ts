@@ -18,7 +18,13 @@
 
 import { readFileSync } from "node:fs";
 import { config } from "./config.js";
-import { exportJsonl, exportBundleJsonl, allRunIds } from "./journal.js";
+import {
+  exportJsonl,
+  exportBundleJsonl,
+  allRunIds,
+  hitlState,
+  pausedRuns,
+} from "./journal.js";
 import {
   diffTrajectories,
   forkTree,
@@ -49,6 +55,37 @@ async function ingressInvoke(runId: string, decision: ForkDecision): Promise<unk
     throw new Error(`invoke ${runId} -> ${res.status}: ${await res.text()}`);
   }
   return res.json();
+}
+
+// ─── M5 HITL ingress helpers ──────────────────────────────────────────────────
+
+/**
+ * Start a HITL run WITHOUT blocking the CLI: use the Restate one-way `send`
+ * ingress so the run starts, advances to the durable pause, and suspends. The
+ * CLI returns immediately — the run is now durably paused (journal shows it),
+ * and this process (or the whole machine) can exit.
+ */
+async function hitlSubmit(runId: string, prompt: string, traj: string): Promise<void> {
+  const res = await fetch(`${INGRESS}/HitlAgentRun/${runId}/run/send`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ prompt, trajectory: traj }),
+  });
+  if (!res.ok) throw new Error(`submit ${runId} -> ${res.status}: ${await res.text()}`);
+}
+
+/** Supply human input to resume a paused run (resolves the durable promise). */
+async function hitlProvideInput(
+  runId: string,
+  decision: string,
+): Promise<{ runId: string; accepted: boolean }> {
+  const res = await fetch(`${INGRESS}/HitlAgentRun/${runId}/provideInput`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ decision }),
+  });
+  if (!res.ok) throw new Error(`provideInput ${runId} -> ${res.status}: ${await res.text()}`);
+  return res.json() as Promise<{ runId: string; accepted: boolean }>;
 }
 
 function parseFlags(args: string[]): { positional: string[]; flags: Record<string, string | boolean> } {
@@ -112,6 +149,12 @@ const USAGE = `durabl — trajectory branching + replay/time-travel CLI (M2 + M3
   durabl replay <runId> [--from <export.jsonl>]   (reconstruct a run, step-by-step)
   durabl state-at <runId> --n <N> [--from <export.jsonl>]  (time-travel to step N)
   durabl ui [--port <p>] [--from <export.jsonl>]  (launch local replay web UI)
+
+  M5 — human-in-the-loop (HITL) pause/resume (survives a real process restart):
+  durabl hitl-run <runId> --prompt <p> [--trajectory <t>]   (start; pauses for input)
+  durabl hitl-input <runId> --decision <text>               (supply input → resume)
+  durabl hitl-status <runId>                                (paused | resumed | none)
+  durabl paused                                             (all runs awaiting input)
 `;
 
 async function main(): Promise<void> {
@@ -251,6 +294,37 @@ async function main(): Promise<void> {
     }
     case "runs": {
       out(allRunIds());
+      break;
+    }
+    case "hitl-run": {
+      const runId = positional[0];
+      const prompt = flags.prompt;
+      if (!runId || typeof prompt !== "string") {
+        throw new Error("usage: durabl hitl-run <runId> --prompt <p> [--trajectory <t>]");
+      }
+      const trajectory = typeof flags.trajectory === "string" ? flags.trajectory : "main";
+      await hitlSubmit(runId, prompt, trajectory);
+      out({ submitted: runId, state: hitlState(runId), note: "run is durably suspended at the HITL pause once it reaches it; supply input with `durabl hitl-input`" });
+      break;
+    }
+    case "hitl-input": {
+      const runId = positional[0];
+      const decision = flags.decision;
+      if (!runId || typeof decision !== "string") {
+        throw new Error("usage: durabl hitl-input <runId> --decision <text>");
+      }
+      const res = await hitlProvideInput(runId, decision);
+      out(res);
+      break;
+    }
+    case "hitl-status": {
+      const runId = positional[0];
+      if (!runId) throw new Error("usage: durabl hitl-status <runId>");
+      out({ runId, state: hitlState(runId) });
+      break;
+    }
+    case "paused": {
+      out(pausedRuns());
       break;
     }
     case "help":

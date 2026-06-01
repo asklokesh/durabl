@@ -22,6 +22,7 @@
     "gate:m2": "npm run build && node --enable-source-maps dist/harness/run-m2-gate.js",
     "gate:m3": "npm run build && node --enable-source-maps dist/harness/run-m3-gate.js",
     "gate:m4": "npm run build && node --enable-source-maps dist/harness/run-m4-gate.js",
+    "gate:m5": "npm run build && node --enable-source-maps dist/harness/run-m5-gate.js",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
@@ -29,7 +30,8 @@
     "test": "npm run gate",
     "test:m2": "npm run gate:m2",
     "test:m3": "npm run gate:m3",
-    "test:m4": "npm run gate:m4"
+    "test:m4": "npm run gate:m4",
+    "test:m5": "npm run gate:m5"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",

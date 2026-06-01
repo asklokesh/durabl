@@ -103,6 +103,24 @@ export {
 export { agentRun, type AgentRunService } from "./workflow.js";
 export { config } from "./config.js";
 
+// M5 — human-in-the-loop (HITL) pause/resume + journal-derived pause state.
+export {
+  hitlAgentRun,
+  HITL_PROMISE,
+  HITL_STEP,
+  type HitlAgentRunService,
+} from "./hitl-workflow.js";
+export {
+  hitlState,
+  pausedRuns,
+  type HitlState,
+} from "./journal.js";
+export {
+  type HitlWorkflowInput,
+  type HitlWorkflowOutput,
+  type HitlInput,
+} from "./step-model.js";
+
 // M4 — neutrality seams (model provider + deploy target), config-driven.
 export {
   type ModelProvider,

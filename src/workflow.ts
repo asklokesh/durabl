@@ -22,6 +22,7 @@ import type { WorkflowInput, WorkflowOutput } from "./step-model.js";
 import { maybeCrash } from "./crash-inject.js";
 import { config } from "./config.js";
 import { getModelProvider } from "./providers/registry.js";
+import { hitlAgentRun } from "./hitl-workflow.js";
 
 /** Stable logical step names — the basis of the deterministic idempotency key. */
 const STEP = {
@@ -130,5 +131,8 @@ export const agentRun = restate.workflow({
 export type AgentRunService = typeof agentRun;
 
 if (process.env.DURABL_SERVE === "1" || process.argv[1]?.endsWith("service.js")) {
-  restate.serve({ services: [agentRun], port: config.servicePort });
+  // Serve BOTH the M1 reference workflow and the M5 HITL workflow. The HITL
+  // workflow is registered here so a freshly-restarted service process (the one
+  // that resumes a paused run) hosts it — proving resume across a real restart.
+  restate.serve({ services: [agentRun, hitlAgentRun], port: config.servicePort });
 }
