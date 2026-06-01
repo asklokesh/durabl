@@ -1,0 +1,22 @@
+{
+  "name": "m0-fork-feasibility-spike",
+  "version": "0.0.0",
+  "private": true,
+  "description": "THROWAWAY M0 spike: logical step-level trajectory fork + crash-injected exactly-once over a Restate journal. Not production.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "service": "node --enable-source-maps dist/service.js",
+    "gate": "node --enable-source-maps dist/harness/run-gates.js"
+  },
+  "dependencies": {
+    "@restatedev/restate-sdk": "1.14.4",
+    "@restatedev/restate-sdk-clients": "1.14.4"
+  },
+  "devDependencies": {
+    "@restatedev/restate": "^1.6.2",
+    "@restatedev/restate-server": "^1.6.2",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

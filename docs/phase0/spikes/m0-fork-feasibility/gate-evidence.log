@@ -1,0 +1,190 @@
+Starting restate-server...
+restate-server healthy.
+[restate][2026-06-01T20:57:10.012Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:10.014Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:10.338Z][AgentRun/crash-before_step1-1780347429921/run][inv_1kyI6Op6ygKY7yZ92MbjR3TuFvtGFNIkAS] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step1 run=crash-before_step1-1780347429921 pid=3117
+[2m2026-06-01T20:57:10.341892Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 586ms 81µs 685ns.[0m[33m
+    [1;33merror[0m[33m: error when calling 'http://localhost:9080/': client error (SendRequest) caused by: connection error caused by: connection reset
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1kyI6Op6ygKY7yZ92MbjR3TuFvtGFNIkAS[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step1-1780347429921/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-7
+[restate][2026-06-01T20:57:10.901Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:10.903Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:10.937Z][AgentRun/crash-before_step1-1780347429921/run][inv_1kyI6Op6ygKY7yZ92MbjR3TuFvtGFNIkAS] INFO: Starting invocation.
+[restate][2026-06-01T20:57:10.947Z][AgentRun/crash-before_step1-1780347429921/run][inv_1kyI6Op6ygKY7yZ92MbjR3TuFvtGFNIkAS] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@before:step1
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=1)|prompt=crashy>>"
+[restate][2026-06-01T20:57:11.451Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:11.452Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:11.718Z][AgentRun/crash-after_step1-1780347431350/run][inv_1jow7ASLrWUh4tXSA6GdZLWTClgyawYByK] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after:step1 run=crash-after_step1-1780347431350 pid=3147
+[2m2026-06-01T20:57:11.725529Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 639ms 82µs 646ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1jow7ASLrWUh4tXSA6GdZLWTClgyawYByK[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step1-1780347431350/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-9
+[restate][2026-06-01T20:57:12.281Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:12.282Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:12.374Z][AgentRun/crash-after_step1-1780347431350/run][inv_1jow7ASLrWUh4tXSA6GdZLWTClgyawYByK] INFO: Replaying invocation.
+[restate][2026-06-01T20:57:12.383Z][AgentRun/crash-after_step1-1780347431350/run][inv_1jow7ASLrWUh4tXSA6GdZLWTClgyawYByK] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after:step1
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=2)|prompt=crashy>>"
+[restate][2026-06-01T20:57:12.832Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:12.833Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:13.100Z][AgentRun/crash-before_effect_step2-1780347432728/run][inv_1hzB9HDHsdyy6iejFvOyUEBqxF9P6s0b7K] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before-effect:step2 run=crash-before_effect_step2-1780347432728 pid=3171
+[2m2026-06-01T20:57:13.108580Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 524ms 268µs 962ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hzB9HDHsdyy6iejFvOyUEBqxF9P6s0b7K[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_effect_step2-1780347432728/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-18
+[2m2026-06-01T20:57:13.635559Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 205ms 717µs 177ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hzB9HDHsdyy6iejFvOyUEBqxF9P6s0b7K[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_effect_step2-1780347432728/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-18
+[restate][2026-06-01T20:57:13.663Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:13.664Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:14.847Z][AgentRun/crash-before_effect_step2-1780347432728/run][inv_1hzB9HDHsdyy6iejFvOyUEBqxF9P6s0b7K] INFO: Replaying invocation.
+[restate][2026-06-01T20:57:14.855Z][AgentRun/crash-before_effect_step2-1780347432728/run][inv_1hzB9HDHsdyy6iejFvOyUEBqxF9P6s0b7K] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@before-effect:step2
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=3)|prompt=crashy>>"
+[restate][2026-06-01T20:57:15.158Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:15.159Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:15.427Z][AgentRun/crash-after_effect_step2-1780347435059/run][inv_1ezOkFzvfMKL52UVv0i9egGCFucGY4TaqI] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=crash-after_effect_step2-1780347435059 pid=3195
+[2m2026-06-01T20:57:15.435241Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 641ms 751µs 474ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1ezOkFzvfMKL52UVv0i9egGCFucGY4TaqI[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_effect_step2-1780347435059/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-10
+[restate][2026-06-01T20:57:15.986Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:15.988Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:16.088Z][AgentRun/crash-after_effect_step2-1780347435059/run][inv_1ezOkFzvfMKL52UVv0i9egGCFucGY4TaqI] INFO: Replaying invocation.
+[restate][2026-06-01T20:57:16.097Z][AgentRun/crash-after_effect_step2-1780347435059/run][inv_1ezOkFzvfMKL52UVv0i9egGCFucGY4TaqI] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after-effect:step2
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=4)|prompt=crashy>>"
+[restate][2026-06-01T20:57:16.543Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:16.544Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:16.810Z][AgentRun/crash-after_step2-1780347436442/run][inv_15cDCCnbRZNK0w2AyOfD4dbeFLuXduHiUm] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after:step2 run=crash-after_step2-1780347436442 pid=3225
+[2m2026-06-01T20:57:16.818440Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 645ms 854µs 328ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_15cDCCnbRZNK0w2AyOfD4dbeFLuXduHiUm[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step2-1780347436442/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-15
+[restate][2026-06-01T20:57:17.372Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:17.373Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:17.473Z][AgentRun/crash-after_step2-1780347436442/run][inv_15cDCCnbRZNK0w2AyOfD4dbeFLuXduHiUm] INFO: Replaying invocation.
+[restate][2026-06-01T20:57:17.479Z][AgentRun/crash-after_step2-1780347436442/run][inv_15cDCCnbRZNK0w2AyOfD4dbeFLuXduHiUm] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after:step2
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=6)|prompt=crashy>>"
+[restate][2026-06-01T20:57:17.931Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:17.932Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:18.197Z][AgentRun/crash-before_step3-1780347437825/run][inv_1hwkfmeBnOb23TEJHBuiDbl94vyVRBCamg] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step3 run=crash-before_step3-1780347437825 pid=3249
+[2m2026-06-01T20:57:18.205209Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 646ms 827µs 172ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hwkfmeBnOb23TEJHBuiDbl94vyVRBCamg[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step3-1780347437825/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-7
+[restate][2026-06-01T20:57:18.757Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:18.758Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:18.862Z][AgentRun/crash-before_step3-1780347437825/run][inv_1hwkfmeBnOb23TEJHBuiDbl94vyVRBCamg] INFO: Replaying invocation.
+[restate][2026-06-01T20:57:18.869Z][AgentRun/crash-before_step3-1780347437825/run][inv_1hwkfmeBnOb23TEJHBuiDbl94vyVRBCamg] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@before:step3
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=7)|prompt=crashy>>"
+[restate][2026-06-01T20:57:19.315Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:19.316Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:19.577Z][AgentRun/crash-after_step3-1780347439211/run][inv_13OmIqr0y4UW5DIfmYYYqNLgETr8PraKqh] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after:step3 run=crash-after_step3-1780347439211 pid=3273
+[2m2026-06-01T20:57:19.585900Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 562ms 366µs 892ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_13OmIqr0y4UW5DIfmYYYqNLgETr8PraKqh[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step3-1780347439211/run[0m[33m
+    restate.deployment.id: dp_12yrsGvTJttbegBHgIAFJ1n[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-21
+[restate][2026-06-01T20:57:20.142Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:20.143Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:20.156Z][AgentRun/crash-after_step3-1780347439211/run][inv_13OmIqr0y4UW5DIfmYYYqNLgETr8PraKqh] INFO: Replaying invocation.
+[restate][2026-06-01T20:57:20.159Z][AgentRun/crash-after_step3-1780347439211/run][inv_13OmIqr0y4UW5DIfmYYYqNLgETr8PraKqh] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after:step3
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<plan-for(crashy)|tool-result(effectId=8)|prompt=crashy>>"
+[restate][2026-06-01T20:57:20.694Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:20.696Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:20.963Z][AgentRun/fork-src-1780347440958/run][inv_1hWkjee4wQC61d2jCAVAEslNc2d2LkDSSu] INFO: Starting invocation.
+[restate][2026-06-01T20:57:20.972Z][AgentRun/fork-src-1780347440958/run][inv_1hWkjee4wQC61d2jCAVAEslNc2d2LkDSSu] INFO: Invocation completed successfully.
+[restate][2026-06-01T20:57:20.976Z][AgentRun/fork-new-1780347440973/run][inv_1iUrHOjQ6ev81XjOyAsUDcOByC3egbNEss] INFO: Starting invocation.
+[restate][2026-06-01T20:57:20.979Z][AgentRun/fork-new-1780347440973/run][inv_1iUrHOjQ6ev81XjOyAsUDcOByC3egbNEss] INFO: Invocation completed successfully.
+
+[GATE PASS] fork-correctness
+  seeded=2(expect 2) src_effects=1(expect 1) fork_NEW_effects=0(expect 0) step2_output_identical=true diverged_answer=true parent_linked=true src_answer="answer[main]<<plan-for(original)|tool-result(effectId=9)|prompt=original>>" fork_answer="answer[what-if]<<plan-for(original)|tool-result(effectId=9)|prompt=diverged-prompt>>"
+[restate][2026-06-01T20:57:21.279Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:21.281Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:21.558Z][AgentRun/concurrent-1780347441552/run][inv_12HfGHvdDa4L2w9nvcFaFSJdGuMe1M4PHW] INFO: Starting invocation.
+[restate][2026-06-01T20:57:21.566Z][AgentRun/concurrent-1780347441552/run][inv_12HfGHvdDa4L2w9nvcFaFSJdGuMe1M4PHW] INFO: Invocation completed successfully.
+
+[GATE PASS] concurrent-workers
+  workers=8 effect_fires=1(expect 1) journal_len=3(expect 3) distinct_answers=1(expect 1)
+[restate][2026-06-01T20:57:21.873Z] INFO: Restate SDK started listening on 9080...
+[restate][2026-06-01T20:57:21.874Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[restate][2026-06-01T20:57:22.138Z][AgentRun/replay-1780347442133/run][inv_1d8XkiigX4hJ7g9v8BxDWzR833RUQl12L5] INFO: Starting invocation.
+[restate][2026-06-01T20:57:22.145Z][AgentRun/replay-1780347442133/run][inv_1d8XkiigX4hJ7g9v8BxDWzR833RUQl12L5] INFO: Invocation completed successfully.
+
+[GATE PASS] replay-divergence
+  same_step_sequence=true same_answer=true effects(first=1,second=1; expect 1,1)
+
+================ GATE SUMMARY ================
+PASS  crash@before:step1
+PASS  crash@after:step1
+PASS  crash@before-effect:step2
+PASS  crash@after-effect:step2
+PASS  crash@after:step2
+PASS  crash@before:step3
+PASS  crash@after:step3
+PASS  fork-correctness
+PASS  concurrent-workers
+PASS  replay-divergence
+---------------------------------------------
+10/10 gates passed
+VERDICT: GATE PASSED
+=============================================
