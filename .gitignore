@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+*.log
+.DS_Store
+
+# Committed proof: the M1 gate evidence is a deliverable, not a transient log.
+!docs/m1-evidence/gate-evidence.log

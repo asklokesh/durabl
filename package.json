@@ -1,0 +1,31 @@
+{
+  "name": "durabl",
+  "version": "0.1.0",
+  "private": true,
+  "description": "durabl M1 — neutral, portable, self-hostable agent execution journal with structural per-step idempotency, on Restate (step-journal substrate). The durable foundation for replay/time-travel + logical step-level fork.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "service": "node --enable-source-maps dist/service.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "gate": "npm run build && node --enable-source-maps dist/harness/run-gate.js",
+    "test": "npm run gate"
+  },
+  "dependencies": {
+    "@restatedev/restate-sdk": "1.14.4",
+    "@restatedev/restate-sdk-clients": "1.14.4"
+  },
+  "devDependencies": {
+    "@restatedev/restate": "^1.6.2",
+    "@restatedev/restate-server": "^1.6.2",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}
