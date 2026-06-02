@@ -208,17 +208,17 @@ node dist/cli.js replay my-run --from hitl.jsonl
 
 ---
 
-## 6. Optional web-UI affordance — DEFERRED (documented choice)
+## 6. Web-UI affordance — shipped on `feat/hitl-web-ui` (post-M5)
 
-The brief lists surfacing pause/resume in the M3 web UI as a *nice-to-have, only
-if cheap, and to be skipped if it risks the gate or the M3 daemon-deadlock issue*.
-**Decision: skipped for M5; CLI-only resume shipped.** Rationale: the resume path
-is a substrate write (`provideInput`), and wiring a write affordance + live "paused"
-polling into the M3 server risks exactly the browse-daemon/event-loop deadlock M3
-documented (§3 of `m3-observability-replay.md`), for zero gate value. The
-**journal-derived** paused state (`hitlState`, `pausedRuns`) is already exposed via
-the CLI and travels in the export, so the UI *read* story is intact; an "awaiting
-input" pill + input box is a small, isolated follow-up that does not gate M5.
+M5 shipped CLI-only resume. The follow-up branch adds the M3 web UI affordance
+without touching the M5 gate:
+
+- **Read:** journal-derived paused runs (`/api/hitl/paused`, `hitlState` on `/api/runs`).
+- **Write (live only):** `POST /api/hitl/input` → same `provideInput` path as `durabl hitl-input`.
+- **Offline:** paused runs visible from export; submit returns 503 (no substrate).
+- **Testing:** `npm run gate:hitl-ui` — fetch-based only; no browse daemon in the server process.
+
+See [`hitl-web-ui.md`](hitl-web-ui.md).
 
 ---
 
@@ -233,7 +233,7 @@ input" pill + input box is a small, isolated follow-up that does not gate M5.
 - "Process restart" is a real OS process death + fresh process on the same host
   reusing the substrate's persisted state dir; cross-host failover is a substrate
   concern, untested here.
-- The web-UI resume affordance is intentionally deferred (§6); resume is CLI-only.
+- Web UI resume is on `feat/hitl-web-ui` (§6); M5 mainline remains CLI-only.
 
 ---
 

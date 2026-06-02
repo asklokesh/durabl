@@ -25,6 +25,10 @@
       <div class="layout">
         <!-- Left: runs + fork tree -->
         <aside class="sidebar">
+          <div class="panel hitl-panel" id="hitlPanel" hidden>
+            <div class="panel-title">Awaiting human input</div>
+            <div id="hitlPausedList" class="hitl-paused-list"></div>
+          </div>
           <div class="panel">
             <div class="panel-title">Runs &amp; fork tree</div>
             <div id="tree" class="tree"></div>
@@ -34,6 +38,24 @@
         <!-- Center: timeline + time-travel -->
         <main class="main">
           <div class="run-header" id="runHeader"></div>
+
+          <div class="hitl-banner" id="hitlBanner" hidden>
+            <div class="hitl-banner-head">
+              <span class="hitl-pill">Awaiting human input</span>
+              <span class="hitl-banner-sub" id="hitlBannerSub"></span>
+            </div>
+            <form id="hitlForm" class="hitl-form">
+              <label class="hitl-label" for="hitlDecision">Decision</label>
+              <textarea id="hitlDecision" name="decision" rows="2" placeholder="e.g. APPROVED — same as durabl hitl-input" required></textarea>
+              <div class="hitl-form-actions">
+                <button type="submit" class="btn-primary" id="hitlSubmitBtn">Submit &amp; resume</button>
+                <span class="hitl-form-msg" id="hitlFormMsg" hidden></span>
+              </div>
+            </form>
+            <p class="hitl-offline-note" id="hitlOfflineNote" hidden>
+              Offline export: paused runs are visible for replay only. Resume requires live mode with Restate ingress.
+            </p>
+          </div>
 
           <div class="tt-bar" id="ttBar" hidden>
             <div class="tt-label">Time-travel</div>
