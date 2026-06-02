@@ -20,6 +20,10 @@ const state = {
   hitlSubmitEnabled: false,
   hitlState: "none",
   pausedRuns: [],
+  /** runIds on root→selected lineage (from GET /api/tree). */
+  lineagePath: new Set(),
+  /** root runId → ForkTreeNode from GET /api/tree */
+  forkTrees: new Map(),
 };
 
 async function api(path, opts) {
@@ -179,32 +183,114 @@ function updateHitlBanner() {
   }
 }
 
+function forkBadgeLabel(node) {
+  return node.forkedAtSeq === null ? node.trajectory : `@${node.forkedAtSeq} ${node.trajectory}`;
+}
+
+function forkTwigSvg() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "fork-twig");
+  svg.setAttribute("width", "14");
+  svg.setAttribute("height", "14");
+  svg.setAttribute("viewBox", "0 0 14 14");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", "M2 7h6M8 4v6M8 7h4");
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "1.4");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(path);
+  return svg;
+}
+
 async function renderTree() {
-  const tree = $("#tree");
-  tree.innerHTML = "";
+  const host = $("#tree");
+  host.innerHTML = "";
+  state.forkTrees.clear();
   if (!state.roots.length) {
-    tree.appendChild(el("div", "empty", "No runs in this journal yet."));
+    host.appendChild(el("div", "empty", "No runs in this journal yet."));
     return;
   }
   for (const root of state.roots) {
     const data = await api(`/api/tree?runId=${encodeURIComponent(root)}`);
-    renderTreeNode(tree, data.tree, 0);
+    state.forkTrees.set(root, data.tree);
+    const block = el("div", "fork-tree-block");
+    if (state.roots.length > 1) {
+      block.appendChild(el("div", "fork-tree-root-label", root));
+    }
+    const ul = el("ul", "fork-lineage-tree");
+    ul.setAttribute("role", "group");
+    renderTreeNode(ul, data.tree, 0);
+    block.appendChild(ul);
+    host.appendChild(block);
   }
+  syncTreeSelection();
 }
 
-function renderTreeNode(container, node, depth) {
-  const row = el("div", "tree-node");
+function renderTreeNode(ul, node, depth) {
+  const li = el("li", "fork-tree-item");
+  li.setAttribute("role", "treeitem");
+  const row = el("button", "tree-node");
+  row.type = "button";
   row.classList.add(node.forkedAtSeq === null ? "root" : "fork");
-  if (state.selected === node.runId) row.classList.add("active");
-  if (depth > 0) {
-    row.appendChild(el("span", "twig", "  ".repeat(depth - 1) + "└─"));
-  }
+  row.dataset.runId = node.runId;
+  if (depth > 0) row.appendChild(forkTwigSvg());
   row.appendChild(el("span", "tname", node.runId));
-  const badge = el("span", "traj-badge", node.forkedAtSeq === null ? node.trajectory : `@${node.forkedAtSeq} ${node.trajectory}`);
-  row.appendChild(badge);
+  row.appendChild(el("span", "traj-badge", forkBadgeLabel(node)));
   row.onclick = () => selectRun(node.runId);
-  container.appendChild(row);
-  for (const c of node.children) renderTreeNode(container, c, depth + 1);
+  li.appendChild(row);
+  if (node.children.length) {
+    const childUl = el("ul", "fork-tree-children");
+    childUl.setAttribute("role", "group");
+    for (const c of node.children) renderTreeNode(childUl, c, depth + 1);
+    li.appendChild(childUl);
+  }
+  ul.appendChild(li);
+}
+
+function syncTreeSelection() {
+  document.querySelectorAll(".tree-node").forEach((row) => {
+    const id = row.dataset.runId;
+    row.classList.toggle("active", id === state.selected);
+    row.classList.toggle("on-path", state.lineagePath.has(id));
+  });
+}
+
+function renderLineageBar(chain) {
+  const bar = $("#lineagePath");
+  bar.innerHTML = "";
+  if (!chain || chain.length <= 1) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  chain.forEach((node, i) => {
+    if (i > 0) bar.appendChild(el("span", "lineage-sep", "→"));
+    const btn = el("button", "lineage-crumb");
+    btn.type = "button";
+    btn.textContent = node.runId;
+    btn.title = forkBadgeLabel(node);
+    if (node.runId === state.selected) btn.classList.add("active");
+    btn.onclick = () => selectRun(node.runId);
+    bar.appendChild(btn);
+  });
+}
+
+async function refreshLineageForRun(runId) {
+  if (!runId) {
+    state.lineagePath = new Set();
+    renderLineageBar([]);
+    syncTreeSelection();
+    return;
+  }
+  const data = await api(`/api/tree?runId=${encodeURIComponent(runId)}`);
+  const chain = data.lineage || [];
+  state.lineagePath = new Set(chain.map((n) => n.runId));
+  renderLineageBar(chain);
+  syncTreeSelection();
 }
 
 // ── Select + render a run ──────────────────────────────────
@@ -212,9 +298,7 @@ async function selectRun(runId) {
   state.selected = runId;
   state.ttN = null;
   state.selectedStepSeq = null;
-  document.querySelectorAll(".tree-node").forEach((n) => {
-    n.classList.toggle("active", n.querySelector(".tname")?.textContent === runId);
-  });
+  await refreshLineageForRun(runId);
   const replay = await api(`/api/replay?runId=${encodeURIComponent(runId)}`);
   state.replay = replay;
   renderRunHeader(replay);
