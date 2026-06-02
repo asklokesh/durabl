@@ -33,6 +33,8 @@ import {
   forkTreeFrom,
   lineageFrom,
   diffTrajectoriesFrom,
+  inspectRunFrom,
+  listForksFrom,
 } from "./inspect-source.js";
 import { listRunsForApi, parseRunsListQuery } from "./runs-list.js";
 import {
@@ -98,22 +100,51 @@ export interface ServerOptions {
   readonly source?: JournalSource;
 }
 
-function buildSource(opts: ServerOptions): { source: JournalSource; label: string } {
-  if (opts.source) return { source: opts.source, label: opts.source.origin };
+function exportPathFromOrigin(origin: string): string | null {
+  if (!origin.startsWith("imported:")) return null;
+  const p = origin.slice("imported:".length);
+  return p || null;
+}
+
+function requestUiUrl(req: IncomingMessage, host: string, port: number): string {
+  const h = req.headers.host ?? `${host}:${port}`;
+  const proto =
+    (typeof req.headers["x-forwarded-proto"] === "string"
+      ? req.headers["x-forwarded-proto"].split(",")[0]?.trim()
+      : undefined) || "http";
+  return `${proto}://${h}`;
+}
+
+function buildSource(opts: ServerOptions): {
+  source: JournalSource;
+  label: string;
+  exportPath: string | null;
+} {
+  if (opts.source) {
+    return {
+      source: opts.source,
+      label: opts.source.origin,
+      exportPath: exportPathFromOrigin(opts.source.origin),
+    };
+  }
   if (opts.importPath) {
     const jsonl = readFileSync(opts.importPath, "utf8");
     return {
       source: importJournalSource(jsonl, `imported:${opts.importPath}`),
       label: `imported export ${opts.importPath} (OFFLINE — no substrate)`,
+      exportPath: opts.importPath,
     };
   }
-  return { source: liveJournalSource(), label: "live SQLite journal" };
+  return { source: liveJournalSource(), label: "live SQLite journal", exportPath: null };
 }
 
 interface Route {
   source: JournalSource;
   label: string;
   live: boolean;
+  exportPath: string | null;
+  host: string;
+  port: number;
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -145,6 +176,8 @@ function handleApi(
       label: ctx.label,
       live: ctx.live,
       hitlSubmitEnabled: ctx.live,
+      exportPath: ctx.exportPath,
+      uiUrl: requestUiUrl(req, ctx.host, ctx.port),
     });
     return true;
   }
@@ -359,11 +392,11 @@ export interface ServerHandle {
  * Binds localhost by default (DURABL_UI_HOST to override).
  */
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
-  const { source, label } = buildSource(opts);
+  const { source, label, exportPath } = buildSource(opts);
   const live = isLiveJournalSource(source);
-  const ctx: Route = { source, label, live };
   const host = process.env.DURABL_UI_HOST ?? "127.0.0.1";
   const port = opts.port ?? Number(process.env.DURABL_UI_PORT ?? 7878);
+  const ctx: Route = { source, label, live, exportPath, host, port };
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     void (async () => {

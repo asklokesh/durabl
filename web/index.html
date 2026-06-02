@@ -6,6 +6,14 @@
     <title>durabl — replay &amp; time-travel</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236366f1'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/app.css" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("durabl.theme");
+          if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app">
@@ -25,7 +33,31 @@
       <div class="layout">
         <!-- Left: runs + fork tree -->
         <aside class="sidebar">
-          <div class="panel hitl-panel" id="hitlPanel" hidden>
+          <div class="panel settings-panel" id="settingsPanel">
+            <div class="panel-title">Settings</div>
+            <dl class="settings-list">
+              <div class="settings-row">
+                <dt>Export path</dt>
+                <dd id="settingsExportPath" class="settings-mono">—</dd>
+              </div>
+              <div class="settings-row">
+                <dt>Live URL</dt>
+                <dd><a id="settingsLiveUrl" class="settings-link" href="#" target="_blank" rel="noopener">—</a></dd>
+              </div>
+              <div class="settings-row settings-theme" id="dark-mode">
+                <dt>Theme</dt>
+                <dd class="settings-theme-controls">
+                  <select id="themeSelect" class="theme-select" aria-label="Color theme">
+                    <option value="system">System</option>
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                  </select>
+                  <a href="#dark-mode" class="settings-theme-link">Dark mode</a>
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div class="panel hitl-panel" id="hitlPanel">
             <div class="panel-title">Awaiting human input</div>
             <div id="hitlPausedList" class="hitl-paused-list"></div>
           </div>

@@ -387,3 +387,63 @@ select.pick {
   .step { padding: 10px 8px; }
 }
 
+/* ── Settings panel ──────────────────────────────────────── */
+.settings-panel { margin-bottom: 0; }
+.settings-list { margin: 0; padding: 0; }
+.settings-row {
+  display: grid; grid-template-columns: 88px 1fr; gap: 8px 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border-soft);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row dt {
+  margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-faint);
+}
+.settings-row dd { margin: 0; font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+.settings-mono { font-family: var(--mono); font-size: 11px; word-break: break-all; }
+.settings-link { color: var(--accent); text-decoration: none; font-family: var(--mono); font-size: 11px; }
+.settings-link:hover { text-decoration: underline; }
+.settings-theme-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.theme-select {
+  font-family: var(--sans); font-size: 12px; color: var(--text);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; cursor: pointer;
+}
+.theme-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.settings-theme-link { font-size: 11px; color: var(--text-faint); text-decoration: none; }
+.settings-theme-link:hover { color: var(--accent); }
+
+/* ── Empty states ────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 28px 16px; border-radius: 12px;
+  border: 1px dashed var(--border); background: var(--bg-elev);
+  min-height: 120px;
+}
+.empty-state .empty-icon {
+  font-size: 28px; line-height: 1; color: var(--text-faint); margin-bottom: 10px;
+  opacity: 0.85;
+}
+.empty-state .empty-title {
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px;
+}
+.empty-state .empty-hint {
+  font-size: 12px; color: var(--text-dim); line-height: 1.5; max-width: 240px;
+}
+.hitl-paused-list { min-height: 4px; }
+
+html[data-theme="light"] {
+  --bg: #f4f5f8;
+  --bg-elev: #ffffff;
+  --bg-elev2: #eef0f5;
+  --border: #d8dce6;
+  --border-soft: #e8ebf2;
+  --text: #12141a;
+  --text-dim: #4b5568;
+  --text-faint: #6b7280;
+}
+html[data-theme="light"] body {
+  background: radial-gradient(1200px 600px at 80% -10%, #e8eaf5 0%, var(--bg) 55%);
+}
+html[data-theme="light"] .topbar { background: rgba(244, 245, 248, 0.85); }
+

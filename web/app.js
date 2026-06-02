@@ -22,7 +22,11 @@ const state = {
   pausedRuns: [],
   /** Trajectory diff panel: "side" | "inline" */
   diffViewMode: localStorage.getItem("durabl.diffViewMode") === "inline" ? "inline" : "side",
+  exportPath: null,
+  uiUrl: null,
 };
+
+const THEME_STORAGE_KEY = "durabl.theme";
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -46,6 +50,63 @@ function fmtOut(v) {
   try { return JSON.stringify(v, null, 2); } catch { return String(v); }
 }
 
+// ── Theme & settings ───────────────────────────────────────
+function applyTheme(mode) {
+  const root = document.documentElement;
+  if (mode === "light" || mode === "dark") {
+    root.dataset.theme = mode;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, mode);
+    } catch (_) {}
+  } else {
+    delete root.dataset.theme;
+    try {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    } catch (_) {}
+  }
+}
+
+function initThemeControls() {
+  const select = $("#themeSelect");
+  if (!select) return;
+  let stored = "system";
+  try {
+    const t = localStorage.getItem(THEME_STORAGE_KEY);
+    if (t === "light" || t === "dark") stored = t;
+  } catch (_) {}
+  select.value = stored;
+  applyTheme(stored === "system" ? "system" : stored);
+  select.addEventListener("change", () => {
+    applyTheme(select.value === "system" ? "system" : select.value);
+  });
+}
+
+function renderEmptyState(container, icon, title, hint) {
+  const wrap = el("div", "empty-state");
+  wrap.appendChild(el("div", "empty-icon", icon));
+  wrap.appendChild(el("div", "empty-title", title));
+  wrap.appendChild(el("div", "empty-hint", hint));
+  container.appendChild(wrap);
+}
+
+function renderSettings(h) {
+  const exportEl = $("#settingsExportPath");
+  const urlEl = $("#settingsLiveUrl");
+  if (!exportEl || !urlEl) return;
+  const path = h.exportPath ?? state.exportPath;
+  if (path) {
+    exportEl.textContent = path;
+    exportEl.title = path;
+  } else {
+    exportEl.textContent = state.live ? "Live journal (no export file)" : "—";
+    exportEl.title = "";
+  }
+  const url = h.uiUrl ?? state.uiUrl ?? window.location.href;
+  state.uiUrl = url;
+  urlEl.textContent = url;
+  urlEl.href = url;
+}
+
 // ── Source banner ──────────────────────────────────────────
 async function loadSource() {
   const h = await api("/api/health");
@@ -54,6 +115,9 @@ async function loadSource() {
   $("#sourcePill").classList.toggle("offline", offline);
   state.live = Boolean(h.live);
   state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
+  state.exportPath = h.exportPath ?? null;
+  state.uiUrl = h.uiUrl ?? null;
+  renderSettings(h);
 }
 
 async function submitHitlInput(ev) {
@@ -121,14 +185,19 @@ async function loadHitlPaused() {
 }
 
 function renderHitlPausedList() {
-  const panel = $("#hitlPanel");
   const list = $("#hitlPausedList");
   list.innerHTML = "";
   if (!state.pausedRuns.length) {
-    panel.hidden = true;
+    renderEmptyState(
+      list,
+      "◎",
+      "No paused runs",
+      state.live
+        ? "Runs waiting for human input appear here."
+        : "Offline replay — no live HITL queue.",
+    );
     return;
   }
-  panel.hidden = false;
   for (const p of state.pausedRuns) {
     const row = el("button", "hitl-paused-item");
     row.type = "button";
@@ -185,7 +254,14 @@ async function renderTree() {
   const tree = $("#tree");
   tree.innerHTML = "";
   if (!state.roots.length) {
-    tree.appendChild(el("div", "empty", "No runs in this journal yet."));
+    renderEmptyState(
+      tree,
+      "◇",
+      "No runs in this journal",
+      state.live
+        ? "Start an agent run — it will show up in the fork tree."
+        : "This export has no recorded runs yet.",
+    );
     return;
   }
   for (const root of state.roots) {
@@ -541,6 +617,7 @@ $("#hitlForm").addEventListener("submit", submitHitlInput);
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
+    initThemeControls();
     await loadSource();
     await loadRuns();
     setInterval(() => {
