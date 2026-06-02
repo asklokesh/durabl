@@ -55,6 +55,11 @@ import {
 import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
 
 import { enforceMutatingApiAuth } from "./api-auth.js";
+import {
+  handleRunsWebSocketUpgrade,
+  wsRunsEnabled,
+  WS_RUNS_PATH,
+} from "./ws-runs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Static assets live in <repo>/web (copied into dist via package build step, or
