@@ -63,10 +63,12 @@
             <div class="panel-title" id="hitlPanelTitle">Awaiting human input</div>
             <div id="hitlPausedList" class="hitl-paused-list" role="list"></div>
           </div>
-          <div class="panel fork-panel">
-            <div class="panel-title">Fork lineage</div>
-            <nav id="lineagePath" class="lineage-path" hidden aria-label="Lineage to selected run"></nav>
-            <div id="tree" class="tree" role="tree" aria-label="Fork tree"></div>
+
+          <div class="panel">
+            <div class="panel-title">Runs &amp; fork tree</div>
+            <label class="visually-hidden" for="runSearch">Filter runs</label>
+            <input id="runSearch" class="run-search" type="search" placeholder="Filter runs… (/)" autocomplete="off" spellcheck="false" />
+            <div id="tree" class="tree"></div>
           </div>
         </aside>
 
@@ -136,33 +138,16 @@
     </div>
 
 
-    <div class="help-drawer" id="helpDrawer" hidden>
-      <div class="help-backdrop" id="helpBackdrop"></div>
-      <aside
-        class="help-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="helpTitle"
-      >
-        <header class="help-header">
-          <h2 class="help-title" id="helpTitle">Help</h2>
-          <button type="button" class="btn-ghost help-close-btn" id="helpCloseBtn" aria-label="Close help">
-            ✕
-          </button>
-        </header>
-        <nav class="help-nav" aria-label="Help topics">
-          <button type="button" class="help-nav-btn active" data-help="quickstart">Quickstart</button>
-          <button type="button" class="help-nav-btn" data-help="faq">FAQ</button>
-          <button type="button" class="help-nav-btn" data-help="shortcuts">Shortcuts</button>
-        </nav>
-        <div class="help-body" id="helpBody"></div>
-        <footer class="help-footer">
-          <span class="help-footer-label">Full docs in repo:</span>
-          <a class="help-doc-link" id="helpDocLink" href="#" target="_blank" rel="noopener noreferrer">docs/QUICKSTART.md</a>
-        </footer>
-      </aside>
-    </div>
-
+    <div id="kbdHelp" class="kbd-help" hidden role="dialog" aria-modal="true" aria-labelledby="kbdHelpTitle">
+      <div class="kbd-help-card"><div class="kbd-help-head"><h2 id="kbdHelpTitle">Keyboard shortcuts</h2>
+          <button type="button" class="btn-ghost kbd-help-close" id="kbdHelpClose" aria-label="Close">✕</button></div>
+        <dl class="kbd-help-list">
+          <div><dt><kbd>?</kbd></dt><dd>Show or hide this help</dd></div>
+          <div><dt><kbd>/</kbd></dt><dd>Focus run search</dd></div>
+          <div><dt><kbd>j</kbd></dt><dd>Next step</dd></div>
+          <div><dt><kbd>k</kbd></dt><dd>Previous step</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>Close help</dd></div>
+        </dl></div></div>
     <script src="/app.js"></script>
   </body>
 </html>

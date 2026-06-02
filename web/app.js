@@ -388,15 +388,13 @@ async function renderTree() {
     block.appendChild(ul);
     host.appendChild(block);
   }
-  syncTreeSelection();
+
+  applyTreeFilter();
 }
 
-
-function renderTreeNode(ul, node, depth) {
-  const li = el("li", "fork-tree-item");
-  li.setAttribute("role", "treeitem");
-  const row = el("button", "tree-node");
-  row.type = "button";
+function renderTreeNode(container, node, depth) {
+  const row = el("div", "tree-node");
+  row.dataset.runId = node.runId;
   row.classList.add(node.forkedAtSeq === null ? "root" : "fork");
   row.dataset.runId = node.runId;
   if (depth > 0) row.appendChild(forkTwigSvg());
@@ -609,7 +607,21 @@ function selectStep(seq) {
     n.classList.toggle("active", sseq === seq);
   });
   renderStepDetail(seq);
+  scrollActiveStepIntoView();
 }
+
+function scrollActiveStepIntoView(){document.querySelector(".step.active")?.scrollIntoView({block:"nearest",behavior:"smooth"})}
+function visibleStepSeqs(){const r=state.replay;if(!r?.steps.length)return[];const cutoff=state.ttN;return r.steps.filter(s=>cutoff===null||s.seq<=cutoff).map(s=>s.seq)}
+function navigateStep(delta){const seqs=visibleStepSeqs();if(!seqs.length)return;let idx=state.selectedStepSeq!=null?seqs.indexOf(state.selectedStepSeq):-1;if(idx<0)idx=seqs.length-1;const next=Math.max(0,Math.min(seqs.length-1,idx+delta));if(next===idx)return;selectStep(seqs[next])}
+function applyTreeFilter(){const q=($("#runSearch")?.value||"").trim().toLowerCase();document.querySelectorAll(".tree-node").forEach(row=>{const id=(row.dataset.runId||"").toLowerCase();row.hidden=Boolean(q)&&!id.includes(q)})}
+function focusRunSearch(){const search=$("#runSearch");if(!search)return;search.focus();search.select()}
+function isTypingTarget(target){if(!target||!(target instanceof Element))return false;const tag=target.tagName;if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT")return true;return target.isContentEditable}
+function kbdHelpOpen(){const dlg=$("#kbdHelp");return Boolean(dlg&&!dlg.hidden)}
+function openKbdHelp(){const dlg=$("#kbdHelp");if(dlg)dlg.hidden=false}
+function closeKbdHelp(){const dlg=$("#kbdHelp");if(dlg)dlg.hidden=true}
+function toggleKbdHelp(){if(kbdHelpOpen())closeKbdHelp();else openKbdHelp()}
+function setupKeyboardShortcuts(){$("#runSearch")?.addEventListener("input",applyTreeFilter);$("#kbdHelpClose")?.addEventListener("click",closeKbdHelp);$("#kbdHelp")?.addEventListener("click",ev=>{if(ev.target===$("#kbdHelp"))closeKbdHelp()});document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){if(kbdHelpOpen()){ev.preventDefault();closeKbdHelp()}return}if(ev.key==="?"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){if(!isTypingTarget(ev.target)){ev.preventDefault();toggleKbdHelp()}return}if(isTypingTarget(ev.target))return;if(ev.key==="/"){ev.preventDefault();focusRunSearch();return}if(ev.key==="j"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){ev.preventDefault();navigateStep(1);return}if(ev.key==="k"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){ev.preventDefault();navigateStep(-1)}})}
+
 
 function renderStepDetail(seq) {
   const panel = $("#tab-step");
@@ -829,383 +841,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
-$("#themeToggle")?.addEventListener("click", toggleTheme);
-initTheme();
 
-// ── First-visit onboarding (replay → fork → HITL) ───────────
-const ONBOARDING_STORAGE_KEY = "durabl.onboarding.dismissed";
-
-const ONBOARDING_STEPS = [
-  {
-    title: "1. Replay",
-    body:
-      "Select a run and scrub the timeline or use the time-travel slider to reconstruct execution step-by-step. Click any step for inputs, outputs, and side effects.",
-    target: "#timeline",
-    placeCard: "above",
-  },
-  {
-    title: "2. Fork",
-    body:
-      "The left sidebar shows the fork tree: root runs and branches diverging at a step (⑂ markers on the timeline jump to child runs). Compare trajectories in the Trajectory diff tab.",
-    target: "#tree",
-    placeCard: "right",
-  },
-  {
-    title: "3. HITL",
-    body:
-      "Runs paused awaiting human input appear in the sidebar and as a banner on the run. In live mode, submit a decision to resume — same path as durabl hitl-input.",
-    target: "#hitlPanel",
-    fallbackTarget: "#hitlBanner",
-    placeCard: "below",
-  },
-];
-
-function onboardingDismissed() {
-  try {
-    return localStorage.getItem(ONBOARDING_STORAGE_KEY) === "1";
-  } catch {
-    return true;
-  }
-}
-
-function setOnboardingDismissed() {
-  try {
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
-  } catch {
-    /* storage blocked */
-  }
-}
-
-function hideOnboardingBanner() {
-  const banner = $("#onboardingBanner");
-  if (banner) banner.hidden = true;
-}
-
-function finishOnboarding() {
-  setOnboardingDismissed();
-  hideOnboardingBanner();
-  closeOnboardingTour();
-}
-
-function isElementVisible(node) {
-  if (!node || node.hidden) return false;
-  const r = node.getBoundingClientRect();
-  return r.width > 0 && r.height > 0;
-}
-
-function resolveTourTarget(step) {
-  const primary = step.target ? $(step.target) : null;
-  if (primary && isElementVisible(primary)) return primary;
-  if (step.fallbackTarget) {
-    const fallback = $(step.fallbackTarget);
-    if (fallback && isElementVisible(fallback)) return fallback;
-  }
-  return primary || (step.fallbackTarget ? $(step.fallbackTarget) : null);
-}
-
-const onboarding = { stepIndex: 0, open: false };
-
-function positionOnboardingCard(target, placeCard) {
-  const card = $(".onboarding-card");
-  if (!card) return;
-  const pad = 14;
-  const margin = 12;
-  card.style.top = "";
-  card.style.left = "";
-  card.style.right = "";
-  card.style.bottom = "";
-  card.style.transform = "";
-
-  if (!target || !isElementVisible(target)) {
-    card.style.top = "50%";
-    card.style.left = "50%";
-    card.style.transform = "translate(-50%, -50%)";
-    return;
-  }
-
-  const tr = target.getBoundingClientRect();
-  const cr = card.getBoundingClientRect();
-  let top;
-  let left;
-
-  switch (placeCard) {
-    case "above":
-      top = tr.top - cr.height - pad;
-      left = tr.left + tr.width / 2 - cr.width / 2;
-      break;
-    case "below":
-      top = tr.bottom + pad;
-      left = tr.left + tr.width / 2 - cr.width / 2;
-      break;
-    case "right":
-      top = tr.top + tr.height / 2 - cr.height / 2;
-      left = tr.right + pad;
-      break;
-    default:
-      top = tr.bottom + pad;
-      left = tr.left;
-  }
-
-  left = Math.max(margin, Math.min(left, window.innerWidth - cr.width - margin));
-  top = Math.max(margin, Math.min(top, window.innerHeight - cr.height - margin));
-  card.style.top = `${top}px`;
-  card.style.left = `${left}px`;
-}
-
-function positionOnboardingSpotlight(target) {
-  const spot = $("#onboardingSpotlight");
-  if (!spot) return;
-  if (!target || !isElementVisible(target)) {
-    spot.hidden = true;
-    return;
-  }
-  const pad = 6;
-  const r = target.getBoundingClientRect();
-  spot.hidden = false;
-  spot.style.top = `${Math.max(0, r.top - pad)}px`;
-  spot.style.left = `${Math.max(0, r.left - pad)}px`;
-  spot.style.width = `${r.width + pad * 2}px`;
-  spot.style.height = `${r.height + pad * 2}px`;
-}
-
-function renderOnboardingStep() {
-  const step = ONBOARDING_STEPS[onboarding.stepIndex];
-  const title = $("#onboardingTitle");
-  const body = $("#onboardingBody");
-  const progress = $("#onboardingProgress");
-  const nextBtn = $("#onboardingTourNext");
-  if (!step || !title || !body || !progress || !nextBtn) return;
-
-  title.textContent = step.title;
-  body.textContent = step.body;
-  progress.innerHTML = "";
-  for (let i = 0; i < ONBOARDING_STEPS.length; i++) {
-    progress.appendChild(el("span", "dot" + (i === onboarding.stepIndex ? " active" : "")));
-  }
-  nextBtn.textContent =
-    onboarding.stepIndex >= ONBOARDING_STEPS.length - 1 ? "Done" : "Next";
-
-  const target = resolveTourTarget(step);
-  positionOnboardingSpotlight(target);
-  positionOnboardingCard(target, step.placeCard);
-}
-
-function openOnboardingTour() {
-  const tour = $("#onboardingTour");
-  if (!tour) return;
-  hideOnboardingBanner();
-  onboarding.open = true;
-  onboarding.stepIndex = 0;
-  tour.hidden = false;
-  tour.setAttribute("aria-hidden", "false");
-  document.querySelector(".layout")?.classList.add("onboarding-dim");
-  renderOnboardingStep();
-  window.addEventListener("resize", onOnboardingResize);
-  document.addEventListener("keydown", onOnboardingKeydown);
-}
-
-function closeOnboardingTour() {
-  const tour = $("#onboardingTour");
-  if (!tour) return;
-  onboarding.open = false;
-  tour.hidden = true;
-  tour.setAttribute("aria-hidden", "true");
-  const spot = $("#onboardingSpotlight");
-  if (spot) spot.hidden = true;
-  document.querySelector(".layout")?.classList.remove("onboarding-dim");
-  window.removeEventListener("resize", onOnboardingResize);
-  document.removeEventListener("keydown", onOnboardingKeydown);
-}
-
-function onOnboardingResize() {
-  if (onboarding.open) renderOnboardingStep();
-}
-
-function onOnboardingKeydown(ev) {
-  if (!onboarding.open) return;
-  if (ev.key === "Escape") finishOnboarding();
-}
-
-function advanceOnboardingTour() {
-  if (onboarding.stepIndex >= ONBOARDING_STEPS.length - 1) {
-    finishOnboarding();
-    return;
-  }
-  onboarding.stepIndex += 1;
-  renderOnboardingStep();
-}
-
-function initOnboarding() {
-  const banner = $("#onboardingBanner");
-  const startBtn = $("#onboardingStartTour");
-  const dismissBtn = $("#onboardingDismiss");
-  const tour = $("#onboardingTour");
-  const skipBtn = $("#onboardingTourSkip");
-  const nextBtn = $("#onboardingTourNext");
-  const backdrop = $("#onboardingBackdrop");
-  if (!banner || !startBtn || !dismissBtn || !tour) return;
-
-  if (onboardingDismissed()) {
-    banner.hidden = true;
-    return;
-  }
-
-  banner.hidden = false;
-  startBtn.onclick = () => openOnboardingTour();
-  dismissBtn.onclick = () => finishOnboarding();
-  if (skipBtn) skipBtn.onclick = () => finishOnboarding();
-  if (nextBtn) nextBtn.onclick = () => advanceOnboardingTour();
-  if (backdrop) backdrop.onclick = () => finishOnboarding();
-}
-
-
-// ── Help drawer (QUICKSTART / FAQ / shortcuts — minimal inline) ─
-const HELP_REPO = "https://github.com/durabl/durabl/blob/main";
-
-const HELP_SECTIONS = {
-  quickstart: {
-    doc: `${HELP_REPO}/docs/QUICKSTART.md`,
-    html: `
-      <h3>5-minute path</h3>
-      <ol>
-        <li><code>npm install</code> and <code>npm run build</code></li>
-        <li>Prove the journal: <code>npm test</code> (M1 gate)</li>
-        <li>Launch this UI: <code>npm run ui</code> → <code>http://127.0.0.1:7878</code></li>
-      </ol>
-      <h3>Offline replay</h3>
-      <p>Export a bundle, then point the UI at the file — no Restate required:</p>
-      <p><code>node dist/cli.js export-bundle &lt;rootRunId&gt; &gt; run.jsonl</code><br />
-      <code>node dist/cli.js ui --from run.jsonl</code></p>
-      <h3>HITL (live)</h3>
-      <p>With Restate ingress running, paused runs appear in the sidebar; submit a decision here or via <code>durabl hitl-input</code>.</p>
-    `,
-  },
-  faq: {
-    doc: `${HELP_REPO}/docs/FAQ.md`,
-    html: `
-      <h3>What is durabl?</h3>
-      <p>A portable agent execution journal: replay, logical fork at a step, and HITL pause/resume — no process snapshots.</p>
-      <h3>Why is submit disabled?</h3>
-      <p>Offline imports are replay-only. Resume needs live mode with Restate ingress (<code>DURABL_RESTATE_INGRESS</code>).</p>
-      <h3>What is time-travel?</h3>
-      <p>The slider shows state through step <em>N</em> without mutating the journal. Use <strong>↺ full run</strong> to return to the end.</p>
-      <h3>Trajectory diff</h3>
-      <p>Pick two runs on the right — useful after a fork to see where outputs diverge.</p>
-    `,
-  },
-  shortcuts: {
-    doc: `${HELP_REPO}/docs/QUICKSTART.md#replay-ui-m3`,
-    html: `
-      <table class="help-shortcut-table">
-        <thead><tr><th>Keys</th><th>Action</th></tr></thead>
-        <tbody>
-          <tr><td><kbd>?</kbd></td><td>Open help (this panel)</td></tr>
-          <tr><td><kbd>Esc</kbd></td><td>Close help</td></tr>
-          <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Time-travel prev / next step (when slider visible)</td></tr>
-          <tr><td><kbd>Home</kbd> <kbd>End</kbd></td><td>Jump to first / last step</td></tr>
-        </tbody>
-      </table>
-      <p>Focus must not be in a text field (except the HITL decision box uses its own submit shortcut).</p>
-    `,
-  },
-};
-
-let helpSection = "quickstart";
-let helpOpen = false;
-
-function renderHelpSection(section) {
-  helpSection = section;
-  const data = HELP_SECTIONS[section];
-  $("#helpBody").innerHTML = data.html;
-  const link = $("#helpDocLink");
-  link.href = data.doc;
-  link.textContent = data.doc.replace(`${HELP_REPO}/`, "");
-  document.querySelectorAll(".help-nav-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.help === section);
-  });
-}
-
-function setHelpOpen(open) {
-  helpOpen = open;
-  const drawer = $("#helpDrawer");
-  drawer.hidden = !open;
-  if (open) {
-    renderHelpSection(helpSection);
-    $("#helpCloseBtn").focus();
-  } else {
-    $("#helpOpenBtn").focus();
-  }
-}
-
-function openHelp(section = "quickstart") {
-  if (HELP_SECTIONS[section]) helpSection = section;
-  setHelpOpen(true);
-}
-
-function closeHelp() {
-  setHelpOpen(false);
-}
-
-function isTypingTarget(target) {
-  if (!target || !(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
-}
-
-function nudgeTimeTravel(delta) {
-  const bar = $("#ttBar");
-  const range = $("#ttRange");
-  if (bar.hidden || !state.replay?.steps?.length) return;
-  const max = Number(range.max);
-  const next = Math.min(max, Math.max(1, Number(range.value) + delta));
-  if (next === Number(range.value)) return;
-  range.value = String(next);
-  range.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-$("#helpOpenBtn").addEventListener("click", () => openHelp(helpSection));
-$("#helpCloseBtn").addEventListener("click", closeHelp);
-$("#helpBackdrop").addEventListener("click", closeHelp);
-document.querySelectorAll(".help-nav-btn").forEach((btn) => {
-  btn.addEventListener("click", () => renderHelpSection(btn.dataset.help));
-});
-
-document.addEventListener("keydown", (ev) => {
-  if (ev.key === "?" && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
-    if (!isTypingTarget(ev.target)) {
-      ev.preventDefault();
-      openHelp("shortcuts");
-    }
-    return;
-  }
-  if (ev.key === "Escape" && helpOpen) {
-    ev.preventDefault();
-    closeHelp();
-    return;
-  }
-  if (helpOpen || isTypingTarget(ev.target)) return;
-  if (!$("#ttBar").hidden && state.replay?.steps?.length) {
-    if (ev.key === "ArrowLeft") {
-      ev.preventDefault();
-      nudgeTimeTravel(-1);
-    } else if (ev.key === "ArrowRight") {
-      ev.preventDefault();
-      nudgeTimeTravel(1);
-    } else if (ev.key === "Home") {
-      ev.preventDefault();
-      const range = $("#ttRange");
-      range.value = "1";
-      range.dispatchEvent(new Event("input", { bubbles: true }));
-    } else if (ev.key === "End") {
-      ev.preventDefault();
-      const range = $("#ttRange");
-      range.value = range.max;
-      range.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-  }
-});
-
-renderHelpSection("quickstart");
+setupKeyboardShortcuts();
 
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
