@@ -151,6 +151,12 @@ toggles). All entries are commented placeholders — no secrets in the template.
 Real provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) live outside `DURABL_*`;
 never commit them. No credentials are read or logged by durabl itself.
 
+## Security
+
+Private vulnerability reporting, no secrets in public issues, env-var-only
+credentials, and self-host data boundaries:
+[`SECURITY.md`](SECURITY.md).
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
