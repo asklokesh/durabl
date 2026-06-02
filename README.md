@@ -57,6 +57,8 @@ npm run gate:hitl-ui  # HITL web UI resume + offline 503
 npm run gate:live     # real LLM providers (skip if no API keys)
 ```
 
+HTTP routes for the replay UI (`/api/*` and static `web/`): [`docs/API.md`](docs/API.md).
+
 ## Milestone proof
 
 Full matrix, evidence paths, and reproduce commands:
