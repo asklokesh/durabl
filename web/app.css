@@ -84,10 +84,39 @@ body {
   color: var(--text-faint); margin-bottom: 12px; font-weight: 600;
 }
 
-/* ── Fork tree ───────────────────────────────────────────── */
-.tree-root, .tree-group { list-style: none; margin: 0; padding: 0; }
-.tree-item { list-style: none; }
-.tree { display: flex; flex-direction: column; gap: 2px; }
+
+/* ── Fork lineage tree (/api/tree + lineage) ─────────────── */
+.fork-panel { display: flex; flex-direction: column; gap: 10px; }
+.lineage-path {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px;
+  padding: 8px 10px; border-radius: 8px;
+  background: var(--bg-elev); border: 1px solid var(--border-soft);
+  font-family: var(--mono); font-size: 11px;
+}
+.lineage-crumb {
+  appearance: none; border: none; background: transparent;
+  color: var(--text-dim); cursor: pointer; padding: 2px 4px; border-radius: 4px;
+  max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lineage-crumb:hover { color: var(--text); background: var(--bg-elev2); }
+.lineage-crumb.active { color: var(--accent); font-weight: 600; }
+.lineage-sep { color: var(--text-faint); user-select: none; }
+
+.tree { display: flex; flex-direction: column; gap: 12px; }
+.fork-tree-block { display: flex; flex-direction: column; gap: 4px; }
+.fork-tree-root-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text-faint);
+  padding: 0 4px; letter-spacing: 0.03em;
+}
+.fork-lineage-tree, .fork-tree-children {
+  list-style: none; margin: 0; padding: 0;
+}
+.fork-tree-children {
+  margin-left: 10px; padding-left: 10px;
+  border-left: 1px solid var(--border-soft);
+}
+.fork-tree-item { margin: 2px 0; }
+
 .tree-node {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 8px 10px; border-radius: 8px; cursor: pointer;
@@ -96,13 +125,14 @@ body {
 }
 .tree-node:focus-visible { outline-offset: 0; }
 .tree-node:hover { background: var(--bg-elev); }
+.tree-node.on-path:not(.active) { border-color: var(--border); background: var(--bg-elev2); }
 .tree-node.active { background: var(--accent-soft); border-color: var(--accent); }
-.tree-node .twig { color: var(--text-faint); font-family: var(--mono); font-size: 12px; }
-.tree-node .tname { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-node .fork-twig { flex-shrink: 0; color: var(--text-faint); }
+.tree-node .tname { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
 .tree-node .traj-badge {
   font-size: 10px; padding: 1px 7px; border-radius: 999px;
   background: var(--bg-elev2); color: var(--text-dim); border: 1px solid var(--border);
-  margin-left: auto; flex-shrink: 0;
+  flex-shrink: 0;
 }
 .tree-node.root .traj-badge { color: var(--cyan); border-color: #22d3ee44; }
 .tree-node.fork .traj-badge { color: var(--accent); border-color: #6366f144; }

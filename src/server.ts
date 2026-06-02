@@ -16,6 +16,8 @@
 //   - Optional WebSocket `/api/ws/runs` (live only, DURABL_ENABLE_WS=1) streams
 //     new step + HITL state events — see docs/BACKEND.md.
 //   - No secrets read or logged; config via env vars only.
+//   - Optional DURABL_API_KEY: when set, mutating /api/* (POST/PUT/PATCH/DELETE) require
+//     Authorization: Bearer or x-api-key; unset env leaves mutating routes open (local dev).
 //
 // The whole point: the SAME UI renders a live run and a run imported from a
 // portable JSONL export with nothing else running (the portability wedge).
@@ -50,11 +52,8 @@ import {
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
-import {
-  handleRunsWebSocketUpgrade,
-  wsRunsEnabled,
-  WS_RUNS_PATH,
-} from "./ws-runs.js";
+
+import { enforceMutatingApiAuth } from "./api-auth.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Static assets live in <repo>/web (copied into dist via package build step, or
@@ -412,6 +411,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
     try {
       const url = new URL(req.url ?? "/", `http://${host}:${port}`);
       if (url.pathname.startsWith("/api/")) {
+        if (!enforceMutatingApiAuth(req, res, url.pathname, sendJson)) return;
         const handled = await handleApi(ctx, url, res, req);
         if (!handled) sendJson(res, 404, { error: "not found" });
         return;

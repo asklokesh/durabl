@@ -43,6 +43,15 @@ Retries apply only to **429** and **5xx** responses. Errors are thrown as `Provi
 - Authorization / `x-api-key` headers are the only key usage sites (`# SECURITY-REVIEW` in provider modules).
 - Simulated mode is always labelled `mode:"simulated"` in completion meta.
 
+### Replay UI API key (optional)
+
+| Env | Effect |
+|---|---|
+| *(unset)* | No API auth on mutating `/api/*` |
+| `DURABL_API_KEY` | Non-empty shared secret required for `POST` / `PUT` / `PATCH` / `DELETE` on `/api/*`; generic 401 `{ "error": "unauthorized" }` |
+
+No default key is shipped. See `src/api-auth.ts`.
+
 ---
 
 ## Second substrate stub
