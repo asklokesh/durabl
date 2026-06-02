@@ -20,6 +20,9 @@ const state = {
   hitlSubmitEnabled: false,
   hitlState: "none",
   pausedRuns: [],
+  pausedRunsLoading: false,
+  pausedRunsError: null,
+  hitlSubmitBusy: false,
 };
 
 async function api(path, opts) {
@@ -54,36 +57,67 @@ async function loadSource() {
   state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
 }
 
-async function submitHitlInput(ev) {
-  ev.preventDefault();
-  const decision = $("#hitlDecision").value.trim();
+function setHitlFormMsg(text, kind) {
   const msg = $("#hitlFormMsg");
+  msg.hidden = !text;
+  msg.className = "hitl-form-msg" + (kind ? " " + kind : "");
+  msg.textContent = text || "";
+}
+
+function canSubmitHitlNow() {
+  return Boolean(
+    state.selected &&
+      state.hitlState === "paused" &&
+      state.hitlSubmitEnabled &&
+      state.live &&
+      !state.hitlSubmitBusy,
+  );
+}
+
+function syncHitlSubmitControls() {
   const btn = $("#hitlSubmitBtn");
-  if (!state.selected || !decision) return;
+  const canSubmit = canSubmitHitlNow();
+  btn.disabled = !canSubmit;
+  $("#hitlDecision").disabled = state.hitlSubmitBusy || !canSubmit;
+}
+
+async function submitHitlInput(ev) {
+  if (ev) ev.preventDefault();
+  const decision = $("#hitlDecision").value.trim();
+  const btn = $("#hitlSubmitBtn");
+  if (!state.selected) {
+    setHitlFormMsg("Select a paused run first.", "err");
+    return;
+  }
+  if (!decision) {
+    setHitlFormMsg("Enter a decision before submitting.", "err");
+    $("#hitlDecision").focus();
+    return;
+  }
+  if (!canSubmitHitlNow()) return;
+
+  state.hitlSubmitBusy = true;
   btn.disabled = true;
-  msg.hidden = false;
-  msg.className = "hitl-form-msg";
-  msg.textContent = "Submitting…";
+  setHitlFormMsg("Submitting…", "");
   try {
     const res = await apiPost("/api/hitl/input", { runId: state.selected, decision });
     if (res.accepted === false && res.state !== "resumed") {
-      msg.classList.add("err");
-      msg.textContent = "Input not accepted (duplicate or already resumed).";
+      setHitlFormMsg("Input not accepted (duplicate or already resumed).", "err");
     } else {
-      msg.classList.add("ok");
-      msg.textContent = res.accepted
-        ? "Accepted — run resuming…"
-        : "Already resumed (idempotent no-op).";
+      setHitlFormMsg(
+        res.accepted ? "Accepted — run resuming…" : "Already resumed (idempotent no-op).",
+        "ok",
+      );
       $("#hitlDecision").value = "";
       await sleep(800);
       await loadRuns();
       if (state.selected) await selectRun(state.selected);
     }
   } catch (e) {
-    msg.classList.add("err");
-    msg.textContent = e.message;
+    setHitlFormMsg(e.message || "Submit failed.", "err");
   } finally {
-    btn.disabled = !state.hitlSubmitEnabled;
+    state.hitlSubmitBusy = false;
+    syncHitlSubmitControls();
   }
 }
 
@@ -108,28 +142,65 @@ async function loadRuns() {
 }
 
 async function loadHitlPaused() {
+  state.pausedRunsLoading = true;
+  state.pausedRunsError = null;
+  renderHitlPausedList();
   try {
     const data = await api("/api/hitl/paused");
     state.pausedRuns = data.paused || [];
-    renderHitlPausedList();
-  } catch {
+  } catch (e) {
     state.pausedRuns = [];
+    state.pausedRunsError = e.message || "Could not load paused runs.";
+  } finally {
+    state.pausedRunsLoading = false;
     renderHitlPausedList();
   }
+}
+
+function shouldShowHitlPanel() {
+  return (
+    state.pausedRunsLoading ||
+    state.pausedRunsError ||
+    state.pausedRuns.length > 0 ||
+    state.live
+  );
 }
 
 function renderHitlPausedList() {
   const panel = $("#hitlPanel");
   const list = $("#hitlPausedList");
   list.innerHTML = "";
-  if (!state.pausedRuns.length) {
+  list.setAttribute("aria-busy", state.pausedRunsLoading ? "true" : "false");
+
+  if (!shouldShowHitlPanel()) {
     panel.hidden = true;
     return;
   }
   panel.hidden = false;
+
+  if (state.pausedRunsLoading) {
+    const loading = el("div", "hitl-paused-status loading", "Loading paused runs…");
+    loading.setAttribute("role", "status");
+    list.appendChild(loading);
+    return;
+  }
+  if (state.pausedRunsError) {
+    const err = el("div", "hitl-paused-status err", state.pausedRunsError);
+    err.setAttribute("role", "alert");
+    list.appendChild(err);
+    return;
+  }
+  if (!state.pausedRuns.length) {
+    const empty = el("div", "hitl-paused-status empty", "No runs awaiting human input.");
+    empty.setAttribute("role", "status");
+    list.appendChild(empty);
+    return;
+  }
+
   for (const p of state.pausedRuns) {
     const row = el("button", "hitl-paused-item");
     row.type = "button";
+    row.setAttribute("role", "listitem");
     if (p.runId === state.selected) row.classList.add("active");
     row.appendChild(el("div", "run-id", p.runId));
     row.appendChild(el("div", "hint", "paused — click to review & submit"));
@@ -160,12 +231,11 @@ function updateHitlBanner() {
   const banner = $("#hitlBanner");
   const form = $("#hitlForm");
   const offlineNote = $("#hitlOfflineNote");
-  const submitBtn = $("#hitlSubmitBtn");
-  const msg = $("#hitlFormMsg");
-  msg.hidden = true;
+  const hint = $("#hitlDecisionHint");
 
   if (state.hitlState !== "paused") {
     banner.hidden = true;
+    setHitlFormMsg("", "");
     return;
   }
   banner.hidden = false;
@@ -173,10 +243,12 @@ function updateHitlBanner() {
   const canSubmit = state.hitlSubmitEnabled && state.live;
   form.hidden = !canSubmit;
   offlineNote.hidden = canSubmit;
-  submitBtn.disabled = !canSubmit;
+  if (hint) hint.hidden = !canSubmit;
   if (!canSubmit) {
     $("#hitlDecision").value = "";
+    setHitlFormMsg("", "");
   }
+  syncHitlSubmitControls();
 }
 
 async function renderTree() {
@@ -446,6 +518,11 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
+$("#hitlDecision").addEventListener("keydown", (ev) => {
+  if (ev.key !== "Enter" || !(ev.metaKey || ev.ctrlKey)) return;
+  ev.preventDefault();
+  void submitHitlInput();
+});
 
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {

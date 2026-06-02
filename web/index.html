@@ -25,9 +25,9 @@
       <div class="layout">
         <!-- Left: runs + fork tree -->
         <aside class="sidebar">
-          <div class="panel hitl-panel" id="hitlPanel" hidden>
-            <div class="panel-title">Awaiting human input</div>
-            <div id="hitlPausedList" class="hitl-paused-list"></div>
+          <div class="panel hitl-panel" id="hitlPanel" hidden role="region" aria-labelledby="hitlPanelTitle">
+            <div class="panel-title" id="hitlPanelTitle">Awaiting human input</div>
+            <div id="hitlPausedList" class="hitl-paused-list" role="list" aria-label="Paused runs" aria-busy="false"></div>
           </div>
           <div class="panel">
             <div class="panel-title">Runs &amp; fork tree</div>
@@ -44,12 +44,13 @@
               <span class="hitl-pill">Awaiting human input</span>
               <span class="hitl-banner-sub" id="hitlBannerSub"></span>
             </div>
-            <form id="hitlForm" class="hitl-form">
+            <form id="hitlForm" class="hitl-form" novalidate>
               <label class="hitl-label" for="hitlDecision">Decision</label>
-              <textarea id="hitlDecision" name="decision" rows="2" placeholder="e.g. APPROVED — same as durabl hitl-input" required></textarea>
+              <textarea id="hitlDecision" name="decision" rows="2" placeholder="e.g. APPROVED — same as durabl hitl-input" aria-describedby="hitlDecisionHint hitlFormMsg"></textarea>
+              <p class="hitl-decision-hint" id="hitlDecisionHint">Press <kbd>⌘</kbd><kbd>Enter</kbd> or <kbd>Ctrl</kbd><kbd>Enter</kbd> to submit</p>
               <div class="hitl-form-actions">
                 <button type="submit" class="btn-primary" id="hitlSubmitBtn">Submit &amp; resume</button>
-                <span class="hitl-form-msg" id="hitlFormMsg" hidden></span>
+                <span class="hitl-form-msg" id="hitlFormMsg" role="alert" aria-live="polite" hidden></span>
               </div>
             </form>
             <p class="hitl-offline-note" id="hitlOfflineNote" hidden>
