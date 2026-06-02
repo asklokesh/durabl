@@ -190,10 +190,12 @@ async function renderTree() {
     const data = await api(`/api/tree?runId=${encodeURIComponent(root)}`);
     renderTreeNode(tree, data.tree, 0);
   }
+  applyTreeFilter();
 }
 
 function renderTreeNode(container, node, depth) {
   const row = el("div", "tree-node");
+  row.dataset.runId = node.runId;
   row.classList.add(node.forkedAtSeq === null ? "root" : "fork");
   if (state.selected === node.runId) row.classList.add("active");
   if (depth > 0) {
@@ -345,7 +347,21 @@ function selectStep(seq) {
     n.classList.toggle("active", sseq === seq);
   });
   renderStepDetail(seq);
+  scrollActiveStepIntoView();
 }
+
+function scrollActiveStepIntoView(){document.querySelector(".step.active")?.scrollIntoView({block:"nearest",behavior:"smooth"})}
+function visibleStepSeqs(){const r=state.replay;if(!r?.steps.length)return[];const cutoff=state.ttN;return r.steps.filter(s=>cutoff===null||s.seq<=cutoff).map(s=>s.seq)}
+function navigateStep(delta){const seqs=visibleStepSeqs();if(!seqs.length)return;let idx=state.selectedStepSeq!=null?seqs.indexOf(state.selectedStepSeq):-1;if(idx<0)idx=seqs.length-1;const next=Math.max(0,Math.min(seqs.length-1,idx+delta));if(next===idx)return;selectStep(seqs[next])}
+function applyTreeFilter(){const q=($("#runSearch")?.value||"").trim().toLowerCase();document.querySelectorAll(".tree-node").forEach(row=>{const id=(row.dataset.runId||"").toLowerCase();row.hidden=Boolean(q)&&!id.includes(q)})}
+function focusRunSearch(){const search=$("#runSearch");if(!search)return;search.focus();search.select()}
+function isTypingTarget(target){if(!target||!(target instanceof Element))return false;const tag=target.tagName;if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT")return true;return target.isContentEditable}
+function kbdHelpOpen(){const dlg=$("#kbdHelp");return Boolean(dlg&&!dlg.hidden)}
+function openKbdHelp(){const dlg=$("#kbdHelp");if(dlg)dlg.hidden=false}
+function closeKbdHelp(){const dlg=$("#kbdHelp");if(dlg)dlg.hidden=true}
+function toggleKbdHelp(){if(kbdHelpOpen())closeKbdHelp();else openKbdHelp()}
+function setupKeyboardShortcuts(){$("#runSearch")?.addEventListener("input",applyTreeFilter);$("#kbdHelpClose")?.addEventListener("click",closeKbdHelp);$("#kbdHelp")?.addEventListener("click",ev=>{if(ev.target===$("#kbdHelp"))closeKbdHelp()});document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){if(kbdHelpOpen()){ev.preventDefault();closeKbdHelp()}return}if(ev.key==="?"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){if(!isTypingTarget(ev.target)){ev.preventDefault();toggleKbdHelp()}return}if(isTypingTarget(ev.target))return;if(ev.key==="/"){ev.preventDefault();focusRunSearch();return}if(ev.key==="j"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){ev.preventDefault();navigateStep(1);return}if(ev.key==="k"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){ev.preventDefault();navigateStep(-1)}})}
+
 
 function renderStepDetail(seq) {
   const panel = $("#tab-step");
@@ -446,6 +462,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
+setupKeyboardShortcuts();
 
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {

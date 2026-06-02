@@ -31,6 +31,8 @@
           </div>
           <div class="panel">
             <div class="panel-title">Runs &amp; fork tree</div>
+            <label class="visually-hidden" for="runSearch">Filter runs</label>
+            <input id="runSearch" class="run-search" type="search" placeholder="Filter runs… (/)" autocomplete="off" spellcheck="false" />
             <div id="tree" class="tree"></div>
           </div>
         </aside>
@@ -78,6 +80,17 @@
         </section>
       </div>
     </div>
+
+    <div id="kbdHelp" class="kbd-help" hidden role="dialog" aria-modal="true" aria-labelledby="kbdHelpTitle">
+      <div class="kbd-help-card"><div class="kbd-help-head"><h2 id="kbdHelpTitle">Keyboard shortcuts</h2>
+          <button type="button" class="btn-ghost kbd-help-close" id="kbdHelpClose" aria-label="Close">✕</button></div>
+        <dl class="kbd-help-list">
+          <div><dt><kbd>?</kbd></dt><dd>Show or hide this help</dd></div>
+          <div><dt><kbd>/</kbd></dt><dd>Focus run search</dd></div>
+          <div><dt><kbd>j</kbd></dt><dd>Next step</dd></div>
+          <div><dt><kbd>k</kbd></dt><dd>Previous step</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>Close help</dd></div>
+        </dl></div></div>
     <script src="/app.js"></script>
   </body>
 </html>
