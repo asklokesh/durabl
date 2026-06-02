@@ -6,13 +6,14 @@ and gate-green.
 
 ## Prerequisites
 
-- Node.js **>= 22.5** (built-in `node:sqlite`)
+- Node.js **>= 22.5** (built-in `node:sqlite`; pin with `.nvmrc` → `nvm use`)
 - macOS or Linux (harness uses `pkill` for cleanup)
 
 Optional:
 
 - Docker (M4 deploy-target gate and `docker compose` demo stack)
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for live-provider hardening (`npm run gate:m4-live`)
+- Dev container — see [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) (Restate via npm, forwarded ports)
 
 ## Development loop
 
