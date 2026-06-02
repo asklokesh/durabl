@@ -33,8 +33,8 @@ import {
   forkTreeFrom,
   lineageFrom,
   diffTrajectoriesFrom,
-  rootRuns,
 } from "./inspect-source.js";
+import { listRunsForApi, parseRunsListQuery } from "./runs-list.js";
 import {
   hitlStateFromSource,
   pausedRunsFromSource,
@@ -144,21 +144,21 @@ function handleApi(
     return true;
   }
   if (p === "/api/runs") {
-    const ids = source.allRunIds();
-    const runs = ids.map((id) => {
-      const m = source.runMeta(id);
-      const steps = source.trajectory(id);
-      return {
-        runId: id,
-        trajectory: m?.trajectory ?? "main",
-        parentRun: m?.parentRun ?? null,
-        forkedAtSeq: m?.forkedAtSeq ?? null,
-        steps: steps.length,
-        createdAt: m?.createdAt ?? "",
-        hitlState: hitlStateFromSource(source, id),
-      };
-    });
-    sendJson(res, 200, { source: source.origin, label: ctx.label, roots: rootRuns(source), runs });
+    const parsed = parseRunsListQuery(
+      url.searchParams.get("limit"),
+      url.searchParams.get("cursor"),
+    );
+    if ("error" in parsed) return badReq(res, parsed.error);
+    try {
+      const body = listRunsForApi(source, parsed);
+      sendJson(res, 200, { source: source.origin, label: ctx.label, ...body });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "invalid cursor" || msg === "cursor not found") {
+        return badReq(res, msg);
+      }
+      throw e;
+    }
     return true;
   }
   if (p === "/api/hitl/paused") {

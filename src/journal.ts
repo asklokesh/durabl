@@ -412,6 +412,126 @@ export function allRunIds(): string[] {
   }
 }
 
+type RawRunMetaRow = {
+  schema: number;
+  run_id: string;
+  parent_run: string | null;
+  forked_at_seq: number | null;
+  trajectory: string;
+  created_at: string;
+};
+
+function hydrateRunMeta(r: RawRunMetaRow): RunMeta {
+  return {
+    schema: JOURNAL_SCHEMA_VERSION,
+    runId: r.run_id,
+    parentRun: r.parent_run,
+    forkedAtSeq: r.forked_at_seq,
+    trajectory: r.trajectory,
+    createdAt: r.created_at,
+  };
+}
+
+/** Number of journaled steps for a run (cheaper than loading the full trajectory). */
+export function stepCount(runId: string): number {
+  const d = open();
+  try {
+    const row = d
+      .prepare(`SELECT COUNT(*) AS c FROM step_journal WHERE run_id = ?`)
+      .get(runId) as unknown as { c: number };
+    return Number(row.c);
+  } finally {
+    d.close();
+  }
+}
+
+/** Total runs with metadata in the journal. */
+export function countRuns(): number {
+  const d = open();
+  try {
+    const row = d.prepare(`SELECT COUNT(*) AS c FROM run_meta`).get() as unknown as { c: number };
+    return Number(row.c);
+  } finally {
+    d.close();
+  }
+}
+
+/** Root runs (no parent) in stable list order. */
+export function rootRunIds(): string[] {
+  const d = open();
+  try {
+    const rows = d
+      .prepare(
+        `SELECT run_id FROM run_meta WHERE parent_run IS NULL ORDER BY created_at, run_id`,
+      )
+      .all() as unknown as Array<{ run_id: string }>;
+    return rows.map((r) => r.run_id);
+  } finally {
+    d.close();
+  }
+}
+
+/**
+ * Cursor page over run_meta (ORDER BY created_at, run_id).
+ * `cursor` is the opaque token from the previous page's `nextCursor`.
+ */
+export function listRunMetaPage(
+  limit: number,
+  cursor?: string,
+): { items: RunMeta[]; nextCursor: string | null } {
+  const d = open();
+  try {
+    const fetchLimit = limit + 1;
+    let rows: RawRunMetaRow[];
+    if (cursor) {
+      const decoded = decodeRunListCursor(cursor);
+      if (!decoded) throw new Error("invalid cursor");
+      rows = d
+        .prepare(
+          `SELECT * FROM run_meta
+           WHERE created_at > ? OR (created_at = ? AND run_id > ?)
+           ORDER BY created_at, run_id
+           LIMIT ?`,
+        )
+        .all(decoded.createdAt, decoded.createdAt, decoded.runId, fetchLimit) as unknown as RawRunMetaRow[];
+    } else {
+      rows = d
+        .prepare(`SELECT * FROM run_meta ORDER BY created_at, run_id LIMIT ?`)
+        .all(fetchLimit) as unknown as RawRunMetaRow[];
+    }
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const items = page.map(hydrateRunMeta);
+    const last = items[items.length - 1];
+    return {
+      items,
+      nextCursor: hasMore && last ? encodeRunListCursor(last) : null,
+    };
+  } finally {
+    d.close();
+  }
+}
+
+/** Opaque pagination cursor for GET /api/runs (created_at + run_id). */
+export function encodeRunListCursor(m: Pick<RunMeta, "createdAt" | "runId">): string {
+  return Buffer.from(`${m.createdAt}\0${m.runId}`, "utf8").toString("base64url");
+}
+
+/** Decode {@link encodeRunListCursor}; returns null when invalid. */
+export function decodeRunListCursor(cursor: string): Pick<RunMeta, "createdAt" | "runId"> | null {
+  try {
+    const raw = Buffer.from(cursor, "base64url").toString("utf8");
+    const i = raw.indexOf("\0");
+    if (i <= 0 || i === raw.length - 1) return null;
+    const createdAt = raw.slice(0, i);
+    const runId = raw.slice(i + 1);
+    if (!createdAt || !runId) return null;
+    return { createdAt, runId };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Export a run's trajectory as neutral JSONL — substrate-detail-free. This is
  * the "your journal, in your infra, exportable" surface. Each line is a
