@@ -1,0 +1,496 @@
+openapi: 3.0.3
+info:
+  title: durabl replay UI API
+  description: |
+    HTTP JSON API served by `src/server.ts` (`startServer` / `durabl ui`).
+    Read-only journal replay; `POST /api/hitl/input` proxies to Restate ingress in live mode only.
+    Narrative: [docs/API.md](docs/API.md).
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:7878
+    description: Default (`DURABL_UI_HOST` / `DURABL_UI_PORT`)
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Server and journal source status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/runs:
+    get:
+      operationId: listRuns
+      summary: List all runs
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunsResponse"
+  /api/hitl/paused:
+    get:
+      operationId: listHitlPaused
+      summary: Paused runs (journal-derived)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HitlPausedResponse"
+  /api/hitl/status:
+    get:
+      operationId: getHitlStatus
+      summary: HITL state for one run
+      parameters:
+        - $ref: "#/components/parameters/runIdQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HitlStatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/hitl/input:
+    post:
+      operationId: postHitlInput
+      summary: Submit human decision (live only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HitlInputBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/HitlInputSuccess"
+                  - $ref: "#/components/schemas/HitlInputAlreadyResumed"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HitlInputNotFound"
+        "502":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HitlInputIngressError"
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HitlInputOffline"
+  /api/replay:
+    get:
+      operationId: getReplay
+      summary: Full run reconstruction
+      parameters:
+        - $ref: "#/components/parameters/runIdQuery"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplayedRun"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/state-at:
+    get:
+      operationId: getStateAt
+      summary: State as of step N
+      parameters:
+        - $ref: "#/components/parameters/runIdQuery"
+        - name: n
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateAsOf"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/tree:
+    get:
+      operationId: getTree
+      summary: Fork tree and lineage
+      parameters:
+        - $ref: "#/components/parameters/runIdQuery"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/diff:
+    get:
+      operationId: getDiff
+      summary: Trajectory diff
+      parameters:
+        - name: a
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: b
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrajectoryDiff"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+components:
+  parameters:
+    runIdQuery:
+      name: runId
+      in: query
+      required: true
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+  schemas:
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    HealthResponse:
+      type: object
+      required: [ok, origin, source, label, live, hitlSubmitEnabled]
+      properties:
+        ok:
+          type: boolean
+        origin:
+          type: string
+        source:
+          type: string
+        label:
+          type: string
+        live:
+          type: boolean
+        hitlSubmitEnabled:
+          type: boolean
+    HitlState:
+      type: string
+      enum: [paused, resumed, none]
+    RunSummary:
+      type: object
+      properties:
+        runId:
+          type: string
+        trajectory:
+          type: string
+        parentRun:
+          type: string
+          nullable: true
+        forkedAtSeq:
+          type: integer
+          nullable: true
+        steps:
+          type: integer
+        createdAt:
+          type: string
+        hitlState:
+          $ref: "#/components/schemas/HitlState"
+    RunsResponse:
+      type: object
+      properties:
+        source:
+          type: string
+        label:
+          type: string
+        roots:
+          type: array
+          items:
+            type: string
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunSummary"
+    HitlPausedEntry:
+      type: object
+      properties:
+        runId:
+          type: string
+        hitlState:
+          type: string
+          enum: [paused]
+        pauseOutput: {}
+        steps:
+          type: integer
+    HitlPausedResponse:
+      type: object
+      properties:
+        source:
+          type: string
+        live:
+          type: boolean
+        submitEnabled:
+          type: boolean
+        paused:
+          type: array
+          items:
+            $ref: "#/components/schemas/HitlPausedEntry"
+    HitlStatusResponse:
+      type: object
+      properties:
+        runId:
+          type: string
+        state:
+          $ref: "#/components/schemas/HitlState"
+        live:
+          type: boolean
+        submitEnabled:
+          type: boolean
+    HitlInputBody:
+      type: object
+      required: [runId, decision]
+      properties:
+        runId:
+          type: string
+        decision:
+          type: string
+    HitlInputSuccess:
+      type: object
+      properties:
+        runId:
+          type: string
+        accepted:
+          type: boolean
+        state:
+          $ref: "#/components/schemas/HitlState"
+    HitlInputAlreadyResumed:
+      type: object
+      properties:
+        runId:
+          type: string
+        accepted:
+          type: boolean
+        state:
+          type: string
+        note:
+          type: string
+    HitlInputNotFound:
+      type: object
+      properties:
+        error:
+          type: string
+        runId:
+          type: string
+        state:
+          type: string
+    HitlInputIngressError:
+      type: object
+      properties:
+        error:
+          type: string
+        runId:
+          type: string
+        hint:
+          type: string
+    HitlInputOffline:
+      type: object
+      properties:
+        error:
+          type: string
+        submitEnabled:
+          type: boolean
+    RunMeta:
+      type: object
+      additionalProperties: true
+    ReplayEffect:
+      type: object
+      properties:
+        id:
+          type: integer
+        stepName:
+          type: string
+        idemKey:
+          type: string
+        firedAt:
+          type: string
+        payload: {}
+    ReplayStep:
+      type: object
+      properties:
+        seq:
+          type: integer
+        stepName:
+          type: string
+        kind:
+          type: string
+        output: {}
+        sideEffect:
+          type: boolean
+        seeded:
+          type: boolean
+        seededFrom:
+          type: string
+          nullable: true
+        idemKey:
+          type: string
+        recordedAt:
+          type: string
+        elapsedMsFromPrev:
+          type: integer
+          nullable: true
+        effects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReplayEffect"
+    DivergencePoint:
+      type: object
+      properties:
+        seq:
+          type: integer
+        forkRunId:
+          type: string
+        forkTrajectory:
+          type: string
+    ReplayedRun:
+      type: object
+      properties:
+        runId:
+          type: string
+        trajectory:
+          type: string
+        meta:
+          $ref: "#/components/schemas/RunMeta"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReplayStep"
+        totalElapsedMs:
+          type: number
+        outcome: {}
+        effects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReplayEffect"
+        divergencePoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/DivergencePoint"
+        reconstructedFrom:
+          type: string
+    StateAsOf:
+      type: object
+      properties:
+        runId:
+          type: string
+        n:
+          type: integer
+        maxSeq:
+          type: integer
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReplayStep"
+        currentOutput: {}
+        effects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReplayEffect"
+        divergedSoFar:
+          type: array
+          items:
+            $ref: "#/components/schemas/DivergencePoint"
+        reconstructedFrom:
+          type: string
+    ForkTreeNode:
+      type: object
+      properties:
+        runId:
+          type: string
+        trajectory:
+          type: string
+        forkedAtSeq:
+          type: integer
+          nullable: true
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForkTreeNode"
+    LineageNode:
+      type: object
+      properties:
+        runId:
+          type: string
+        trajectory:
+          type: string
+        parentRun:
+          type: string
+          nullable: true
+        forkedAtSeq:
+          type: integer
+          nullable: true
+    TreeResponse:
+      type: object
+      properties:
+        tree:
+          $ref: "#/components/schemas/ForkTreeNode"
+        lineage:
+          type: array
+          items:
+            $ref: "#/components/schemas/LineageNode"
+    StepDiff:
+      type: object
+      properties:
+        seq:
+          type: integer
+        status:
+          type: string
+          enum: [same, changed, only_a, only_b]
+        stepName:
+          type: string
+        aOutput: {}
+        bOutput: {}
+        seeded:
+          type: boolean
+    TrajectoryDiff:
+      type: object
+      properties:
+        runA:
+          type: string
+        runB:
+          type: string
+        firstDivergenceSeq:
+          type: integer
+          nullable: true
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepDiff"
