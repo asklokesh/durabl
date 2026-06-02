@@ -7,18 +7,26 @@
   "engines": {
     "node": ">=22.5.0"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
-    "durabl": "dist/cli.js"
+    "durabl": "./dist/cli.js"
   },
   "files": [
     "dist",
     "web",
     "README.md",
-    "LICENSE",
-    "CONTRIBUTING.md"
+    "LICENSE"
   ],
+  "sideEffects": false,
   "keywords": [
     "agent",
     "durability",
@@ -65,7 +73,8 @@
     "test:m3": "npm run gate:m3",
     "test:m4": "npm run gate:m4",
     "test:m5": "npm run gate:m5",
-    "test:hitl-ui": "npm run gate:hitl-ui"
+    "test:hitl-ui": "npm run gate:hitl-ui",
+    "verify:npm-pack": "bash scripts/verify-npm-pack.sh"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",
