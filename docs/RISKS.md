@@ -102,15 +102,15 @@ Each risk is ranked by **investor diligence severity** (likelihood × impact if 
 
 ---
 
-## 9. HITL / compliance story incomplete in UI
+## 9. HITL / compliance story — UI shipped; production hardening remains
 
 | | |
 |---|---|
-| **Risk** | HITL is CLI-proven (M5) but **web UI lacks pause/resume** (deferred in M3/M5 docs) |
+| **Risk** | HITL pause/resume is gated (CLI + **web UI HTTP API** on main, `feat/hitl-web-ui` merged) but **not yet proven** in regulated production (RBAC, SSO, immutable audit export workflows) |
 | **Likelihood** | Medium |
-| **Impact** | Regulated buyers want approver UI, audit trail export |
-| **Mitigation** | CLI + export bundle already carry `hitl_pause` / `hitl_input` kinds; prioritize UI affordance in post-fundraise milestone. Sell export-first compliance initially. |
-| **Kill signal** | Security review blocks CLI-only approval flows |
+| **Impact** | Regulated buyers want enterprise approver UX, retention, and signed audit trails beyond local replay |
+| **Mitigation** | CLI + export bundle + live `POST /api/hitl/input` (see [`docs/hitl-web-ui.md`](hitl-web-ui.md), `npm run gate:hitl-ui`). Sell export-first compliance; roadmap managed layer for RBAC/retention. |
+| **Kill signal** | Security review blocks even gated web approval flows or requires features not on the near-term roadmap |
 
 ---
 
@@ -138,7 +138,7 @@ Each risk is ranked by **investor diligence severity** (likelihood × impact if 
 | 6 | Thin-layer monetization | Medium | Managed TBD |
 | 7 | Temporal bundling | Medium | Position as neutral export |
 | 8 | Single-host gates | Medium | Documented; acceptable for seed |
-| 9 | HITL UI gap | Low–medium | Export-complete; UI deferred |
+| 9 | HITL prod/compliance UX | Low–medium | UI + export shipped; enterprise hardening TBD |
 | 10 | Post-AX timing | Medium | Honest positioning as feature |
 
 **Before declaring “fundable”:** close risk **#4** (one production provider switch + redacted journal), **#6** (3 design partners or LOIs), and rehearse **#1/#2** answers with [`docs/DEMO-NARRATIVE.md`](DEMO-NARRATIVE.md).

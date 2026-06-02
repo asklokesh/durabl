@@ -4,6 +4,10 @@ Date: 2026-06-01. Redline of the original product hypothesis against Phase 0
 evidence. `~~strike~~` = removed/invalidated; **bold** = changed/added. Every change
 is justified by a finding in `validation-report.md`.
 
+### Implementation status (2026-06-02)
+
+The redline below remains the **product contract** from Phase 0. **Execution status:** M0–M5 gates are green on main (Restate TS substrate); logical fork shipped as M2 and replay/time-travel UI as M3 (order swapped vs the milestone names in `build-plan.md`). HITL pause/resume is gated CLI + export, with web UI list/resume merged from `feat/hitl-web-ui` (`docs/hitl-web-ui.md`, `npm run gate:hitl-ui`). **Not yet shipped:** Python SDK, DBOS second-substrate parity, and the managed control plane — see `docs/build-status.md`, `docs/SECOND-SUBSTRATE.md`, and `docs/HARDENING.md`.
+
 ---
 
 ## Positioning
