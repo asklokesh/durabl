@@ -924,3 +924,26 @@ PASS  G2 hitl-ui-offline-paused-readonly
 VERDICT: GATE PASSED
 ================================================
 ALL GATES PASSED
+
+> durabl@0.1.0 gate:all
+> bash scripts/run-all-gates.sh
+
+DURABL_DATA_DIR=/tmp/durabl-gate-agent3
+
+> durabl@0.1.0 typecheck
+> tsc -p tsconfig.json --noEmit
+
+
+> durabl@0.1.0 test
+> npm run gate
+
+
+> durabl@0.1.0 gate
+> npm run build && node --enable-source-maps dist/harness/run-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+scripts/run-all-gates.sh: line 48: 47380 Killed: 9                  npm test

@@ -16,3 +16,4 @@ DURABL_DATA_DIR=/tmp/durabl-gate-69436
 > tsc -p tsconfig.json && node scripts/copy-web.mjs
 
 [build] copied web/ → dist/web
+EXIT=
