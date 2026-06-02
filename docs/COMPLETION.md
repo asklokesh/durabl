@@ -90,7 +90,7 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 
 **Skipped:** `feat/backend-logging` (wrong tree; structured logging landed via other backend branches).
 
-**Land on `main`:** `0f0f36c` + follow-up fix commit (run `git rev-parse HEAD` after pull).
+**Land on `main`:** `561add8e694c69b3a05c00555891bb9c66d0f20f` (`0f0f36c` initial merge + `c5b8c7e` route/probe fix + docs).
 
 **Gates (backend touch):** `npm run typecheck`, `npm run test:api`, `npm run gate:m5`, `npm run gate:hitl-ui`.
 

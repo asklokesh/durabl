@@ -16,6 +16,27 @@
 
 Defaults: `127.0.0.1:7878` (`DURABL_UI_HOST`, `DURABL_UI_PORT`). Offline mode: `importPath` or pre-built `JournalSource` from a JSONL export.
 
+### Ops (not under `/api/*`)
+
+| Route | Response |
+|---|---|
+| `GET /health` | `{ "ok": true }` |
+| `GET /ready` | `{ "ready": true }` offline; live checks Restate admin |
+| `GET /metrics` | Prometheus text stub |
+
+### Replay API (selected)
+
+| Route | Notes |
+|---|---|
+| `GET /api/health` | Origin, `live`, `hitlSubmitEnabled`, optional WS fields |
+| `GET /api/runs` | `limit`, `cursor` pagination |
+| `GET /api/inspect`, `/api/lineage`, `/api/forks` | `runId` query param |
+| `POST /api/fork` | Live only (Restate ingress) |
+| `POST /api/hitl/input` | Live only; rate-limited |
+| `GET /api/ws/runs` | WebSocket upgrade when `DURABL_ENABLE_WS=1` |
+
+Security: `src/http-security.ts`, `src/api-auth.js`, `DURABL_API_KEY`, `DURABL_CORS_ORIGINS`. Tests: `npm run test:api`.
+
 ---
 
 ## Request logging
