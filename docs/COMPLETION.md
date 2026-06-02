@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `6ec939c42596ef7b750977a0143af57541b8c647` · **Gate log:** [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) (`ALL GATES PASSED`, exit 0)
+**Branch:** `main` · **HEAD:** `5f88326a7cb7408e7a6ccaf026a9ea4672ea0a6e` · **Gate log:** [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) (`ALL GATES PASSED`, exit 0)
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 
@@ -117,7 +117,7 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 
 ## UX/UI + integrations merge queue (2026-06-02)
 
-All branches below are **ancestors of `main`** at HEAD `6ec939c`. Serial merge into `/private/tmp/durabl-merge-main` (integration `main`).
+All branches below are **ancestors of `main`** at HEAD `5f88326`. Serial merge into `/private/tmp/durabl-merge-main` (integration `main`).
 
 | Branch | Scope | Merged |
 |--------|--------|--------|
@@ -143,7 +143,7 @@ All branches below are **ancestors of `main`** at HEAD `6ec939c`. Serial merge i
 
 | Field | Value |
 |-------|--------|
-| **Integration HEAD** | `6ec939c42596ef7b750977a0143af57541b8c647` |
+| **Integration HEAD** | `5f88326a7cb7408e7a6ccaf026a9ea4672ea0a6e` (gate run @ `50efc3f`) |
 | **Canonical log** | [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) |
 | **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui) |
 | **Exit code** | `0` |
