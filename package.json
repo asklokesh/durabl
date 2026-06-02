@@ -23,7 +23,7 @@
     "gate:m3": "npm run build && node --enable-source-maps dist/harness/run-m3-gate.js",
     "gate:m4": "npm run build && node --enable-source-maps dist/harness/run-m4-gate.js",
     "gate:m5": "npm run build && node --enable-source-maps dist/harness/run-m5-gate.js",
-    "gate:hitl-ui": "npm run build && node --enable-source-maps dist/harness/run-hitl-ui-gate.js",
+    "gate:hitl-ui": "npm run build && DURABL_DATA_DIR=\"/tmp/dhui-$$\" node --enable-source-maps dist/harness/run-hitl-ui-gate.js",
     "gate:hitl-web": "npm run gate:hitl-ui",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
