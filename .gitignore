@@ -24,3 +24,12 @@ docs/m5-evidence/*.jsonl
 !docs/m4-evidence/
 !docs/m4-evidence/**
 .gstack/
+
+# Playwright e2e (committed fixtures under tests/fixtures/)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+!tests/fixtures/
+!tests/fixtures/**
+
