@@ -16,15 +16,27 @@ const state = {
   replay: null, // current full ReplayedRun
   ttN: null, // time-travel step (null = full run)
   selectedStepSeq: null,
+  live: false,
+  hitlSubmitEnabled: false,
+  hitlState: "none",
+  pausedRuns: [],
 };
 
-async function api(path) {
-  const res = await fetch(path);
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
-  return res.json();
+  return body;
+}
+
+async function apiPost(path, payload) {
+  return api(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
 
 function fmtOut(v) {
@@ -38,6 +50,45 @@ async function loadSource() {
   $("#sourceLabel").textContent = h.label;
   const offline = h.origin && h.origin.startsWith("imported");
   $("#sourcePill").classList.toggle("offline", offline);
+  state.live = Boolean(h.live);
+  state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
+}
+
+async function submitHitlInput(ev) {
+  ev.preventDefault();
+  const decision = $("#hitlDecision").value.trim();
+  const msg = $("#hitlFormMsg");
+  const btn = $("#hitlSubmitBtn");
+  if (!state.selected || !decision) return;
+  btn.disabled = true;
+  msg.hidden = false;
+  msg.className = "hitl-form-msg";
+  msg.textContent = "Submitting…";
+  try {
+    const res = await apiPost("/api/hitl/input", { runId: state.selected, decision });
+    if (res.accepted === false && res.state !== "resumed") {
+      msg.classList.add("err");
+      msg.textContent = "Input not accepted (duplicate or already resumed).";
+    } else {
+      msg.classList.add("ok");
+      msg.textContent = res.accepted
+        ? "Accepted — run resuming…"
+        : "Already resumed (idempotent no-op).";
+      $("#hitlDecision").value = "";
+      await sleep(800);
+      await loadRuns();
+      if (state.selected) await selectRun(state.selected);
+    }
+  } catch (e) {
+    msg.classList.add("err");
+    msg.textContent = e.message;
+  } finally {
+    btn.disabled = !state.hitlSubmitEnabled;
+  }
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 // ── Runs + fork tree ───────────────────────────────────────
@@ -45,11 +96,86 @@ async function loadRuns() {
   const data = await api("/api/runs");
   state.runs = data.runs;
   state.roots = data.roots;
+  await loadHitlPaused();
   await renderTree();
   if (!state.selected && state.runs.length) {
     // prefer a root run for the first view
     const first = state.roots[0] || state.runs[0].runId;
     selectRun(first);
+  } else if (state.selected) {
+    await refreshHitlForRun(state.selected);
+  }
+}
+
+async function loadHitlPaused() {
+  try {
+    const data = await api("/api/hitl/paused");
+    state.pausedRuns = data.paused || [];
+    renderHitlPausedList();
+  } catch {
+    state.pausedRuns = [];
+    renderHitlPausedList();
+  }
+}
+
+function renderHitlPausedList() {
+  const panel = $("#hitlPanel");
+  const list = $("#hitlPausedList");
+  list.innerHTML = "";
+  if (!state.pausedRuns.length) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  for (const p of state.pausedRuns) {
+    const row = el("button", "hitl-paused-item");
+    row.type = "button";
+    if (p.runId === state.selected) row.classList.add("active");
+    row.appendChild(el("div", "run-id", p.runId));
+    row.appendChild(el("div", "hint", "paused — click to review & submit"));
+    row.onclick = () => selectRun(p.runId);
+    list.appendChild(row);
+  }
+}
+
+async function refreshHitlForRun(runId) {
+  if (!runId) {
+    state.hitlState = "none";
+    updateHitlBanner();
+    return;
+  }
+  try {
+    const st = await api(`/api/hitl/status?runId=${encodeURIComponent(runId)}`);
+    state.hitlState = st.state || "none";
+    state.hitlSubmitEnabled = Boolean(st.submitEnabled);
+  } catch {
+    const run = state.runs.find((r) => r.runId === runId);
+    state.hitlState = run?.hitlState || "none";
+  }
+  updateHitlBanner();
+  renderHitlPausedList();
+}
+
+function updateHitlBanner() {
+  const banner = $("#hitlBanner");
+  const form = $("#hitlForm");
+  const offlineNote = $("#hitlOfflineNote");
+  const submitBtn = $("#hitlSubmitBtn");
+  const msg = $("#hitlFormMsg");
+  msg.hidden = true;
+
+  if (state.hitlState !== "paused") {
+    banner.hidden = true;
+    return;
+  }
+  banner.hidden = false;
+  $("#hitlBannerSub").textContent = state.selected || "";
+  const canSubmit = state.hitlSubmitEnabled && state.live;
+  form.hidden = !canSubmit;
+  offlineNote.hidden = canSubmit;
+  submitBtn.disabled = !canSubmit;
+  if (!canSubmit) {
+    $("#hitlDecision").value = "";
   }
 }
 
@@ -96,6 +222,7 @@ async function selectRun(runId) {
   renderTimeline();
   if (replay.steps.length) selectStep(replay.steps[replay.steps.length - 1].seq);
   populateDiffPickers();
+  await refreshHitlForRun(runId);
 }
 
 function renderRunHeader(r) {
@@ -113,6 +240,11 @@ function renderRunHeader(r) {
   row.appendChild(chip("steps", r.steps.length));
   row.appendChild(chip("effects", r.effects.length));
   row.appendChild(chip("elapsed", r.totalElapsedMs + "ms"));
+  const runRow = state.runs.find((x) => x.runId === r.runId);
+  const hs = runRow?.hitlState || state.hitlState;
+  if (hs && hs !== "none") {
+    row.appendChild(chip("HITL", hs, hs === "paused" ? "accent" : ""));
+  }
   if (r.meta && r.meta.parentRun) {
     row.appendChild(chip("forked from", `${r.meta.parentRun} @${r.meta.forkedAtSeq}`));
   }
@@ -169,6 +301,7 @@ function renderTimeline() {
 
   for (const s of r.steps) {
     const node = el("div", "step");
+    node.classList.add("kind-" + s.kind);
     node.classList.toggle("has-effect", s.effects.length > 0);
     node.classList.toggle("seeded", s.seeded);
     if (cutoff !== null && s.seq > cutoff) node.classList.add("future");
@@ -181,7 +314,7 @@ function renderTimeline() {
     const head = el("div", "step-head");
     head.appendChild(el("span", "step-seq", "#" + s.seq));
     head.appendChild(el("span", "step-name", s.stepName));
-    head.appendChild(el("span", "step-kind", s.kind));
+    head.appendChild(el("span", "step-kind kind-" + s.kind, s.kind));
     const tags = el("div", "step-tags");
     if (s.sideEffect) tags.appendChild(el("span", "tag effect", "side-effect"));
     if (s.effects.length) tags.appendChild(el("span", "tag effect", `⚡ ${s.effects.length}`));
@@ -312,11 +445,18 @@ document.querySelectorAll(".tab").forEach((tab) => {
   };
 });
 
+$("#hitlForm").addEventListener("submit", submitHitlInput);
+
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
     await loadSource();
     await loadRuns();
+    setInterval(() => {
+      void loadHitlPaused().then(() => {
+        if (state.selected) void refreshHitlForRun(state.selected);
+      });
+    }, 3000);
   } catch (e) {
     document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#f87171">Failed to load: ${e.message}</div>`;
   }
