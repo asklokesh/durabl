@@ -48,7 +48,7 @@ async function api(path, opts) {
   const res = await fetch(path, opts);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(body.error || `HTTP ${res.status}`);
+    throw new Error(apiErrorMessage(body, res.status));
   }
   return body;
 }
@@ -209,6 +209,7 @@ async function loadSource() {
   state.hitlSubmitDisabledReason = h.hitlSubmitDisabledReason || "";
   const offline = isOfflineHealth(h);
   $("#sourcePill").classList.toggle("offline", offline);
+  updateOfflineBanner(offline);
   state.live = Boolean(h.live);
   state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
   state.exportPath = h.exportPath ?? null;
@@ -288,17 +289,25 @@ function sleep(ms) {
 
 // ── Runs + fork tree ───────────────────────────────────────
 async function loadRuns() {
-  const data = await api("/api/runs");
-  state.runs = data.runs;
-  state.roots = data.roots;
-  await loadHitlPaused();
-  await renderTree();
-  if (!state.selected && state.runs.length) {
-    // prefer a root run for the first view
-    const first = state.roots[0] || state.runs[0].runId;
-    selectRun(first);
-  } else if (state.selected) {
-    await refreshHitlForRun(state.selected);
+  renderTreeSkeleton();
+  try {
+    const data = await api("/api/runs");
+    state.runs = data.runs;
+    state.roots = data.roots;
+    await loadHitlPaused();
+    await renderTree();
+    if (!state.selected && state.runs.length) {
+      const first = state.roots[0] || state.runs[0].runId;
+      await selectRun(first);
+    } else if (state.selected) {
+      await refreshHitlForRun(state.selected);
+    }
+  } catch (e) {
+    const tree = $("#tree");
+    tree.classList.remove("is-loading");
+    tree.innerHTML = "";
+    tree.appendChild(el("div", "empty err", e.message));
+    throw e;
   }
 }
 
@@ -546,6 +555,7 @@ async function refreshLineageForRun(runId) {
 // ── Select + render a run ──────────────────────────────────
 async function selectRun(runId) {
   state.selected = runId;
+  updateExportButton();
   state.ttN = null;
   state.selectedStepSeq = null;
   await refreshLineageForRun(runId);
@@ -574,7 +584,7 @@ function renderRunHeader(r) {
   row.appendChild(chip("trajectory", r.trajectory, "accent"));
   row.appendChild(chip("steps", r.steps.length));
   row.appendChild(chip("effects", r.effects.length));
-  row.appendChild(chip("elapsed", r.totalElapsedMs + "ms"));
+  row.appendChild(chip("elapsed", formatDuration(r.totalElapsedMs) ?? `${r.totalElapsedMs}ms`));
   const runRow = state.runs.find((x) => x.runId === r.runId);
   const hs = runRow?.hitlState || state.hitlState;
   if (hs && hs !== "none") {
@@ -624,6 +634,7 @@ function setupTimeTravel(r) {
 // ── Timeline ───────────────────────────────────────────────
 function renderTimeline() {
   const tl = $("#timeline");
+  tl.classList.remove("is-loading");
   tl.innerHTML = "";
   const r = state.replay;
   if (!r) return;
@@ -648,13 +659,22 @@ function renderTimeline() {
 
     const head = el("div", "step-head");
     head.appendChild(el("span", "step-seq", "#" + s.seq));
-    head.appendChild(el("span", "step-name", s.stepName));
+    head.appendChild(el("span", "step-label", humanStepLabel(s)));
+    const prov = providerFromJournalOutput(s.output);
+    if (prov) {
+      const pb = el("span", "provider-badge", providerIconText(prov.provider));
+      pb.title = `${prov.provider} (${prov.mode})`;
+      head.appendChild(pb);
+    }
     head.appendChild(el("span", "step-kind kind-" + s.kind, s.kind));
     const tags = el("div", "step-tags");
     if (s.sideEffect) tags.appendChild(el("span", "tag effect", "side-effect"));
     if (s.effects.length) tags.appendChild(el("span", "tag effect", `⚡ ${s.effects.length}`));
     if (s.seeded) tags.appendChild(el("span", "tag seeded", "seeded"));
-    if (s.elapsedMsFromPrev !== null) tags.appendChild(el("span", "tag timing", `+${s.elapsedMsFromPrev}ms`));
+    if (s.elapsedMsFromPrev !== null) {
+      const dur = formatDuration(s.elapsedMsFromPrev);
+      if (dur) tags.appendChild(el("span", "tag duration", dur));
+    }
     head.appendChild(tags);
     node.appendChild(head);
 
@@ -701,11 +721,18 @@ function renderStepDetail(seq) {
     return wrap;
   };
 
-  panel.appendChild(kv("step", `#${s.seq} · ${s.stepName}`));
+  panel.appendChild(kv("step", `#${s.seq} · ${humanStepLabel(s)}`));
+  panel.appendChild(kv("logical name", s.stepName));
   panel.appendChild(kv("kind", s.kind));
+  const prov = providerFromJournalOutput(s.output);
+  if (prov) panel.appendChild(kv("model provider", `${prov.provider} (${prov.mode})`));
   panel.appendChild(kv("idempotency key", s.idemKey));
   panel.appendChild(kv("recorded at", s.recordedAt));
-  panel.appendChild(kv("timing", s.elapsedMsFromPrev === null ? "first step" : `+${s.elapsedMsFromPrev}ms from previous`));
+  const timing =
+    s.elapsedMsFromPrev === null
+      ? "first step"
+      : `${formatDuration(s.elapsedMsFromPrev) ?? s.elapsedMsFromPrev + "ms"} from previous`;
+  panel.appendChild(kv("timing", timing));
   panel.appendChild(kv("seeded", s.seeded ? `yes (from ${s.seededFrom})` : "no — natively executed"));
   panel.appendChild(kv("output", fmtOut(s.output), true));
 
@@ -874,6 +901,24 @@ $("#hitlDecision").addEventListener("keydown", (ev) => {
   if (ev.key !== "Enter" || !(ev.metaKey || ev.ctrlKey)) return;
   ev.preventDefault();
   void submitHitlInput();
+});
+
+const importFile = $("#importFile");
+if (importFile) {
+  $("#btnImport").addEventListener("click", () => importFile.click());
+  importFile.addEventListener("change", () => {
+    const file = importFile.files && importFile.files[0];
+    importFile.value = "";
+    if (!file) return;
+    void uploadJsonl(file).catch((e) => {
+      window.alert(e instanceof Error ? e.message : String(e));
+    });
+  });
+}
+$("#btnExport").addEventListener("click", () => {
+  void downloadExport().catch((e) => {
+    window.alert(e instanceof Error ? e.message : String(e));
+  });
 });
 
 // ── Boot ───────────────────────────────────────────────────
