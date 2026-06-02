@@ -1,16 +1,18 @@
 # durabl — local self-host stack (Restate + durabl SDK service).
 # No secrets in this file; set API keys in your shell or a local .env (gitignored).
 #
-#   docker compose up --build
+#   docker compose --profile docker-demo up --build
+#   npm run compose:up
 #
 # Then register the deployment (one-time per stack start):
-#   docker compose exec restate restate deployments register http://durabl:9080
+#   docker compose --profile docker-demo exec restate restate deployments register http://durabl:9080
 #
 # Gates and CLI still use the npm harness on the host by default; this compose
 # file is for operators who want a reproducible two-container demo environment.
 
 services:
   restate:
+    profiles: ["docker-demo"]
     image: docker.restate.dev/restatedev/restate:1.6.2
     ports:
       - "8080:8080"   # ingress
@@ -20,6 +22,7 @@ services:
     command: ["--node-name", "durabl-local"]
 
   durabl:
+    profiles: ["docker-demo"]
     build:
       context: .
       dockerfile: Dockerfile

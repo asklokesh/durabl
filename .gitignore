@@ -6,16 +6,21 @@ dist/
 *.log
 .DS_Store
 
-# Runtime gate JSONL exports (stable copies live in test/fixtures/).
-docs/*-evidence/*.jsonl
+# Local agent-loop daemon (never commit PID or loop logs)
+.agent-loop*.pid
+.agent-loop*.log
+
+# Gate-generated JSONL bundles and UI captures (stable copies live in test/fixtures/).
+docs/m3-evidence/*.jsonl
+docs/m3-evidence/screenshots/
+docs/m5-evidence/*.jsonl
 docs/hitl-ui-evidence/*.jsonl
 
-# Committed proof: gate evidence logs are deliverables, not transient logs.
+# Committed proof: gate evidence transcripts are deliverables, not transient logs.
 !docs/m1-evidence/gate-evidence.log
 !docs/m2-evidence/
 !docs/m2-evidence/*.log
-!docs/m3-evidence/
-!docs/m3-evidence/*.log
+!docs/m3-evidence/gate-evidence.log
 !docs/m4-evidence/
-!docs/m4-evidence/*.log
+!docs/m4-evidence/**
 .gstack/
