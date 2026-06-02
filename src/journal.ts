@@ -15,10 +15,8 @@
 // recorded here under the same deterministic key.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { config } from "./config.js";
+import type { DatabaseSync } from "node:sqlite";
+import { openMigratedJournalDatabase } from "./journal-migrate.js";
 import { effectsFor } from "./effect-sink.js";
 import {
   asIdempotencyKey,
@@ -33,42 +31,9 @@ import {
 } from "./step-model.js";
 
 function open(): DatabaseSync {
-  mkdirSync(dirname(config.journalDbPath), { recursive: true });
-  const d = new DatabaseSync(config.journalDbPath);
-  d.exec("PRAGMA journal_mode = WAL");
-  d.exec("PRAGMA busy_timeout = 5000");
-  d.exec("PRAGMA foreign_keys = ON");
-  d.exec(`
-    CREATE TABLE IF NOT EXISTS step_journal (
-      schema      INTEGER NOT NULL,
-      run_id      TEXT NOT NULL,
-      seq         INTEGER NOT NULL,
-      step_name   TEXT NOT NULL,
-      kind        TEXT NOT NULL,
-      idem_key    TEXT NOT NULL,
-      output      TEXT NOT NULL,
-      side_effect INTEGER NOT NULL DEFAULT 0,
-      seeded_from TEXT,
-      recorded_at TEXT NOT NULL,
-      PRIMARY KEY (run_id, seq)
-    );
-    -- Per-run uniqueness of the deterministic idempotency key: a logical step
-    -- can be journaled at most once per run. Structural enforcement of the
-    -- exactly-once contract at the journal layer (mirrors the effect sink).
-    CREATE UNIQUE INDEX IF NOT EXISTS step_journal_idem
-      ON step_journal (run_id, idem_key);
-
-    CREATE TABLE IF NOT EXISTS run_meta (
-      schema        INTEGER NOT NULL,
-      run_id        TEXT PRIMARY KEY,
-      parent_run    TEXT,
-      forked_at_seq INTEGER,
-      trajectory    TEXT NOT NULL,
-      created_at    TEXT NOT NULL
-    );
-  `);
-  return d;
+  return openMigratedJournalDatabase();
 }
+
 
 interface RawStepRow {
   schema: number;

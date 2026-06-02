@@ -69,6 +69,7 @@
     "smoke": "bash scripts/smoke-quickstart.sh",
     "examples:minimal": "npm run build && tsc -p examples/minimal-workflow/tsconfig.json && node --enable-source-maps examples/minimal-workflow/dist/run.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
+    "journal:migrate": "npm run build && node --enable-source-maps dist/journal-migrate.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
     "capture:ui": "npm run build && node scripts/capture-ui.mjs",
     "test": "npm run gate",
