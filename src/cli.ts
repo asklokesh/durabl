@@ -1,22 +1,11 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-// durabl CLI — fork ergonomics + read-only trajectory inspection (M2).
-//
-//   durabl run <runId> --prompt <p> [--trajectory <t>]
-//   durabl fork <sourceRunId> --at <N> --new <newRunId> --prompt <p> [--trajectory <t>]
-//   durabl inspect <runId>
-//   durabl list-forks <runId>
-//   durabl tree <runId>
-//   durabl diff <runA> <runB>
-//   durabl export <runId> [--meta]            (portable JSONL; --meta = include lineage)
-//   durabl runs                               (list all known runs)
-//
-// Reads are pure journal queries (no substrate). `run`/`fork` invoke the
-// substrate via the Restate ingress (config.restateIngress). All config (ingress,
-// db paths) comes from env vars — nothing hardcoded, no secrets logged.
+// durabl CLI — fork ergonomics + read-only trajectory inspection (M2+).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import {
   exportJsonl,
@@ -42,7 +31,17 @@ import {
 import { reconstruct, stateAt } from "./replay.js";
 import { startServer } from "./server.js";
 
+const PKG = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../package.json"), "utf8"),
+) as { version: string };
+const VERSION = PKG.version;
+
 const INGRESS = config.restateIngress;
+
+function cliError(message: string, code = 2): never {
+  console.error(`durabl: error: ${message}`);
+  process.exit(code);
+}
 
 /** Invoke a run on the Restate substrate via the ingress (synchronous attach). */
 async function ingressInvoke(runId: string, decision: ForkDecision): Promise<unknown> {
@@ -52,29 +51,22 @@ async function ingressInvoke(runId: string, decision: ForkDecision): Promise<unk
     body: JSON.stringify({ prompt: decision.prompt, trajectory: decision.trajectory }),
   });
   if (!res.ok) {
-    throw new Error(`invoke ${runId} -> ${res.status}: ${await res.text()}`);
+    throw new Error(`invoke ${runId} failed (${res.status}): ${await res.text()}`);
   }
   return res.json();
 }
 
-// ─── M5 HITL ingress helpers ──────────────────────────────────────────────────
-
-/**
- * Start a HITL run WITHOUT blocking the CLI: use the Restate one-way `send`
- * ingress so the run starts, advances to the durable pause, and suspends. The
- * CLI returns immediately — the run is now durably paused (journal shows it),
- * and this process (or the whole machine) can exit.
- */
 async function hitlSubmit(runId: string, prompt: string, traj: string): Promise<void> {
   const res = await fetch(`${INGRESS}/HitlAgentRun/${runId}/run/send`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ prompt, trajectory: traj }),
   });
-  if (!res.ok) throw new Error(`submit ${runId} -> ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    throw new Error(`hitl submit ${runId} failed (${res.status}): ${await res.text()}`);
+  }
 }
 
-/** Supply human input to resume a paused run (resolves the durable promise). */
 async function hitlProvideInput(
   runId: string,
   decision: string,
@@ -84,7 +76,9 @@ async function hitlProvideInput(
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ decision }),
   });
-  if (!res.ok) throw new Error(`provideInput ${runId} -> ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    throw new Error(`hitl provideInput ${runId} failed (${res.status}): ${await res.text()}`);
+  }
   return res.json() as Promise<{ runId: string; accepted: boolean }>;
 }
 
@@ -93,6 +87,14 @@ function parseFlags(args: string[]): { positional: string[]; flags: Record<strin
   const flags: Record<string, string | boolean> = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
+    if (a === "-h" || a === "--help") {
+      flags.help = true;
+      continue;
+    }
+    if (a === "-V" || a === "--version") {
+      flags.version = true;
+      continue;
+    }
     if (a.startsWith("--")) {
       const key = a.slice(2);
       const next = args[i + 1];
@@ -113,11 +115,6 @@ function out(obj: unknown): void {
   console.log(JSON.stringify(obj, null, 2));
 }
 
-/**
- * Pick the journal source for a read command. With `--from <file>`, the run is
- * reconstructed PURELY from a portable JSONL export (no SQLite, no substrate) —
- * the offline-portability path. Otherwise the live SQLite journal is used.
- */
 function sourceFromFlags(flags: Record<string, string | boolean>): JournalSource {
   if (typeof flags.from === "string") {
     const jsonl = readFileSync(flags.from, "utf8");
@@ -133,32 +130,69 @@ function printTree(node: ForkTreeNode, depth = 0): void {
   for (const c of node.children) printTree(c, depth + 1);
 }
 
-const USAGE = `durabl — trajectory branching + replay/time-travel CLI (M2 + M3)
+const USAGE = `durabl ${VERSION} — portable agent journal (replay, fork, HITL)
 
-  durabl run <runId> --prompt <p> [--trajectory <t>]
-  durabl fork <sourceRunId> --at <N> --new <newRunId> --prompt <p> [--trajectory <t>]
-  durabl inspect <runId>
-  durabl list-forks <runId>
-  durabl tree <runId>
-  durabl diff <runA> <runB>
-  durabl export <runId> [--meta]
-  durabl export-bundle <rootRunId>          (run + all forks + effects, portable)
-  durabl runs
+Usage:
+  durabl <command> [args] [flags]
+  durabl --help
+  durabl --version
 
-  M3 — observability / replay / time-travel (read-only, journal/export only):
-  durabl replay <runId> [--from <export.jsonl>]   (reconstruct a run, step-by-step)
-  durabl state-at <runId> --n <N> [--from <export.jsonl>]  (time-travel to step N)
-  durabl ui [--port <p>] [--from <export.jsonl>]  (launch local replay web UI)
+Run & fork (requires Restate ingress; see DURABL_RESTATE_INGRESS):
+  run <runId> --prompt <p> [--trajectory <t>]
+  fork <sourceRunId> --at <N> --new <newRunId> --prompt <p> [--trajectory <t>]
 
-  M5 — human-in-the-loop (HITL) pause/resume (survives a real process restart):
-  durabl hitl-run <runId> --prompt <p> [--trajectory <t>]   (start; pauses for input)
-  durabl hitl-input <runId> --decision <text>               (supply input → resume)
-  durabl hitl-status <runId>                                (paused | resumed | none)
-  durabl paused                                             (all runs awaiting input)
+Inspect (journal only; no substrate):
+  inspect <runId>
+  list-forks <runId>
+  tree <runId>
+  diff <runA> <runB>
+  runs
+
+Export:
+  export <runId> [--meta]
+  export-bundle <rootRunId>
+
+Replay & UI (read-only; optional --from <export.jsonl> for offline):
+  replay <runId> [--from <file>]
+  state-at <runId> --n <N> [--from <file>]
+  ui [--port <p>] [--from <file>]
+
+Human-in-the-loop (Restate ingress):
+  hitl-run <runId> --prompt <p> [--trajectory <t>]
+  hitl-input <runId> --decision <text>
+  hitl-status <runId>
+  paused
+
+Environment: DURABL_DATA_DIR, DURABL_JOURNAL_DB, DURABL_RESTATE_INGRESS, …
+Docs: https://github.com/durabl/durabl#readme
 `;
 
 async function main(): Promise<void> {
-  const [cmd, ...rest] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+
+  if (argv.length === 0 || argv[0] === "help") {
+    console.log(USAGE);
+    return;
+  }
+  if (argv.length === 1 && (argv[0] === "-h" || argv[0] === "--help")) {
+    console.log(USAGE);
+    return;
+  }
+  const versionAt = argv.findIndex((a) => a === "-V" || a === "--version");
+  if (versionAt !== -1) {
+    const firstCmd = argv.find((a) => !a.startsWith("-"));
+    const cmdAt = firstCmd === undefined ? -1 : argv.indexOf(firstCmd);
+    if (cmdAt === -1 || versionAt < cmdAt) {
+      console.log(VERSION);
+      return;
+    }
+  }
+
+  const [cmd, ...rest] = argv;
+  if (cmd === "-h" || cmd === "--help") {
+    console.log(USAGE);
+    return;
+  }
   const { positional, flags } = parseFlags(rest);
 
   switch (cmd) {
@@ -166,7 +200,7 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const prompt = flags.prompt;
       if (!runId || typeof prompt !== "string") {
-        throw new Error("usage: durabl run <runId> --prompt <p> [--trajectory <t>]");
+        cliError("usage: durabl run <runId> --prompt <p> [--trajectory <t>]");
       }
       const trajectory = typeof flags.trajectory === "string" ? flags.trajectory : "main";
       const result = await ingressInvoke(runId, { prompt, trajectory });
@@ -184,12 +218,12 @@ async function main(): Promise<void> {
         typeof at !== "string" ||
         typeof prompt !== "string"
       ) {
-        throw new Error(
+        cliError(
           "usage: durabl fork <sourceRunId> --at <N> --new <newRunId> --prompt <p> [--trajectory <t>]",
         );
       }
       const throughSeq = Number(at);
-      if (!Number.isInteger(throughSeq)) throw new Error(`--at must be an integer (got ${at})`);
+      if (!Number.isInteger(throughSeq)) cliError(`--at must be an integer (got ${at})`);
       const trajectory =
         typeof flags.trajectory === "string" ? flags.trajectory : `fork-of-${sourceRunId}`;
       const result = await forkAndRun(
@@ -201,53 +235,57 @@ async function main(): Promise<void> {
     }
     case "inspect": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl inspect <runId>");
+      if (!runId) cliError("usage: durabl inspect <runId>");
       out({ ...inspectRun(runId), lineage: lineage(runId) });
       break;
     }
     case "list-forks": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl list-forks <runId>");
+      if (!runId) cliError("usage: durabl list-forks <runId>");
       out(listForks(runId));
       break;
     }
     case "tree": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl tree <runId>");
+      if (!runId) cliError("usage: durabl tree <runId>");
       printTree(forkTree(runId));
       break;
     }
     case "diff": {
       const a = positional[0];
       const b = positional[1];
-      if (!a || !b) throw new Error("usage: durabl diff <runA> <runB>");
+      if (!a || !b) cliError("usage: durabl diff <runA> <runB>");
       out(diffTrajectories(a, b));
       break;
     }
     case "export": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl export <runId> [--meta]");
+      if (!runId) cliError("usage: durabl export <runId> [--meta]");
       console.log(exportJsonl(runId, flags.meta === true));
       break;
     }
     case "export-bundle": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl export-bundle <rootRunId>");
+      if (!runId) cliError("usage: durabl export-bundle <rootRunId>");
       console.log(exportBundleJsonl(runId));
       break;
     }
     case "replay": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl replay <runId> [--from <export.jsonl>]");
+      if (!runId) cliError("usage: durabl replay <runId> [--from <export.jsonl>]");
       const source = sourceFromFlags(flags);
       const r = reconstruct(source, runId);
       console.log(`# replay of ${runId} reconstructed from: ${r.reconstructedFrom}`);
-      console.log(`# trajectory=${r.trajectory} steps=${r.steps.length} effects=${r.effects.length} totalElapsedMs=${r.totalElapsedMs}`);
+      console.log(
+        `# trajectory=${r.trajectory} steps=${r.steps.length} effects=${r.effects.length} totalElapsedMs=${r.totalElapsedMs}`,
+      );
       for (const s of r.steps) {
         const tag = s.seeded ? " (seeded)" : "";
         const eff = s.effects.length ? ` [effects: ${s.effects.length}]` : "";
         const dt = s.elapsedMsFromPrev === null ? "" : ` +${s.elapsedMsFromPrev}ms`;
-        console.log(`  seq ${s.seq} ${s.stepName} [${s.kind}]${s.sideEffect ? " (side-effect)" : ""}${tag}${dt}${eff}`);
+        console.log(
+          `  seq ${s.seq} ${s.stepName} [${s.kind}]${s.sideEffect ? " (side-effect)" : ""}${tag}${dt}${eff}`,
+        );
         console.log(`    output: ${JSON.stringify(s.output)}`);
       }
       if (r.divergencePoints.length) {
@@ -263,10 +301,10 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const nFlag = flags.n;
       if (!runId || typeof nFlag !== "string") {
-        throw new Error("usage: durabl state-at <runId> --n <N> [--from <export.jsonl>]");
+        cliError("usage: durabl state-at <runId> --n <N> [--from <export.jsonl>]");
       }
       const n = Number(nFlag);
-      if (!Number.isInteger(n)) throw new Error(`--n must be an integer (got ${nFlag})`);
+      if (!Number.isInteger(n)) cliError(`--n must be an integer (got ${nFlag})`);
       const source = sourceFromFlags(flags);
       const st = stateAt(source, runId, n);
       out({
@@ -286,9 +324,10 @@ async function main(): Promise<void> {
       const importPath = typeof flags.from === "string" ? flags.from : undefined;
       const host = await startServer({ port, importPath });
       console.log(`durabl replay UI running at ${host}`);
-      console.log(`source: ${importPath ? `imported export ${importPath} (OFFLINE — no substrate)` : "live SQLite journal"}`);
+      console.log(
+        `source: ${importPath ? `imported export ${importPath} (OFFLINE — no substrate)` : "live SQLite journal"}`,
+      );
       console.log(`(bound to localhost only; Ctrl-C to stop)`);
-      // keep the process alive
       await new Promise(() => {});
       break;
     }
@@ -300,18 +339,22 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const prompt = flags.prompt;
       if (!runId || typeof prompt !== "string") {
-        throw new Error("usage: durabl hitl-run <runId> --prompt <p> [--trajectory <t>]");
+        cliError("usage: durabl hitl-run <runId> --prompt <p> [--trajectory <t>]");
       }
       const trajectory = typeof flags.trajectory === "string" ? flags.trajectory : "main";
       await hitlSubmit(runId, prompt, trajectory);
-      out({ submitted: runId, state: hitlState(runId), note: "run is durably suspended at the HITL pause once it reaches it; supply input with `durabl hitl-input`" });
+      out({
+        submitted: runId,
+        state: hitlState(runId),
+        note: "run is durably suspended at the HITL pause once it reaches it; supply input with `durabl hitl-input`",
+      });
       break;
     }
     case "hitl-input": {
       const runId = positional[0];
       const decision = flags.decision;
       if (!runId || typeof decision !== "string") {
-        throw new Error("usage: durabl hitl-input <runId> --decision <text>");
+        cliError("usage: durabl hitl-input <runId> --decision <text>");
       }
       const res = await hitlProvideInput(runId, decision);
       out(res);
@@ -319,7 +362,7 @@ async function main(): Promise<void> {
     }
     case "hitl-status": {
       const runId = positional[0];
-      if (!runId) throw new Error("usage: durabl hitl-status <runId>");
+      if (!runId) cliError("usage: durabl hitl-status <runId>");
       out({ runId, state: hitlState(runId) });
       break;
     }
@@ -332,12 +375,12 @@ async function main(): Promise<void> {
       console.log(USAGE);
       break;
     default:
-      console.error(`unknown command: ${cmd}\n\n${USAGE}`);
-      process.exitCode = 2;
+      cliError(`unknown command "${cmd}"\n\n${USAGE}`);
   }
 }
 
 main().catch((e) => {
-  console.error("ERROR:", e instanceof Error ? e.message : String(e));
-  process.exitCode = 1;
+  const message = e instanceof Error ? e.message : String(e);
+  console.error(`durabl: error: ${message}`);
+  process.exit(1);
 });
