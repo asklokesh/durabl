@@ -30,14 +30,14 @@
 
           <button
             type="button"
-            id="themeToggle"
-            class="theme-toggle btn-ghost"
-            aria-label="Switch to dark mode"
-            title="Toggle light / dark theme"
+            id="helpOpenBtn"
+            class="btn-ghost help-open-btn"
+            aria-haspopup="dialog"
+            aria-controls="helpDrawer"
+            title="Help (?)"
           >
-            <span class="theme-toggle-icon" aria-hidden="true">☾</span>
+            Help
           </button>
-
           <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
             <span class="dot"></span><span id="sourceLabel">loading…</span>
           </div>
@@ -136,18 +136,31 @@
     </div>
 
 
-    <div class="onboarding-tour" id="onboardingTour" hidden aria-hidden="true">
-      <div class="onboarding-backdrop" id="onboardingBackdrop"></div>
-      <div class="onboarding-spotlight" id="onboardingSpotlight" hidden></div>
-      <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
-        <div class="onboarding-progress" id="onboardingProgress" aria-hidden="true"></div>
-        <h2 class="onboarding-title" id="onboardingTitle"></h2>
-        <p class="onboarding-body" id="onboardingBody"></p>
-        <div class="onboarding-card-actions">
-          <button type="button" class="btn-ghost" id="onboardingTourSkip">Skip</button>
-          <button type="button" class="btn-primary" id="onboardingTourNext">Next</button>
-        </div>
-      </div>
+    <div class="help-drawer" id="helpDrawer" hidden>
+      <div class="help-backdrop" id="helpBackdrop"></div>
+      <aside
+        class="help-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="helpTitle"
+      >
+        <header class="help-header">
+          <h2 class="help-title" id="helpTitle">Help</h2>
+          <button type="button" class="btn-ghost help-close-btn" id="helpCloseBtn" aria-label="Close help">
+            ✕
+          </button>
+        </header>
+        <nav class="help-nav" aria-label="Help topics">
+          <button type="button" class="help-nav-btn active" data-help="quickstart">Quickstart</button>
+          <button type="button" class="help-nav-btn" data-help="faq">FAQ</button>
+          <button type="button" class="help-nav-btn" data-help="shortcuts">Shortcuts</button>
+        </nav>
+        <div class="help-body" id="helpBody"></div>
+        <footer class="help-footer">
+          <span class="help-footer-label">Full docs in repo:</span>
+          <a class="help-doc-link" id="helpDocLink" href="#" target="_blank" rel="noopener noreferrer">docs/QUICKSTART.md</a>
+        </footer>
+      </aside>
     </div>
 
     <script src="/app.js"></script>

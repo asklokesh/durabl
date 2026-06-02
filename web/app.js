@@ -1059,6 +1059,154 @@ function initOnboarding() {
 }
 
 
+// ── Help drawer (QUICKSTART / FAQ / shortcuts — minimal inline) ─
+const HELP_REPO = "https://github.com/durabl/durabl/blob/main";
+
+const HELP_SECTIONS = {
+  quickstart: {
+    doc: `${HELP_REPO}/docs/QUICKSTART.md`,
+    html: `
+      <h3>5-minute path</h3>
+      <ol>
+        <li><code>npm install</code> and <code>npm run build</code></li>
+        <li>Prove the journal: <code>npm test</code> (M1 gate)</li>
+        <li>Launch this UI: <code>npm run ui</code> → <code>http://127.0.0.1:7878</code></li>
+      </ol>
+      <h3>Offline replay</h3>
+      <p>Export a bundle, then point the UI at the file — no Restate required:</p>
+      <p><code>node dist/cli.js export-bundle &lt;rootRunId&gt; &gt; run.jsonl</code><br />
+      <code>node dist/cli.js ui --from run.jsonl</code></p>
+      <h3>HITL (live)</h3>
+      <p>With Restate ingress running, paused runs appear in the sidebar; submit a decision here or via <code>durabl hitl-input</code>.</p>
+    `,
+  },
+  faq: {
+    doc: `${HELP_REPO}/docs/FAQ.md`,
+    html: `
+      <h3>What is durabl?</h3>
+      <p>A portable agent execution journal: replay, logical fork at a step, and HITL pause/resume — no process snapshots.</p>
+      <h3>Why is submit disabled?</h3>
+      <p>Offline imports are replay-only. Resume needs live mode with Restate ingress (<code>DURABL_RESTATE_INGRESS</code>).</p>
+      <h3>What is time-travel?</h3>
+      <p>The slider shows state through step <em>N</em> without mutating the journal. Use <strong>↺ full run</strong> to return to the end.</p>
+      <h3>Trajectory diff</h3>
+      <p>Pick two runs on the right — useful after a fork to see where outputs diverge.</p>
+    `,
+  },
+  shortcuts: {
+    doc: `${HELP_REPO}/docs/QUICKSTART.md#replay-ui-m3`,
+    html: `
+      <table class="help-shortcut-table">
+        <thead><tr><th>Keys</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>?</kbd></td><td>Open help (this panel)</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Close help</td></tr>
+          <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Time-travel prev / next step (when slider visible)</td></tr>
+          <tr><td><kbd>Home</kbd> <kbd>End</kbd></td><td>Jump to first / last step</td></tr>
+        </tbody>
+      </table>
+      <p>Focus must not be in a text field (except the HITL decision box uses its own submit shortcut).</p>
+    `,
+  },
+};
+
+let helpSection = "quickstart";
+let helpOpen = false;
+
+function renderHelpSection(section) {
+  helpSection = section;
+  const data = HELP_SECTIONS[section];
+  $("#helpBody").innerHTML = data.html;
+  const link = $("#helpDocLink");
+  link.href = data.doc;
+  link.textContent = data.doc.replace(`${HELP_REPO}/`, "");
+  document.querySelectorAll(".help-nav-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.help === section);
+  });
+}
+
+function setHelpOpen(open) {
+  helpOpen = open;
+  const drawer = $("#helpDrawer");
+  drawer.hidden = !open;
+  if (open) {
+    renderHelpSection(helpSection);
+    $("#helpCloseBtn").focus();
+  } else {
+    $("#helpOpenBtn").focus();
+  }
+}
+
+function openHelp(section = "quickstart") {
+  if (HELP_SECTIONS[section]) helpSection = section;
+  setHelpOpen(true);
+}
+
+function closeHelp() {
+  setHelpOpen(false);
+}
+
+function isTypingTarget(target) {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+}
+
+function nudgeTimeTravel(delta) {
+  const bar = $("#ttBar");
+  const range = $("#ttRange");
+  if (bar.hidden || !state.replay?.steps?.length) return;
+  const max = Number(range.max);
+  const next = Math.min(max, Math.max(1, Number(range.value) + delta));
+  if (next === Number(range.value)) return;
+  range.value = String(next);
+  range.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+$("#helpOpenBtn").addEventListener("click", () => openHelp(helpSection));
+$("#helpCloseBtn").addEventListener("click", closeHelp);
+$("#helpBackdrop").addEventListener("click", closeHelp);
+document.querySelectorAll(".help-nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => renderHelpSection(btn.dataset.help));
+});
+
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "?" && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
+    if (!isTypingTarget(ev.target)) {
+      ev.preventDefault();
+      openHelp("shortcuts");
+    }
+    return;
+  }
+  if (ev.key === "Escape" && helpOpen) {
+    ev.preventDefault();
+    closeHelp();
+    return;
+  }
+  if (helpOpen || isTypingTarget(ev.target)) return;
+  if (!$("#ttBar").hidden && state.replay?.steps?.length) {
+    if (ev.key === "ArrowLeft") {
+      ev.preventDefault();
+      nudgeTimeTravel(-1);
+    } else if (ev.key === "ArrowRight") {
+      ev.preventDefault();
+      nudgeTimeTravel(1);
+    } else if (ev.key === "Home") {
+      ev.preventDefault();
+      const range = $("#ttRange");
+      range.value = "1";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    } else if (ev.key === "End") {
+      ev.preventDefault();
+      const range = $("#ttRange");
+      range.value = range.max;
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+});
+
+renderHelpSection("quickstart");
+
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
