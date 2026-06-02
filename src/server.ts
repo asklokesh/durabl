@@ -14,8 +14,15 @@ import {
   forkTreeFrom,
   lineageFrom,
   diffTrajectoriesFrom,
+  inspectRunFrom,
+  listForksFrom,
   rootRuns,
 } from "./inspect-source.js";
+import {
+  executeForkPost,
+  forkApiErrorStatus,
+  parseForkPostBody,
+} from "./api-fork.js";
 import {
   hitlStateFromSource,
   pausedRunsFromSource,
@@ -270,7 +277,53 @@ function handleApi(
     sendJson(res, 200, diffTrajectoriesFrom(source, a, b));
     return true;
   }
+  if (p === "/api/inspect") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    sendJson(res, 200, { source: source.origin, inspection: inspectRunFrom(source, runId) });
+    return true;
+  }
+  if (p === "/api/lineage") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    sendJson(res, 200, { source: source.origin, runId, lineage: lineageFrom(source, runId) });
+    return true;
+  }
+  if (p === "/api/forks") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    sendJson(res, 200, { source: source.origin, runId, forks: listForksFrom(source, runId) });
+    return true;
+  }
+  if (p === "/api/fork" && req.method === "POST") {
+    return handleForkPost(ctx, req, res);
+  }
   return false;
+}
+
+async function handleForkPost(
+  ctx: Route,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<boolean> {
+  let raw: unknown;
+  try {
+    raw = await readJsonBody(req);
+  } catch (e) {
+    return badReq(res, e instanceof Error ? e.message : String(e));
+  }
+  try {
+    const body = parseForkPostBody(raw);
+    const out = await executeForkPost(body, { live: ctx.live });
+    sendJson(res, 200, out);
+  } catch (e) {
+    sendJson(res, forkApiErrorStatus(e), {
+      error: e instanceof Error ? e.message : String(e),
+      live: ctx.live,
+      forkSubmitEnabled: ctx.live,
+    });
+  }
+  return true;
 }
 
 async function handleHitlInput(

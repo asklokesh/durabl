@@ -11,12 +11,25 @@
 import type { JournalSource } from "./journal-source.js";
 import type { RunMeta } from "./step-model.js";
 import type {
+  EffectView,
   ForkTreeNode,
   LineageNode,
+  RunInspection,
   StepDiff,
   StepDiffStatus,
   TrajectoryDiff,
 } from "./inspect.js";
+import type { EffectRow } from "./effect-sink.js";
+
+function viewEffect(r: EffectRow): EffectView {
+  return {
+    id: r.id,
+    stepName: r.step_name,
+    idemKey: r.idem_key,
+    firedAt: r.fired_at,
+    payload: JSON.parse(r.payload) as unknown,
+  };
+}
 
 /** Lineage chain root→…→run over a JournalSource. Cycle-guarded. */
 export function lineageFrom(source: JournalSource, runId: string): LineageNode[] {
@@ -41,6 +54,22 @@ export function lineageFrom(source: JournalSource, runId: string): LineageNode[]
 /** Direct child forks of a run over a JournalSource. */
 export function listForksFrom(source: JournalSource, runId: string): RunMeta[] {
   return source.childRuns(runId);
+}
+
+export function inspectRunFrom(source: JournalSource, runId: string): RunInspection {
+  const meta = source.runMeta(runId);
+  const steps = source.trajectory(runId);
+  const effects = source.effectsFor(runId).map(viewEffect);
+  const seededSeqs = steps.filter((s) => s.seededFrom !== null).map((s) => s.seq);
+  return {
+    runId,
+    meta,
+    steps,
+    effects,
+    seededSeqs,
+    divergedAtSeq: meta?.forkedAtSeq ?? null,
+    forks: source.childRuns(runId),
+  };
 }
 
 /** Whole descendant fork tree rooted at `rootId` over a JournalSource. */
