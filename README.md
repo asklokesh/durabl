@@ -169,6 +169,15 @@ web/                  # replay UI static assets
 
 No credentials are read or logged; paths and ports only.
 
+## Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/FAQ.md`](docs/FAQ.md) | Common questions (journal, replay, HITL, gates) |
+| [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Harness lock, port conflicts, SIGKILL teardown, offline HITL 503 |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Worktrees, serial gates, harness locking |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | First-run walkthrough |
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
