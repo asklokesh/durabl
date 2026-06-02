@@ -151,8 +151,8 @@ const HITL_SHOTS = [
 ];
 
 async function captureDefault() {
-  const m3Bundle = join(root, "docs", "m3-evidence", "portable-bundle.jsonl");
-  const hitlBundle = join(root, "docs", "hitl-ui-evidence", "hitl-ui-offline.jsonl");
+  const m3Bundle = join(root, "test", "fixtures", "m3-portable-bundle.jsonl");
+  const hitlBundle = join(root, "test", "fixtures", "hitl-ui-offline-paused.jsonl");
   const m3Dir = join(root, "docs", "m3-evidence");
   const hitlDir = join(root, "docs", "hitl-ui-evidence");
 
@@ -181,7 +181,7 @@ async function captureDefault() {
 }
 
 async function captureSingle() {
-  const bundle = process.argv[2] ?? join(root, "docs", "m3-evidence", "portable-bundle.jsonl");
+  const bundle = process.argv[2] ?? join(root, "test", "fixtures", "m3-portable-bundle.jsonl");
   const outDir = process.argv[3] ?? join(root, "docs", "m3-evidence");
   const port = Number(process.argv[4] ?? process.env.DURABL_UI_PORT ?? 7890);
   const isHitl = bundle.includes("hitl-ui-offline");

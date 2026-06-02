@@ -65,9 +65,11 @@ import {
 } from "../replay.js";
 import { forkTreeFrom, diffTrajectoriesFrom } from "../inspect-source.js";
 import { startServerHandle } from "../server.js";
+import { FIXTURE_M3_PORTABLE } from "./fixture-paths.js";
 
 const INGRESS = config.restateIngress;
 const EVID_DIR = join(process.cwd(), "docs", "m3-evidence");
+const RUNTIME_BUNDLE = join(EVID_DIR, "portable-bundle.jsonl");
 
 interface GateResult {
   name: string;
@@ -162,9 +164,11 @@ async function main(): Promise<void> {
 
     // ── Export the run + whole fork tree to a portable bundle ───────────────
     bundle = exportBundleJsonl(rootId);
-    const bundlePath = join(EVID_DIR, "portable-bundle.jsonl");
-    writeFileSync(bundlePath, bundle, "utf8");
-    console.log(`# exported portable bundle (${bundle.split("\n").length} lines) → ${bundlePath}\n`);
+    writeFileSync(RUNTIME_BUNDLE, bundle, "utf8");
+    console.log(
+      `# exported portable bundle (${bundle.split("\n").length} lines) → ${RUNTIME_BUNDLE} ` +
+        `(committed fixture: ${FIXTURE_M3_PORTABLE})\n`,
+    );
 
     // Snapshot the live reconstructions BEFORE killing the substrate, so G2 can
     // compare offline-reconstruction against live-reconstruction.
@@ -287,7 +291,7 @@ async function main(): Promise<void> {
     // every read endpoint the UI calls answers correctly from the imported
     // export with Restate dead. That IS the "UI runs offline" proof; the PNGs
     // are committed evidence captured via the standalone capturer.
-    await uiApiGate(bundlePath);
+    await uiApiGate(RUNTIME_BUNDLE);
   } finally {
     killProc(server);
   }
