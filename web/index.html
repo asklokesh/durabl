@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="/app.css" />
     <script>
       (function () {
-
-        var k = "durabl.theme";
-        var t = localStorage.getItem(k);
-        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        try {
+          var t = localStorage.getItem("durabl.theme");
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        } catch (_) {}
       })();
     </script>
   </head>
@@ -27,48 +27,69 @@
           </div>
         </div>
         <div class="topbar-actions">
-
+          <input
+            type="file"
+            id="importFile"
+            accept=".jsonl,.ndjson,application/x-ndjson,text/plain"
+            hidden
+          />
+          <button type="button" id="btnImport" class="btn-secondary" title="Replace journal with a JSONL export file">
+            Upload JSONL
+          </button>
+          <button type="button" id="btnExport" class="btn-secondary" disabled title="Select a run to export">
+            Download export
+          </button>
           <button
             type="button"
-            id="helpOpenBtn"
-            class="btn-ghost help-open-btn"
-            aria-haspopup="dialog"
-            aria-controls="helpDrawer"
-            title="Help (?)"
+            id="themeToggle"
+            class="theme-toggle btn-ghost"
+            aria-label="Switch to dark mode"
+            title="Toggle light / dark theme"
           >
-            Help
+            <span class="theme-toggle-icon" aria-hidden="true">☾</span>
           </button>
-          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
-            <span class="dot"></span><span id="sourceLabel">loading…</span>
+          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from" aria-label="Journal source">
+            <span class="dot" aria-hidden="true"></span><span id="sourceLabel">loading…</span>
           </div>
         </div>
       </header>
 
-
-      <div class="onboarding-banner" id="onboardingBanner" hidden role="region" aria-label="Getting started">
-        <p class="onboarding-banner-text">
-          <strong>First visit?</strong>
-          Replay agent steps, fork alternate trajectories, and resume runs paused for human input (HITL).
-        </p>
-        <div class="onboarding-banner-actions">
-          <button type="button" class="btn-primary" id="onboardingStartTour">3-step tour</button>
-          <button type="button" class="btn-ghost" id="onboardingDismiss">Dismiss</button>
-        </div>
-      </div>
+      <div id="offlineBanner" class="offline-banner" hidden role="status" aria-live="polite"></div>
 
       <div class="layout">
-
         <aside class="sidebar" aria-label="Runs navigation">
-          <div class="panel hitl-panel" id="hitlPanel" hidden role="region" aria-labelledby="hitlPanelTitle">
+          <div class="panel settings-panel" id="settingsPanel">
+            <div class="panel-title">Settings</div>
+            <dl class="settings-list">
+              <div class="settings-row">
+                <dt>Export path</dt>
+                <dd id="settingsExportPath" class="settings-mono">—</dd>
+              </div>
+              <div class="settings-row">
+                <dt>Live URL</dt>
+                <dd><a id="settingsLiveUrl" class="settings-link" href="#" target="_blank" rel="noopener">—</a></dd>
+              </div>
+              <div class="settings-row settings-theme" id="dark-mode">
+                <dt>Theme</dt>
+                <dd class="settings-theme-controls">
+                  <select id="themeSelect" class="theme-select" aria-label="Color theme">
+                    <option value="system">System</option>
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                  </select>
+                  <a href="#dark-mode" class="settings-theme-link">Dark mode</a>
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div class="panel hitl-panel" id="hitlPanel" role="region" aria-labelledby="hitlPanelTitle">
             <div class="panel-title" id="hitlPanelTitle">Awaiting human input</div>
             <div id="hitlPausedList" class="hitl-paused-list" role="list"></div>
           </div>
-
-          <div class="panel">
+          <div class="panel fork-panel">
             <div class="panel-title">Runs &amp; fork tree</div>
-            <label class="visually-hidden" for="runSearch">Filter runs</label>
-            <input id="runSearch" class="run-search" type="search" placeholder="Filter runs… (/)" autocomplete="off" spellcheck="false" />
-            <div id="tree" class="tree"></div>
+            <nav id="lineagePath" class="lineage-path" hidden aria-label="Lineage to selected run"></nav>
+            <div id="tree" class="tree" role="tree" aria-label="Fork tree"></div>
           </div>
         </aside>
 
@@ -77,12 +98,8 @@
 
           <div class="hitl-banner" id="hitlBanner" hidden role="region" aria-labelledby="hitlBannerTitle">
             <div class="hitl-banner-head">
-
-              <span class="hitl-pill">Awaiting human input</span>
-              <div class="hitl-banner-id-row">
-                <span class="hitl-banner-sub" id="hitlBannerSub"></span>
-                <button type="button" class="btn-copy-runid" id="hitlCopyRunIdBtn" hidden>Copy ID</button>
-              </div>
+              <span class="hitl-pill" id="hitlBannerTitle">Awaiting human input</span>
+              <span class="hitl-banner-sub" id="hitlBannerSub"></span>
             </div>
             <form id="hitlForm" class="hitl-form" aria-describedby="hitlOfflineNote">
               <label class="hitl-label" for="hitlDecision">Decision</label>
@@ -136,18 +153,6 @@
         </section>
       </div>
     </div>
-
-
-    <div id="kbdHelp" class="kbd-help" hidden role="dialog" aria-modal="true" aria-labelledby="kbdHelpTitle">
-      <div class="kbd-help-card"><div class="kbd-help-head"><h2 id="kbdHelpTitle">Keyboard shortcuts</h2>
-          <button type="button" class="btn-ghost kbd-help-close" id="kbdHelpClose" aria-label="Close">✕</button></div>
-        <dl class="kbd-help-list">
-          <div><dt><kbd>?</kbd></dt><dd>Show or hide this help</dd></div>
-          <div><dt><kbd>/</kbd></dt><dd>Focus run search</dd></div>
-          <div><dt><kbd>j</kbd></dt><dd>Next step</dd></div>
-          <div><dt><kbd>k</kbd></dt><dd>Previous step</dd></div>
-          <div><dt><kbd>Esc</kbd></dt><dd>Close help</dd></div>
-        </dl></div></div>
     <script src="/app.js"></script>
   </body>
 </html>

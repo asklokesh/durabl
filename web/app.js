@@ -1,8 +1,6 @@
 // durabl replay UI — vanilla JS, zero deps. Talks to the read-only replay APIs.
 "use strict";
 
-const THEME_STORAGE_KEY = "durabl.theme";
-
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, cls, txt) => {
   const e = document.createElement(tag);
@@ -22,9 +20,12 @@ const state = {
   hitlSubmitEnabled: false,
   hitlState: "none",
   pausedRuns: [],
-
+  origin: "",
+  hitlSubmitDisabledReason: "",
   /** Trajectory diff panel: "side" | "inline" */
   diffViewMode: localStorage.getItem("durabl.diffViewMode") === "inline" ? "inline" : "side",
+  exportPath: null,
+  uiUrl: null,
 };
 
 const THEME_STORAGE_KEY = "durabl.theme";
@@ -33,8 +34,7 @@ async function api(path, opts) {
   const res = await fetch(path, opts);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const hint = body.hint ? ` (${body.hint})` : "";
-    throw new Error((body.error || `HTTP ${res.status}`) + hint);
+    throw new Error(body.error || `HTTP ${res.status}`);
   }
   return body;
 }
@@ -52,113 +52,139 @@ function fmtOut(v) {
   try { return JSON.stringify(v, null, 2); } catch { return String(v); }
 }
 
-
-function getStoredTheme() {
-  const t = localStorage.getItem(THEME_STORAGE_KEY);
-  return t === "light" || t === "dark" ? t : null;
-}
-
-function getEffectiveTheme() {
-  const stored = getStoredTheme();
-  if (stored) return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function applyTheme(theme) {
-  if (theme === "light" || theme === "dark") {
-    document.documentElement.setAttribute("data-theme", theme);
+// ── Theme & settings ───────────────────────────────────────
+function applyTheme(mode) {
+  const root = document.documentElement;
+  if (mode === "light" || mode === "dark") {
+    root.dataset.theme = mode;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, mode);
+    } catch (_) {}
   } else {
-    document.documentElement.removeAttribute("data-theme");
+    delete root.dataset.theme;
+    try {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    } catch (_) {}
   }
 }
 
-function updateThemeToggle() {
-  const btn = $("#themeToggle");
-  if (!btn) return;
-  const dark = getEffectiveTheme() === "dark";
-  btn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
-  btn.title = dark ? "Switch to light mode" : "Switch to dark mode";
-  const icon = btn.querySelector(".theme-toggle-icon");
-  if (icon) icon.textContent = dark ? "☀" : "☾";
-}
-
-function initTheme() {
-  applyTheme(getStoredTheme());
-  updateThemeToggle();
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (!getStoredTheme()) updateThemeToggle();
-  });
-}
-
-function toggleTheme() {
-  const next = getEffectiveTheme() === "dark" ? "light" : "dark";
-  localStorage.setItem(THEME_STORAGE_KEY, next);
-  applyTheme(next);
-  updateThemeToggle();
-}
-
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-const TOAST_MS = { ok: 4200, err: 6200, info: 3800 };
-
-function showToast(message, kind) {
-  const host = $("#toastHost");
-  if (!host || !message) return;
-  const k = kind === "err" || kind === "ok" ? kind : "info";
-  const toast = el("div", "toast toast-" + k);
-  toast.setAttribute("role", k === "err" ? "alert" : "status");
-  toast.textContent = message;
-  if (prefersReducedMotion()) toast.classList.add("toast--static");
-  host.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add("toast-visible"));
-
-  const remove = () => {
-    if (!toast.isConnected) return;
-    if (prefersReducedMotion()) {
-      toast.remove();
-      return;
-    }
-    toast.classList.add("toast-leaving");
-    toast.addEventListener(
-      "animationend",
-      () => toast.remove(),
-      { once: true },
-    );
-    setTimeout(() => toast.remove(), 320);
-  };
-  window.setTimeout(remove, TOAST_MS[k] ?? TOAST_MS.info);
-}
-
-async function copyRunId(runId, btn) {
-  if (!runId) return;
+function initThemeControls() {
+  const select = $("#themeSelect");
+  if (!select) return;
+  let stored = "system";
   try {
-    await navigator.clipboard.writeText(runId);
-    showToast("Run ID copied to clipboard", "ok");
-    if (btn) {
-      const label = btn.dataset.label || btn.textContent;
-      btn.dataset.label = label;
-      btn.textContent = "Copied";
-      btn.classList.add("copied");
-      window.setTimeout(() => {
-        btn.textContent = label;
-        btn.classList.remove("copied");
-      }, 1600);
-    }
-  } catch {
-    showToast("Could not copy run ID", "err");
+    const t = localStorage.getItem(THEME_STORAGE_KEY);
+    if (t === "light" || t === "dark") stored = t;
+  } catch (_) {}
+  select.value = stored;
+  applyTheme(stored === "system" ? "system" : stored);
+  select.addEventListener("change", () => {
+    applyTheme(select.value === "system" ? "system" : select.value);
+  });
+  const btn = $("#themeToggle");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const root = document.documentElement;
+      const cur =
+        root.dataset.theme ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      const next = cur === "dark" ? "light" : "dark";
+      select.value = next;
+      applyTheme(next);
+      btn.setAttribute("aria-label", next === "dark" ? "Switch to light mode" : "Switch to dark mode");
+      const icon = btn.querySelector(".theme-toggle-icon");
+      if (icon) icon.textContent = next === "dark" ? "☀" : "☾";
+    });
   }
 }
 
-function makeCopyRunIdButton(runId) {
-  const btn = el("button", "btn-copy-runid");
-  btn.type = "button";
-  btn.title = "Copy run ID";
-  btn.setAttribute("aria-label", "Copy run ID to clipboard");
-  btn.textContent = "Copy ID";
-  btn.onclick = () => void copyRunId(runId, btn);
-  return btn;
+function renderEmptyState(container, icon, title, hint) {
+  const wrap = el("div", "empty-state");
+  wrap.appendChild(el("div", "empty-icon", icon));
+  wrap.appendChild(el("div", "empty-title", title));
+  wrap.appendChild(el("div", "empty-hint", hint));
+  container.appendChild(wrap);
+}
+
+function renderSettings(h) {
+  const exportEl = $("#settingsExportPath");
+  const urlEl = $("#settingsLiveUrl");
+  if (!exportEl || !urlEl) return;
+  const path = h.exportPath ?? state.exportPath;
+  if (path) {
+    exportEl.textContent = path;
+    exportEl.title = path;
+  } else {
+    exportEl.textContent = state.live ? "Live journal (no export file)" : "—";
+    exportEl.title = "";
+  }
+  const url = h.uiUrl ?? state.uiUrl ?? window.location.href;
+  state.uiUrl = url;
+  urlEl.textContent = url;
+  urlEl.href = url;
+}
+
+function isOfflineHealth(h) {
+  const origin = h?.origin ?? state.origin ?? "";
+  return !h?.live || String(origin).startsWith("imported");
+}
+
+function updateOfflineBanner(h) {
+  const banner = $("#offlineBanner");
+  if (!banner) return;
+  const offline = isOfflineHealth(h);
+  banner.hidden = !offline;
+  if (!offline) return;
+  banner.textContent =
+    h?.hitlSubmitDisabledReason ||
+    state.hitlSubmitDisabledReason ||
+    "Viewing imported JSONL — replay only. No live substrate; HITL submit is disabled.";
+}
+
+function updateExportButton() {
+  const btn = $("#btnExport");
+  if (!btn) return;
+  btn.disabled = !state.selected;
+  btn.title = state.selected
+    ? "Download JSONL export (fork tree bundle)"
+    : "Select a run to export";
+}
+
+async function downloadExport() {
+  if (!state.selected) return;
+  const url = `/api/export?runId=${encodeURIComponent(state.selected)}&bundle=true`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const disp = res.headers.get("content-disposition") || "";
+  const m = /filename="([^"]+)"/.exec(disp);
+  const filename = m?.[1] || `${state.selected}-bundle.jsonl`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function uploadJsonl(file) {
+  const text = await file.text();
+  const res = await fetch("/api/import", {
+    method: "POST",
+    headers: { "content-type": "application/x-ndjson" },
+    body: text,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const hint = body.hint ? ` (${body.hint})` : "";
+    throw new Error((body.error || `HTTP ${res.status}`) + hint);
+  }
+  state.selected = null;
+  state.replay = null;
+  await loadSource();
+  await loadRuns();
 }
 
 // ── Source banner ──────────────────────────────────────────
@@ -171,7 +197,9 @@ async function loadSource() {
   $("#sourcePill").classList.toggle("offline", offline);
   state.live = Boolean(h.live);
   state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
-
+  state.exportPath = h.exportPath ?? null;
+  state.uiUrl = h.uiUrl ?? null;
+  renderSettings(h);
   updateOfflineBanner(h);
   updateExportButton();
 }
@@ -181,15 +209,7 @@ async function submitHitlInput(ev) {
   const decision = $("#hitlDecision").value.trim();
   const msg = $("#hitlFormMsg");
   const btn = $("#hitlSubmitBtn");
-  if (!state.selected) {
-    showToast("Select a paused run first", "err");
-    return;
-  }
-  if (!decision) {
-    showToast("Enter a decision before submitting", "err");
-    $("#hitlDecision").focus();
-    return;
-  }
+  if (!state.selected || !decision) return;
   btn.disabled = true;
   msg.hidden = false;
   msg.className = "hitl-form-msg";
@@ -197,17 +217,13 @@ async function submitHitlInput(ev) {
   try {
     const res = await apiPost("/api/hitl/input", { runId: state.selected, decision });
     if (res.accepted === false && res.state !== "resumed") {
-      const text = "Input not accepted (duplicate or already resumed).";
       msg.classList.add("err");
-      msg.textContent = text;
-      showToast(text, "err");
+      msg.textContent = "Input not accepted (duplicate or already resumed).";
     } else {
-      const text = res.accepted
-        ? "HITL input accepted — run resuming"
-        : "Run already resumed (idempotent)";
       msg.classList.add("ok");
-      msg.textContent = text;
-      showToast(text, "ok");
+      msg.textContent = res.accepted
+        ? "Accepted — run resuming…"
+        : "Already resumed (idempotent no-op).";
       $("#hitlDecision").value = "";
       await sleep(800);
       await loadRuns();
@@ -216,7 +232,6 @@ async function submitHitlInput(ev) {
   } catch (e) {
     msg.classList.add("err");
     msg.textContent = e.message;
-    showToast(e.message || "Submit failed", "err");
   } finally {
     btn.disabled = !state.hitlSubmitEnabled;
   }
@@ -270,12 +285,7 @@ function renderHitlPausedList() {
   for (const p of state.pausedRuns) {
     const row = el("button", "hitl-paused-item");
     row.type = "button";
-    row.setAttribute("role", "listitem");
-    row.setAttribute("aria-label", `Paused run ${p.runId}`);
-    if (p.runId === state.selected) {
-      row.classList.add("active");
-      row.setAttribute("aria-current", "true");
-    }
+    if (p.runId === state.selected) row.classList.add("active");
     row.appendChild(el("div", "run-id", p.runId));
     row.appendChild(el("div", "hint", "paused — click to review & submit"));
     row.onclick = () => selectRun(p.runId);
@@ -314,143 +324,49 @@ function updateHitlBanner() {
     return;
   }
   banner.hidden = false;
-  banner.classList.remove("hitl-banner--enter");
-  void banner.offsetWidth;
-  banner.classList.add("hitl-banner--enter");
   $("#hitlBannerSub").textContent = state.selected || "";
-  const copyBtn = $("#hitlCopyRunIdBtn");
-  if (copyBtn) {
-    copyBtn.hidden = !state.selected;
-    copyBtn.onclick = () => void copyRunId(state.selected, copyBtn);
-  }
   const canSubmit = state.hitlSubmitEnabled && state.live;
   form.hidden = !canSubmit;
   offlineNote.hidden = canSubmit;
-  if (!canSubmit && state.hitlSubmitDisabledReason) {
-    offlineNote.textContent = state.hitlSubmitDisabledReason;
-  }
   submitBtn.disabled = !canSubmit;
-  submitBtn.setAttribute("aria-disabled", String(!canSubmit));
-  const decisionEl = $("#hitlDecision");
-  decisionEl.disabled = !canSubmit;
-  decisionEl.setAttribute("aria-disabled", String(!canSubmit));
   if (!canSubmit) {
-    decisionEl.value = "";
+    $("#hitlDecision").value = "";
   }
-}
-
-function forkBadgeLabel(node) {
-  return node.forkedAtSeq === null ? node.trajectory : `@${node.forkedAtSeq} ${node.trajectory}`;
-}
-
-function forkTwigSvg() {
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("class", "fork-twig");
-  svg.setAttribute("width", "14");
-  svg.setAttribute("height", "14");
-  svg.setAttribute("viewBox", "0 0 14 14");
-  svg.setAttribute("aria-hidden", "true");
-  const path = document.createElementNS(ns, "path");
-  path.setAttribute("d", "M2 7h6M8 4v6M8 7h4");
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "currentColor");
-  path.setAttribute("stroke-width", "1.4");
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
-  svg.appendChild(path);
-  return svg;
 }
 
 async function renderTree() {
-  const host = $("#tree");
-  host.innerHTML = "";
-  state.forkTrees.clear();
+  const tree = $("#tree");
+  tree.innerHTML = "";
   if (!state.roots.length) {
-
-    host.appendChild(el("div", "empty", "No runs in this journal yet."));
+    renderEmptyState(
+      tree,
+      "◇",
+      "No runs in this journal",
+      state.live
+        ? "Start an agent run — it will show up in the fork tree."
+        : "This export has no recorded runs yet.",
+    );
     return;
   }
-  const rootList = el("ul", "tree-root");
-  rootList.setAttribute("role", "group");
-  tree.appendChild(rootList);
   for (const root of state.roots) {
     const data = await api(`/api/tree?runId=${encodeURIComponent(root)}`);
-
-    state.forkTrees.set(root, data.tree);
-    const block = el("div", "fork-tree-block");
-    if (state.roots.length > 1) {
-      block.appendChild(el("div", "fork-tree-root-label", root));
-    }
-    const ul = el("ul", "fork-lineage-tree");
-    ul.setAttribute("role", "group");
-    renderTreeNode(ul, data.tree, 0);
-    block.appendChild(ul);
-    host.appendChild(block);
+    renderTreeNode(tree, data.tree, 0);
   }
-
-  applyTreeFilter();
 }
 
 function renderTreeNode(container, node, depth) {
   const row = el("div", "tree-node");
-  row.dataset.runId = node.runId;
   row.classList.add(node.forkedAtSeq === null ? "root" : "fork");
-  row.dataset.runId = node.runId;
-  if (depth > 0) row.appendChild(forkTwigSvg());
+  if (state.selected === node.runId) row.classList.add("active");
+  if (depth > 0) {
+    row.appendChild(el("span", "twig", "  ".repeat(depth - 1) + "└─"));
+  }
   row.appendChild(el("span", "tname", node.runId));
-  row.appendChild(el("span", "traj-badge", forkBadgeLabel(node)));
+  const badge = el("span", "traj-badge", node.forkedAtSeq === null ? node.trajectory : `@${node.forkedAtSeq} ${node.trajectory}`);
+  row.appendChild(badge);
   row.onclick = () => selectRun(node.runId);
-  li.appendChild(row);
-  if (node.children.length) {
-    const childUl = el("ul", "fork-tree-children");
-    childUl.setAttribute("role", "group");
-    for (const c of node.children) renderTreeNode(childUl, c, depth + 1);
-    li.appendChild(childUl);
-  }
-  ul.appendChild(li);
-}
-
-function syncTreeSelection() {
-  document.querySelectorAll(".tree-node").forEach((row) => {
-    const id = row.dataset.runId;
-    row.classList.toggle("active", id === state.selected);
-    row.classList.toggle("on-path", state.lineagePath.has(id));
-  });
-}
-
-function renderLineageBar(chain) {
-  const bar = $("#lineagePath");
-  bar.innerHTML = "";
-  if (!chain || chain.length <= 1) {
-    bar.hidden = true;
-    return;
-  }
-  bar.hidden = false;
-  chain.forEach((node, i) => {
-    if (i > 0) bar.appendChild(el("span", "lineage-sep", "→"));
-    const btn = el("button", "lineage-crumb");
-    btn.type = "button";
-    btn.textContent = node.runId;
-    btn.title = forkBadgeLabel(node);
-    if (node.runId === state.selected) btn.classList.add("active");
-    btn.onclick = () => selectRun(node.runId);
-    bar.appendChild(btn);
-  });
-}
-
-async function refreshLineageForRun(runId) {
-  if (!runId) {
-    state.lineagePath = new Set();
-    renderLineageBar([]);
-    syncTreeSelection();
-    return;
-  }
-  const data = await api(`/api/tree?runId=${encodeURIComponent(runId)}`);
-  const chain = data.lineage || [];
-  state.lineagePath = new Set(chain.map((n) => n.runId));
-  renderLineageBar(chain);
-  syncTreeSelection();
+  container.appendChild(row);
+  for (const c of node.children) renderTreeNode(container, c, depth + 1);
 }
 
 // ── Select + render a run ──────────────────────────────────
@@ -458,8 +374,9 @@ async function selectRun(runId) {
   state.selected = runId;
   state.ttN = null;
   state.selectedStepSeq = null;
-
-  await refreshLineageForRun(runId);
+  document.querySelectorAll(".tree-node").forEach((n) => {
+    n.classList.toggle("active", n.querySelector(".tname")?.textContent === runId);
+  });
   const replay = await api(`/api/replay?runId=${encodeURIComponent(runId)}`);
   state.replay = replay;
   renderRunHeader(replay);
@@ -474,10 +391,7 @@ async function selectRun(runId) {
 function renderRunHeader(r) {
   const head = $("#runHeader");
   head.innerHTML = "";
-  const titleRow = el("div", "run-title-row");
-  titleRow.appendChild(el("div", "run-title", r.runId));
-  titleRow.appendChild(makeCopyRunIdButton(r.runId));
-  head.appendChild(titleRow);
+  head.appendChild(el("div", "run-title", r.runId));
   const row = el("div", "run-meta-row");
   const chip = (label, val, cls) => {
     const c = el("span", "chip" + (cls ? " " + cls : ""));
@@ -503,16 +417,6 @@ function renderRunHeader(r) {
   head.appendChild(row);
 }
 
-function syncTimeTravelAria() {
-  const range = $("#ttRange");
-  const max = Number(range.max) || 1;
-  const n = Number(range.value) || 1;
-  range.setAttribute("aria-valuemin", "1");
-  range.setAttribute("aria-valuemax", String(max));
-  range.setAttribute("aria-valuenow", String(n));
-  range.setAttribute("aria-valuetext", `Step ${n} of ${max}`);
-}
-
 // ── Time-travel ────────────────────────────────────────────
 function setupTimeTravel(r) {
   const bar = $("#ttBar");
@@ -527,13 +431,11 @@ function setupTimeTravel(r) {
   $("#ttNow").textContent = max;
   $("#ttMax").textContent = max;
   range.style.setProperty("--pct", "100%");
-  syncTimeTravelAria();
   range.oninput = () => {
     const n = Number(range.value);
     state.ttN = n === max ? null : n;
     $("#ttNow").textContent = n;
     range.style.setProperty("--pct", (n / max) * 100 + "%");
-    syncTimeTravelAria();
     renderTimeline();
     selectStep(n);
   };
@@ -542,7 +444,6 @@ function setupTimeTravel(r) {
     state.ttN = null;
     $("#ttNow").textContent = max;
     range.style.setProperty("--pct", "100%");
-    syncTimeTravelAria();
     renderTimeline();
     selectStep(max);
   };
@@ -607,21 +508,7 @@ function selectStep(seq) {
     n.classList.toggle("active", sseq === seq);
   });
   renderStepDetail(seq);
-  scrollActiveStepIntoView();
 }
-
-function scrollActiveStepIntoView(){document.querySelector(".step.active")?.scrollIntoView({block:"nearest",behavior:"smooth"})}
-function visibleStepSeqs(){const r=state.replay;if(!r?.steps.length)return[];const cutoff=state.ttN;return r.steps.filter(s=>cutoff===null||s.seq<=cutoff).map(s=>s.seq)}
-function navigateStep(delta){const seqs=visibleStepSeqs();if(!seqs.length)return;let idx=state.selectedStepSeq!=null?seqs.indexOf(state.selectedStepSeq):-1;if(idx<0)idx=seqs.length-1;const next=Math.max(0,Math.min(seqs.length-1,idx+delta));if(next===idx)return;selectStep(seqs[next])}
-function applyTreeFilter(){const q=($("#runSearch")?.value||"").trim().toLowerCase();document.querySelectorAll(".tree-node").forEach(row=>{const id=(row.dataset.runId||"").toLowerCase();row.hidden=Boolean(q)&&!id.includes(q)})}
-function focusRunSearch(){const search=$("#runSearch");if(!search)return;search.focus();search.select()}
-function isTypingTarget(target){if(!target||!(target instanceof Element))return false;const tag=target.tagName;if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT")return true;return target.isContentEditable}
-function kbdHelpOpen(){const dlg=$("#kbdHelp");return Boolean(dlg&&!dlg.hidden)}
-function openKbdHelp(){const dlg=$("#kbdHelp");if(dlg)dlg.hidden=false}
-function closeKbdHelp(){const dlg=$("#kbdHelp");if(dlg)dlg.hidden=true}
-function toggleKbdHelp(){if(kbdHelpOpen())closeKbdHelp();else openKbdHelp()}
-function setupKeyboardShortcuts(){$("#runSearch")?.addEventListener("input",applyTreeFilter);$("#kbdHelpClose")?.addEventListener("click",closeKbdHelp);$("#kbdHelp")?.addEventListener("click",ev=>{if(ev.target===$("#kbdHelp"))closeKbdHelp()});document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){if(kbdHelpOpen()){ev.preventDefault();closeKbdHelp()}return}if(ev.key==="?"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){if(!isTypingTarget(ev.target)){ev.preventDefault();toggleKbdHelp()}return}if(isTypingTarget(ev.target))return;if(ev.key==="/"){ev.preventDefault();focusRunSearch();return}if(ev.key==="j"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){ev.preventDefault();navigateStep(1);return}if(ev.key==="k"&&!ev.metaKey&&!ev.ctrlKey&&!ev.altKey){ev.preventDefault();navigateStep(-1)}})}
-
 
 function renderStepDetail(seq) {
   const panel = $("#tab-step");
@@ -724,9 +611,7 @@ function populateDiffPickers() {
   panel.innerHTML = "";
   const controls = el("div", "diff-controls");
   const selA = el("select", "pick");
-  selA.id = "diffRunA";
   const selB = el("select", "pick");
-  selB.id = "diffRunB";
   for (const run of state.runs) {
     const oa = el("option", null, run.runId); oa.value = run.runId;
     const ob = el("option", null, run.runId); ob.value = run.runId;
@@ -736,13 +621,9 @@ function populateDiffPickers() {
   // default B = first fork of selected, else next run
   const forkTarget = state.replay?.divergencePoints?.[0]?.forkRunId;
   selB.value = forkTarget || (state.runs.find((r) => r.runId !== state.selected)?.runId ?? state.selected);
-  const labA = el("label", "kv-label", "A");
-  labA.htmlFor = "diffRunA";
-  controls.appendChild(labA);
+  controls.appendChild(el("span", "kv-label", "A"));
   controls.appendChild(selA);
-  const labB = el("label", "kv-label", "B");
-  labB.htmlFor = "diffRunB";
-  controls.appendChild(labB);
+  controls.appendChild(el("span", "kv-label", "B"));
   controls.appendChild(selB);
 
   const viewToggle = el("div", "diff-view-toggle");
@@ -807,47 +688,21 @@ function populateDiffPickers() {
 }
 
 // ── Tabs ───────────────────────────────────────────────────
-function activateTab(tab) {
-  const tabs = [...document.querySelectorAll(".tab")];
-  const name = tab.dataset.tab;
-  tabs.forEach((t) => {
-    const on = t === tab;
-    t.classList.toggle("active", on);
-    t.setAttribute("aria-selected", on ? "true" : "false");
-    t.tabIndex = on ? 0 : -1;
-  });
-  document.querySelectorAll(".tab-panel").forEach((p) => {
-    const on = p.id === "tab-" + name;
-    p.classList.toggle("active", on);
-    p.hidden = !on;
-  });
-}
-
 document.querySelectorAll(".tab").forEach((tab) => {
-  tab.onclick = () => activateTab(tab);
-  tab.addEventListener("keydown", (ev) => {
-    const tabs = [...document.querySelectorAll(".tab")];
-    const i = tabs.indexOf(tab);
-    let next = i;
-    if (ev.key === "ArrowRight") next = (i + 1) % tabs.length;
-    else if (ev.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
-    else if (ev.key === "Home") next = 0;
-    else if (ev.key === "End") next = tabs.length - 1;
-    else return;
-    ev.preventDefault();
-    activateTab(tabs[next]);
-    tabs[next].focus();
-  });
+  tab.onclick = () => {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    tab.classList.add("active");
+    $("#tab-" + tab.dataset.tab).classList.add("active");
+  };
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
 
-setupKeyboardShortcuts();
-
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
-
+    initThemeControls();
     const btnImport = $("#btnImport");
     const importFile = $("#importFile");
     if (btnImport && importFile) {
@@ -874,7 +729,6 @@ setupKeyboardShortcuts();
     }
     await loadSource();
     await loadRuns();
-    initOnboarding();
     setInterval(() => {
       void loadHitlPaused().then(() => {
         if (state.selected) void refreshHitlForRun(state.selected);
