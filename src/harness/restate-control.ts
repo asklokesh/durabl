@@ -2,9 +2,10 @@
 // and the SDK service process. Used only by the gate harness, not by production.
 
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Socket } from "node:net";
 import { config } from "../config.js";
 import type { DeployTarget } from "../deploy-target.js";
@@ -16,6 +17,24 @@ const RESTATE_SERVER_BIN = resolve(BIN_DIR, "restate-server");
 const RESTATE_CLI_BIN = resolve(BIN_DIR, "restate");
 
 export const SERVICE_URL = `http://localhost:${config.servicePort}`;
+
+const HARNESS_LOCK_FILE =
+  process.env.DURABL_HARNESS_LOCK ?? join(tmpdir(), "durabl-harness.lock");
+
+/** Extra ports used by replay / HITL UI gates (must be free between runs). */
+const EXTRA_HARNESS_PORTS = [7879, 17878, 17879] as const;
+
+function portFromUrl(url: string, fallback: number): number {
+  const p = new URL(url).port;
+  return p ? Number(p) : fallback;
+}
+
+/** Host ports the sequential gate suite binds (single-flight via harness lock). */
+export const harnessPorts = {
+  ingress: portFromUrl(config.restateIngress, 8080),
+  admin: portFromUrl(config.restateAdmin, 9070),
+  service: config.servicePort,
+} as const;
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -47,8 +66,156 @@ export function startRestateServer(): ChildProcess {
   });
 }
 
-export function waitForRestate(timeoutMs = 60000): Promise<boolean> {
+export function waitForRestate(timeoutMs = 90000): Promise<boolean> {
   return waitForHttp(`${config.restateAdmin}/health`, timeoutMs);
+}
+
+/** True when admin health is down (server stopped or not yet listening). */
+export async function waitForRestateDown(timeoutMs = 20000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${config.restateAdmin}/health`);
+      if (res.status >= 500) return true;
+    } catch {
+      return true;
+    }
+    await sleep(250);
+  }
+  return false;
+}
+
+function isPidAlive(pid: number): boolean {
+  if (!pid || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Serialize gate processes so only one harness owns 8080/9070/9080 at a time. */
+export async function acquireHarnessLock(timeoutMs = 900_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      writeFileSync(HARNESS_LOCK_FILE, String(process.pid), { flag: "wx" });
+      return;
+    } catch (e: unknown) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") throw e;
+      try {
+        if (existsSync(HARNESS_LOCK_FILE)) {
+          const holder = Number(readFileSync(HARNESS_LOCK_FILE, "utf8").trim());
+          if (!holder || !isPidAlive(holder)) unlinkSync(HARNESS_LOCK_FILE);
+        }
+      } catch {
+        try {
+          unlinkSync(HARNESS_LOCK_FILE);
+        } catch {
+          /* contested */
+        }
+      }
+      await sleep(500);
+    }
+  }
+  throw new Error(`harness lock timeout (${HARNESS_LOCK_FILE})`);
+}
+
+export function releaseHarnessLock(): void {
+  try {
+    if (!existsSync(HARNESS_LOCK_FILE)) return;
+    const holder = Number(readFileSync(HARNESS_LOCK_FILE, "utf8").trim());
+    if (holder === process.pid) unlinkSync(HARNESS_LOCK_FILE);
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function waitForPortDown(port: number, timeoutMs = 30000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await tcpOpen(port, 500))) return true;
+    await sleep(200);
+  }
+  return false;
+}
+
+async function waitForHarnessPortsDown(timeoutMs = 30000): Promise<boolean> {
+  const ports = [
+    harnessPorts.ingress,
+    harnessPorts.admin,
+    harnessPorts.service,
+    ...EXTRA_HARNESS_PORTS,
+  ];
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const busy = await Promise.all(ports.map((p) => tcpOpen(p, 400)));
+    if (!busy.some(Boolean)) return true;
+    await sleep(250);
+  }
+  return false;
+}
+
+export interface HarnessTeardownOptions {
+  /** Remove the M4 docker restate container if set. */
+  dockerContainer?: string;
+}
+
+/**
+ * Kill stale harness children and wait until ingress/admin/service (+ UI) ports
+ * are free. Idempotent — safe at gate start and end.
+ */
+export async function harnessTeardown(opts: HarnessTeardownOptions = {}): Promise<void> {
+  killStaleServiceProcesses();
+  spawnSync("pkill", ["-9", "-f", "restate-server"]);
+  spawnSync("pkill", ["-9", "-f", "dist/harness"]);
+  if (opts.dockerContainer) {
+    spawnSync("docker", ["rm", "-f", opts.dockerContainer], { encoding: "utf8" });
+  }
+  const ports = [
+    harnessPorts.ingress,
+    harnessPorts.admin,
+    harnessPorts.service,
+    ...EXTRA_HARNESS_PORTS,
+  ];
+  for (const port of ports) {
+    spawnSync("sh", [
+      "-c",
+      `lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`,
+    ]);
+  }
+  await waitForHarnessPortsDown(45000);
+  await waitForRestateDown(5000);
+}
+
+/** Gate entry: exclusive lock + ports fully down before bind/register. */
+export async function enterHarnessGate(opts: HarnessTeardownOptions = {}): Promise<void> {
+  await acquireHarnessLock();
+  await harnessTeardown(opts);
+  await sleep(500);
+}
+
+/** Gate exit: reap children, free ports, release lock for the next gate. */
+export async function exitHarnessGate(opts: HarnessTeardownOptions = {}): Promise<void> {
+  await harnessTeardown(opts);
+  releaseHarnessLock();
+}
+
+/** Start restate-server after ports are free; wait until admin health is up. */
+export async function startRestateServerAndWait(
+  timeoutMs = 90000,
+): Promise<ChildProcess> {
+  if (!(await waitForPortDown(harnessPorts.admin, 15000))) {
+    throw new Error(`admin port ${harnessPorts.admin} still in use`);
+  }
+  const server = startRestateServer();
+  if (!(await waitForRestate(timeoutMs))) {
+    killProc(server);
+    throw new Error("restate-server failed to become healthy");
+  }
+  return server;
 }
 
 export interface ServiceHandle {
@@ -118,14 +285,15 @@ export function registerDeployment(): { ok: boolean; out: string } {
 
 /** registerDeployment with bounded retries — admin can lag after service SIGKILL storms. */
 export async function registerDeploymentWithRetry(
-  tries = 8,
+  tries = 12,
 ): Promise<{ ok: boolean; out: string }> {
   let last = { ok: false, out: "" };
   for (let i = 0; i < tries; i++) {
-    await waitForRestate(5000);
+    await waitForRestate(8000);
+    await waitForService(8000);
     last = registerDeployment();
     if (last.ok) return last;
-    await sleep(400);
+    await sleep(800 + i * 200);
   }
   return last;
 }
@@ -139,17 +307,35 @@ export function killStaleServiceProcesses(): void {
   ]);
 }
 
+/** @deprecated Prefer `await harnessTeardown()` — sync best-effort kill only. */
+export function freeHarnessPorts(): void {
+  killStaleServiceProcesses();
+  spawnSync("pkill", ["-9", "-f", "restate-server"]);
+  spawnSync("pkill", ["-9", "-f", "dist/harness"]);
+  for (const port of [
+    harnessPorts.ingress,
+    harnessPorts.admin,
+    harnessPorts.service,
+    ...EXTRA_HARNESS_PORTS,
+  ]) {
+    spawnSync("sh", [
+      "-c",
+      `lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`,
+    ]);
+  }
+}
+
 /** Start SDK service and register deployment (shared harness helper). */
 export async function startAndRegisterService(
   env: Record<string, string> = {},
 ): Promise<ServiceHandle> {
   killStaleServiceProcesses();
-  await waitForServiceDown(15000);
-  if (!(await waitForRestate(30000))) {
+  await waitForServiceDown(20000);
+  if (!(await waitForRestate(45000))) {
     throw new Error("restate admin not reachable before deployment register");
   }
   const svc = startService(env);
-  if (!(await waitForService(20000))) throw new Error("service did not come up");
+  if (!(await waitForService(30000))) throw new Error("service did not come up");
   const reg = await registerDeploymentWithRetry(12);
   if (!reg.ok) throw new Error("register failed: " + reg.out);
   return svc;

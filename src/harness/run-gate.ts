@@ -17,10 +17,11 @@ import { rmSync } from "node:fs";
 import { config } from "../config.js";
 import {
   sleep,
-  startRestateServer,
   startAndRegisterService,
   killStaleServiceProcesses,
-  waitForRestate,
+  enterHarnessGate,
+  exitHarnessGate,
+  startRestateServerAndWait,
   waitForServiceDown,
   killProc,
   type ServiceHandle,
@@ -104,9 +105,11 @@ async function crashGate(point: string): Promise<void> {
   const killDeadline = Date.now() + 15000;
   while (isProcAlive(svc.pid) && Date.now() < killDeadline) await sleep(150);
   const died = !isProcAlive(svc.pid);
+  if (!died) killProc(svc.proc);
+  await waitForServiceDown(15000);
+  await sleep(1500);
 
   // Phase 2: restart. CRASH_ONCE marker persists so it won't re-crash; recover.
-  killProc(svc.proc);
   svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
 
   const result = await waitForCompletion(runId, 90000);
@@ -240,21 +243,19 @@ async function replayGate(): Promise<void> {
 async function main(): Promise<void> {
   const only = process.argv[2]; // optional: crash | concurrency | fork | replay
 
-  // Defensive: kill stale engine/service so a fresh data dir is not yanked out
-  // from under a live server.
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  await sleep(1500);
+  await enterHarnessGate();
   rmSync(config.restateDataDir, { recursive: true, force: true });
   resetEffects();
   resetJournal();
   spawnSync("rm", ["-rf", process.env.DURABL_CRASH_MARKER_DIR ?? "/tmp/durabl-m1/markers"]);
 
   console.log("Starting restate-server (single self-hostable binary)...");
-  const server = startRestateServer();
-  if (!(await waitForRestate(60000))) {
-    console.error("restate-server failed to become healthy");
-    killProc(server);
+  let server: Awaited<ReturnType<typeof startRestateServerAndWait>>;
+  try {
+    server = await startRestateServerAndWait();
+  } catch (e) {
+    console.error(String(e));
+    await exitHarnessGate();
     process.exit(2);
   }
   console.log("restate-server healthy.");
@@ -268,10 +269,7 @@ async function main(): Promise<void> {
     if (!only || only === "replay") await replayGate();
   } finally {
     killProc(server);
-    // Reap any stale engine/service children so the process exits cleanly (no
-    // lingering pipe holding the parent open in CI).
-    spawnSync("pkill", ["-9", "-f", "restate-server"]);
-    spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+    await exitHarnessGate();
   }
 
   const passed = results.filter((r) => r.pass).length;

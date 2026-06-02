@@ -47,11 +47,13 @@ import { config } from "../config.js";
 import {
   dockerTargetRunnable,
   killProc,
-  registerDeployment,
   registerDeploymentAt,
+  startAndRegisterService,
   sleep,
   startDockerRestate,
-  startRestateServer,
+  enterHarnessGate,
+  exitHarnessGate,
+  startRestateServerAndWait,
   startService,
   startServiceForTarget,
   stopDockerRestate,
@@ -165,11 +167,7 @@ async function waitForCompletion(
 
 /** Start the local SDK service for a provider and register it (local target). */
 async function startLocalService(env: Record<string, string>): Promise<ServiceHandle> {
-  const svc = startService(env);
-  if (!(await waitForService(15000))) throw new Error("service did not come up");
-  const reg = registerDeployment();
-  if (!reg.ok) throw new Error("register failed: " + reg.out);
-  return svc;
+  return startAndRegisterService(env);
 }
 
 // ─── G1 — model-provider neutrality (config-only) ─────────────────────────────
@@ -393,23 +391,20 @@ async function g4Portability(runs: string[]): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  // Defensive cleanup (mirror M1/M2/M3 harness).
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  spawnSync("docker", ["rm", "-f", getDeployTarget("docker").dockerContainer!], {
-    encoding: "utf8",
-  });
-  await sleep(1500);
+  const dockerContainer = getDeployTarget("docker").dockerContainer!;
+  await enterHarnessGate({ dockerContainer });
   rmSync(config.restateDataDir, { recursive: true, force: true });
   resetEffects();
   resetJournal();
   spawnSync("rm", ["-rf", process.env.DURABL_CRASH_MARKER_DIR ?? "/tmp/durabl-m1/markers"]);
 
   console.log("M4 neutrality gate — starting local restate-server (target A)...");
-  const server = startRestateServer();
-  if (!(await waitForRestate(60000))) {
-    console.error("restate-server failed to become healthy");
-    killProc(server);
+  let server: Awaited<ReturnType<typeof startRestateServerAndWait>>;
+  try {
+    server = await startRestateServerAndWait();
+  } catch (e) {
+    console.error(String(e));
+    await exitHarnessGate({ dockerContainer });
     process.exit(2);
   }
   console.log("restate-server healthy.\n");
@@ -439,11 +434,7 @@ async function main(): Promise<void> {
     await g4Portability(portabilityRuns);
   } finally {
     killProc(server);
-    spawnSync("pkill", ["-9", "-f", "restate-server"]);
-    spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-    spawnSync("docker", ["rm", "-f", getDeployTarget("docker").dockerContainer!], {
-      encoding: "utf8",
-    });
+    await exitHarnessGate({ dockerContainer: dockerContainer });
   }
 
   const passed = results.filter((r) => r.pass).length;
