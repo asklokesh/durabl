@@ -17,8 +17,20 @@
             <div class="brand-sub">replay &amp; time-travel</div>
           </div>
         </div>
-        <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
-          <span class="dot"></span><span id="sourceLabel">loading…</span>
+        <div class="topbar-actions">
+          <button
+            type="button"
+            id="helpOpenBtn"
+            class="btn-ghost help-open-btn"
+            aria-haspopup="dialog"
+            aria-controls="helpDrawer"
+            title="Help (?)"
+          >
+            Help
+          </button>
+          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
+            <span class="dot"></span><span id="sourceLabel">loading…</span>
+          </div>
         </div>
       </header>
 
@@ -78,6 +90,34 @@
         </section>
       </div>
     </div>
+
+    <div class="help-drawer" id="helpDrawer" hidden>
+      <div class="help-backdrop" id="helpBackdrop"></div>
+      <aside
+        class="help-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="helpTitle"
+      >
+        <header class="help-header">
+          <h2 class="help-title" id="helpTitle">Help</h2>
+          <button type="button" class="btn-ghost help-close-btn" id="helpCloseBtn" aria-label="Close help">
+            ✕
+          </button>
+        </header>
+        <nav class="help-nav" aria-label="Help topics">
+          <button type="button" class="help-nav-btn active" data-help="quickstart">Quickstart</button>
+          <button type="button" class="help-nav-btn" data-help="faq">FAQ</button>
+          <button type="button" class="help-nav-btn" data-help="shortcuts">Shortcuts</button>
+        </nav>
+        <div class="help-body" id="helpBody"></div>
+        <footer class="help-footer">
+          <span class="help-footer-label">Full docs in repo:</span>
+          <a class="help-doc-link" id="helpDocLink" href="#" target="_blank" rel="noopener noreferrer">docs/QUICKSTART.md</a>
+        </footer>
+      </aside>
+    </div>
+
     <script src="/app.js"></script>
   </body>
 </html>
