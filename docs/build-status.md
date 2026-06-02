@@ -3,7 +3,7 @@
 **Date:** 2026-06-02 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
-**main HEAD:** `5927c22` — merged `feat/productize` → `feat/fundability` → `feat/harden` → `feat/hitl-web-ui`, plus harness lock + lifecycle stabilization.
+**main HEAD:** `bb55119` — M0–M5 complete; post-M5 tracks merged (`productize`, `fundability`, `harden`, `hitl-web-ui`); harness lock + lifecycle stabilization.
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -30,6 +30,7 @@ step-journal substrate, never reimplementing the durable engine.
 | **M3** | **Replay / time-travel** read surface over a `JournalSource`; **offline reconstruction from a portable export with the substrate killed**; local web UI | reconstruct-matches-reality, **offline-from-export (substrate killed)**, time-travel, fork-tree+diff, UI-API-offline | ✅ **5/5** | `npm run gate:m3` | `docs/m3-observability-replay.md`, `docs/m3-evidence/` |
 | **M4** | **Neutrality**: same agent across **2 model providers** and **2 deploy targets**, **config-only, no code change**; journal portability across both | provider-switch (no code change), durability-under-switch (SIGKILL), deploy-target switch, journal-portability offline | ✅ **4/4** | `npm run gate:m4` | `docs/m4-neutrality.md`, `docs/m4-evidence/` |
 | **M5** | **HITL pause/resume** across a **real process restart** + export + **web UI API resume** | pause→exit→restart→resume→complete, crash-during-resume, double-submit, export+offline-replay, **hitl-web-ui-api-resume** | ✅ **5/5** | `npm run gate:m5` | `docs/m5-hitl-export.md`, `docs/m5-evidence/` |
+| **Full suite** | Serial M1–M5 + harden + hitl-ui (shared `DURABL_DATA_DIR`, teardown between gates) | typecheck + all milestone/extension gates | ✅ GO | `npm run gate:all` | `scripts/run-all-gates.sh`; optional `docs/evidence/gate-all-*.log` on `feat/final-gates` |
 
 **Run core milestones (each exits 0 on pass):**
 
@@ -44,7 +45,9 @@ npm run gate:all  # full serial suite (M1–M5 + harden + hitl-ui)
 
 ---
 
-## Parallel tracks (merged to main)
+## Post-M5 (merged to main)
+
+Post-M5 work shipped as four parallel branches, then harness hardening on `main`. None of these replace M0–M5 gates; they extend packaging, narrative, hardening, and operator UX.
 
 | Track | Branch | Tip (short) | Scope | Gate / entry | Docs |
 |---|---|---|---|---|---|
@@ -53,6 +56,10 @@ npm run gate:all  # full serial suite (M1–M5 + harden + hitl-ui)
 | **harden** | `feat/harden` | `6da9f0a` | Live provider gate (skip without keys), HTTP retry policy, second-substrate seam | `npm run gate:live` (skip exit 0), `npm run gate:harden` | `docs/HARDENING.md`, `docs/TEST-MATRIX.md`, `docs/SECOND-SUBSTRATE.md` |
 | **hitl-web-ui** | `feat/hitl-web-ui` | `1e91a8a` | HITL paused list + resume in replay web UI + HTTP API | `npm run gate:hitl-ui` (`gate:hitl-web` alias) | `docs/hitl-web-ui.md`, `docs/hitl-ui-evidence/` |
 
+**Merge commits on main:** `9483a85` (fundability), `70536ad` (harden), `e3e5997` (productize), `2c459b1` (hitl-web-ui).
+
+**Harness stabilization (on main after merges):** `911a19a` (registration + M5 G5 fold), `9a5fb34` / `d206675` / `0a376fd` (crash-gate recovery), `0b3b097` (exclusive `/tmp/durabl-harness.lock` + reliable Restate lifecycle). M1 crash phase 2 uses **attach only** (no second `invokeAsync`).
+
 **Extension gates (verified 2026-06-02):**
 
 ```bash
@@ -60,6 +67,8 @@ npm run gate:live      # SKIP + exit 0 when no API keys
 npm run gate:harden    # 3/3 PASS
 npm run gate:hitl-ui   # G2 offline readonly (+ M5 G5 when run via full gate:m5)
 ```
+
+Checklist with commit SHAs and verified vs config-ready: [`docs/COMPLETION.md`](COMPLETION.md).
 
 ---
 
@@ -82,4 +91,5 @@ npm run gate:hitl-ui   # G2 offline readonly (+ M5 G5 when run via full gate:m5)
   `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` are present; `gate:live` **skips** when no keys are set;
   the Docker deploy target runs only when a Docker daemon + local image are present
   (the gate reports CONFIG-READY-NOT-RUN rather than pulling over the network).
+- **DBOS adapter:** `src/journal-source-dbos-stub.ts` types the future `JournalSource` plug-in; not a working DBOS integration (`docs/SECOND-SUBSTRATE.md`).
 - **Offline HITL (by design):** exported bundles list paused runs; `POST /api/hitl/input` returns **503** without live Restate ingress (`docs/hitl-web-ui.md`).
