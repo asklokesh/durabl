@@ -20,7 +20,7 @@ import {
   startAndRegisterService,
   killStaleServiceProcesses,
   enterHarnessGate,
-  exitHarnessGate,
+  releaseHarnessLock,
   startRestateServerAndWait,
   waitForServiceDown,
   killProc,
@@ -255,7 +255,7 @@ async function main(): Promise<void> {
     server = await startRestateServerAndWait();
   } catch (e) {
     console.error(String(e));
-    await exitHarnessGate();
+    releaseHarnessLock();
     process.exit(2);
   }
   console.log("restate-server healthy.");
@@ -269,7 +269,6 @@ async function main(): Promise<void> {
     if (!only || only === "replay") await replayGate();
   } finally {
     killProc(server);
-    await exitHarnessGate();
   }
 
   const passed = results.filter((r) => r.pass).length;
@@ -281,6 +280,7 @@ async function main(): Promise<void> {
   console.log(`VERDICT: ${passed === total ? "GATE PASSED" : "GATE FAILED"}`);
   console.log(`================================================`);
 
+  releaseHarnessLock();
   process.exitCode = passed === total ? 0 : 1;
 }
 

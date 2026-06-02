@@ -43,9 +43,11 @@ import { join } from "node:path";
 import { config } from "../config.js";
 import {
   sleep,
-  startRestateServer,
+  enterHarnessGate,
+  releaseHarnessLock,
+  startRestateServerAndWait,
   startAndRegisterService,
-  waitForRestate,
+  waitForRestateDown,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -98,20 +100,13 @@ async function invokeSync(runId: string, prompt: string, traj = "main"): Promise
 }
 
 async function main(): Promise<void> {
-  // Clean slate.
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  await sleep(1200);
+  await enterHarnessGate();
   rmSync(config.restateDataDir, { recursive: true, force: true });
   resetEffects();
   resetJournal();
   mkdirSync(EVID_DIR, { recursive: true });
 
-  const server = startRestateServer();
-  if (!(await waitForRestate(60000))) {
-    killProc(server);
-    throw new Error("restate-server failed to become healthy");
-  }
+  const server = await startRestateServerAndWait();
 
   const ts = Date.now();
   const rootId = `m3-root-${ts}`;
@@ -184,7 +179,7 @@ async function main(): Promise<void> {
     spawnSync("pkill", ["-9", "-f", "restate-server"]);
     spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
     await sleep(2000);
-    const restateDead = !(await waitForRestate(2500)); // health must NOT come back
+    const restateDead = await waitForRestateDown(5000); // health must NOT come back
     const serviceDead = !isProcAlive(svc.pid) && !isProcAlive(server.pid ?? -1);
     console.log(`# substrate killed: restate_health_unreachable=${restateDead} service_pids_dead=${serviceDead}\n`);
 
@@ -294,8 +289,7 @@ async function main(): Promise<void> {
     // are committed evidence captured via the standalone capturer.
     await uiApiGate(bundlePath);
   } finally {
-    spawnSync("pkill", ["-9", "-f", "restate-server"]);
-    spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+    killProc(server);
   }
 
   // ── Summary ─────────────────────────────────────────────────────────────
@@ -310,6 +304,7 @@ async function main(): Promise<void> {
   const allPass = passed === results.length;
   console.log(`VERDICT: ${allPass ? "GATE PASSED" : "GATE FAILED"}`);
   console.log("================================================");
+  releaseHarnessLock();
   process.exitCode = allPass ? 0 : 1;
 }
 

@@ -19,9 +19,11 @@ import type { ChildProcess } from "node:child_process";
 import { config } from "../config.js";
 import {
   sleep,
-  startRestateServer,
+  enterHarnessGate,
+  releaseHarnessLock,
+  harnessTeardown,
+  startRestateServerAndWait,
   startAndRegisterService,
-  waitForRestate,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -46,17 +48,7 @@ function record(name: string, pass: boolean, detail: string): void {
 async function stopSubstrate(svc?: ServiceHandle | null, server?: ChildProcess | null): Promise<void> {
   if (svc) killProc(svc.proc);
   if (server) killProc(server);
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  for (const port of [8080, 9080, 17878, 17879]) {
-    spawnSync("sh", ["-c", `lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`]);
-  }
-  const deadline = Date.now() + 15000;
-  while (Date.now() < deadline) {
-    const r = spawnSync("sh", ["-c", "lsof -ti tcp:8080 tcp:9080 || true"], { encoding: "utf8" });
-    if (!(r.stdout ?? "").trim()) return;
-    await sleep(300);
-  }
+  await harnessTeardown();
 }
 
 async function hitlSubmit(runId: string, prompt: string): Promise<void> {
@@ -108,9 +100,8 @@ async function g1HitlUiApiResume(): Promise<void> {
   let ui: Awaited<ReturnType<typeof startServerHandle>> | null = null;
 
   try {
-    await stopSubstrate();
-    server = startRestateServer();
-    if (!(await waitForRestate(60000))) throw new Error("restate-server unhealthy");
+    await harnessTeardown();
+    server = await startRestateServerAndWait();
     svc = await startAndRegisterService();
     await hitlSubmit(runId, "ui-gate");
     const paused = await waitForPaused(runId);
@@ -239,9 +230,14 @@ async function g2HitlUiOfflineReadonly(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  await enterHarnessGate();
   mkdirSync(EVID_DIR, { recursive: true });
-  // Live resume is M5 G5; run `npm run gate:hitl-ui` for G2 + full M5.
-  await g2HitlUiOfflineReadonly();
+  try {
+    // Live resume is M5 G5; run `npm run gate:hitl-ui` for G2 + full M5.
+    await g2HitlUiOfflineReadonly();
+  } finally {
+    /* lock released after summary */
+  }
 
   console.log("================ HITL UI GATE SUMMARY ================");
   let passed = 0;
@@ -254,6 +250,7 @@ async function main(): Promise<void> {
   const allPass = passed === results.length;
   console.log(`VERDICT: ${allPass ? "GATE PASSED" : "GATE FAILED"}`);
   console.log("================================================");
+  releaseHarnessLock();
   process.exitCode = allPass ? 0 : 1;
 }
 

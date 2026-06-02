@@ -1,9 +1,9 @@
 # durabl — Build Status (M0–M5 + parallel tracks)
 
-**Date:** 2026-06-01 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
+**Date:** 2026-06-02 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
-**main HEAD:** `d206675` (four tracks merged; harness teardown + M5 G5 HITL UI API).
+**main HEAD:** `0a376fd` — merged `feat/productize` → `feat/fundability` → `feat/harden` → `feat/hitl-web-ui`, plus harness stabilization.
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -15,6 +15,8 @@ step-journal substrate, never reimplementing the durable engine.
 > (real `restate-server`, real SIGKILL on crash paths, real process restart,
 > assertions read from the real SQLite effect sink + journal — no mocks on the
 > crash/restart paths). Each gate exits 0 on pass.
+
+**STATUS: GO** — all gates pass when run serially on a clean machine (`enterHarnessGate` file lock at `/tmp/durabl-harness.lock`). Run one gate at a time if a prior run was SIGKILL'd without releasing the lock.
 
 ---
 
@@ -41,26 +43,30 @@ npm run gate:m5   # M5 — 5/5
 
 ---
 
-## Post-M5 tracks (merged to main)
+## Parallel tracks (merged to main)
 
-Integrated from `1cd52b1` via merge commits `9483a85` (fundability) → `70536ad` (harden) → `dcf7f7f` / `2c459b1` (hitl-web-ui) → `e3e5997` (productize follow-up). Post-merge harness hardening: `enterHarnessGate` / `exitHarnessGate`, `registerDeploymentWithRetry`, crash-gate port cleanup, `scripts/run-all-gates.sh`. Re-verify on main: `bash scripts/run-all-gates.sh` (or the `npm test` + `gate:m2`…`m5` sequence below).
+| Track | Branch | Tip (short) | Scope | Gate / entry | Docs |
+|---|---|---|---|---|---|
+| **productize** | `feat/productize` | `926dc2c` | README polish, `package.json` metadata, `docker-compose`, `CONTRIBUTING`, quickstart | `npm run compose:up`, `docs/QUICKSTART.md`, `scripts/quickstart.sh` | `README.md`, `CONTRIBUTING.md`, `docs/QUICKSTART.md` |
+| **fundability** | `feat/fundability` | `5227c9f` | Investor narrative grounded in Phase 0 evidence | — (docs-only) | `docs/FUNDING.md`, `docs/RISKS.md`, `docs/DEMO-NARRATIVE.md` |
+| **harden** | `feat/harden` | `6da9f0a` | Live provider gate (skip without keys), HTTP retry policy, second-substrate seam | `npm run gate:live` (skip exit 0), `npm run gate:harden` | `docs/HARDENING.md`, `docs/TEST-MATRIX.md`, `docs/SECOND-SUBSTRATE.md` |
+| **hitl-web-ui** | `feat/hitl-web-ui` | `1e91a8a` | HITL paused list + resume in replay web UI + HTTP API | `npm run gate:hitl-ui` (`gate:hitl-web` alias) | `docs/hitl-web-ui.md`, `docs/hitl-ui-evidence/` |
 
-| Track | Branch | Scope | Gate / entry | Docs |
-|---|---|---|---|---|
-| **productize** | `feat/productize` | README polish, `package.json` metadata, `docker-compose`, `CONTRIBUTING`, quickstart | `npm run compose:up`, `docs/QUICKSTART.md`, `scripts/quickstart.sh` | `README.md`, `CONTRIBUTING.md`, `docs/QUICKSTART.md` |
-| **fundability** | `feat/fundability` | Investor narrative grounded in Phase 0 evidence | — (docs-only) | `docs/FUNDING.md`, `docs/RISKS.md`, `docs/DEMO-NARRATIVE.md` |
-| **harden** | `feat/harden` | Live provider gate (skip without keys), HTTP retry policy, second-substrate seam | `npm run gate:live` (skip exit 0), `npm run gate:harden` | `docs/HARDENING.md`, `docs/TEST-MATRIX.md`, `docs/SECOND-SUBSTRATE.md` |
-| **hitl-web-ui** | `feat/hitl-web-ui` | HITL paused list + resume in replay web UI + HTTP API | `npm run gate:hitl-ui` (offline G2; live G5 in `gate:m5`) | `docs/hitl-web-ui.md`, `docs/hitl-ui-evidence/` |
-
-**Optional / CI-safe extension gates:**
+**Extension gates (verified 2026-06-02):**
 
 ```bash
-npm run gate:live      # real OpenAI/Anthropic when keys set; SKIP + exit 0 otherwise
-npm run gate:harden    # provider redaction + DBOS stub seam + delegates to gate:live
-npm run gate:hitl-ui   # offline paused read-only (G2); live resume is M5 G5
+npm run gate:live      # SKIP + exit 0 when no API keys
+npm run gate:harden    # 3/3 PASS
+npm run gate:hitl-ui   # G2 offline readonly (+ M5 G5 when run via full gate:m5)
 ```
 
 ---
+
+## Harness notes (2026-06-02)
+
+- Shared `startAndRegisterService()` with port cleanup + deployment register retries.
+- M1 crash recovery uses **attach only** on phase 2 (no second `invokeAsync`).
+- Gates acquire `/tmp/durabl-harness.lock`; summary prints before lock release to avoid SIGKILL during heavy `harnessTeardown` on the gate process.
 
 ## What's real vs config-ready
 
@@ -69,20 +75,10 @@ npm run gate:hitl-ui   # offline paused read-only (G2); live resume is M5 G5
   re-fire (M2); offline replay from a portable export with the substrate genuinely
   killed (M3); provider/target switching by config with durability preserved (M4);
   HITL durable pause + resume across a **real** process/substrate restart with
-  exactly-once preserved (M5 G1–G4); HITL resume via web UI HTTP API (M5 G5).
+  exactly-once preserved (M5); HITL resume via web UI HTTP API in live mode
+  (`gate:hitl-ui` / M5 G5).
 - **Config-ready (honest):** real OpenAI/Anthropic calls activate only when
-  `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` are present (else a deterministic,
-  CI-safe simulated provider runs); `gate:live` **skips** when no keys are set;
+  `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` are present; `gate:live` **skips** when no keys are set;
   the Docker deploy target runs only when a Docker daemon + local image are present
-  (the gate reports CONFIG-READY-NOT-RUN rather than pulling over the network or
-  faking it). See `docs/m4-neutrality.md` and `docs/HARDENING.md`.
-- **Offline HITL (by design):** exported bundles list paused runs and replay
-  `hitl_pause` steps, but `POST /api/hitl/input` returns **503** without live
-  Restate ingress — resume requires the substrate (`docs/hitl-web-ui.md`).
-
-## Single-machine envelope (applies to all milestones)
-
-Single-node, single-host. No multi-partition / network-partition / clock-skew
-testing — those are substrate concerns, deliberately consumed from Restate, not
-reimplemented (Phase 0 Decisions 1–4). "Process restart" means a real OS process
-death + a fresh process on the same host over the substrate's persisted state.
+  (the gate reports CONFIG-READY-NOT-RUN rather than pulling over the network).
+- **Offline HITL (by design):** exported bundles list paused runs; `POST /api/hitl/input` returns **503** without live Restate ingress (`docs/hitl-web-ui.md`).

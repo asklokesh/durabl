@@ -170,7 +170,6 @@ export interface HarnessTeardownOptions {
 export async function harnessTeardown(opts: HarnessTeardownOptions = {}): Promise<void> {
   killStaleServiceProcesses();
   spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/harness"]);
   if (opts.dockerContainer) {
     spawnSync("docker", ["rm", "-f", opts.dockerContainer], { encoding: "utf8" });
   }
@@ -181,10 +180,7 @@ export async function harnessTeardown(opts: HarnessTeardownOptions = {}): Promis
     ...EXTRA_HARNESS_PORTS,
   ];
   for (const port of ports) {
-    spawnSync("sh", [
-      "-c",
-      `lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`,
-    ]);
+    killListenersOnPort(port);
   }
   await waitForHarnessPortsDown(45000);
   await waitForRestateDown(5000);
@@ -298,30 +294,31 @@ export async function registerDeploymentWithRetry(
   return last;
 }
 
+/** Kill processes listening on a port (not clients with outbound connections to it). */
+function killListenersOnPort(port: number): void {
+  spawnSync("sh", [
+    "-c",
+    `lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null | xargs kill -9 2>/dev/null || true`,
+  ]);
+}
+
 /** Reap stale SDK children so TCP bind + deployment register stay deterministic. */
 export function killStaleServiceProcesses(): void {
   spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  spawnSync("sh", [
-    "-c",
-    `lsof -ti tcp:${config.servicePort} | xargs kill -9 2>/dev/null || true`,
-  ]);
+  killListenersOnPort(config.servicePort);
 }
 
 /** @deprecated Prefer `await harnessTeardown()` — sync best-effort kill only. */
 export function freeHarnessPorts(): void {
   killStaleServiceProcesses();
   spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/harness"]);
   for (const port of [
     harnessPorts.ingress,
     harnessPorts.admin,
     harnessPorts.service,
     ...EXTRA_HARNESS_PORTS,
   ]) {
-    spawnSync("sh", [
-      "-c",
-      `lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`,
-    ]);
+    killListenersOnPort(port);
   }
 }
 
@@ -343,7 +340,9 @@ export async function startAndRegisterService(
 
 export function killProc(proc: ChildProcess): void {
   try {
-    if (proc.pid) process.kill(proc.pid, "SIGKILL");
+    if (!proc.pid || proc.exitCode !== null) return;
+    if (!isPidAlive(proc.pid)) return;
+    process.kill(proc.pid, "SIGKILL");
   } catch {
     /* already dead */
   }

@@ -31,12 +31,14 @@ import { rmSync } from "node:fs";
 import { config } from "../config.js";
 import {
   sleep,
-  startRestateServer,
   startAndRegisterService,
-  waitForRestate,
+  enterHarnessGate,
+  releaseHarnessLock,
+  startRestateServerAndWait,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
+import type { ChildProcess } from "node:child_process";
 import { countEffects, effectsFor, resetEffects } from "../effect-sink.js";
 import { resetJournal, trajectory } from "../journal.js";
 import { seedFork, validateForkPlan, ForkError, type ForkPlan } from "../fork.js";
@@ -466,19 +468,19 @@ async function forkValidationGate(): Promise<void> {
 async function main(): Promise<void> {
   const only = process.argv[2];
 
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  await sleep(1500);
+  await enterHarnessGate();
   rmSync(config.restateDataDir, { recursive: true, force: true });
   resetEffects();
   resetJournal();
   spawnSync("rm", ["-rf", process.env.DURABL_CRASH_MARKER_DIR ?? "/tmp/durabl-m1/markers"]);
 
   console.log("Starting restate-server (single self-hostable binary)...");
-  const server = startRestateServer();
-  if (!(await waitForRestate(60000))) {
-    console.error("restate-server failed to become healthy");
-    killProc(server);
+  let server: ChildProcess;
+  try {
+    server = await startRestateServerAndWait();
+  } catch (e) {
+    console.error(String(e));
+    releaseHarnessLock();
     process.exit(2);
   }
   console.log("restate-server healthy.");
@@ -492,8 +494,6 @@ async function main(): Promise<void> {
     if (!only || only === "validation") await forkValidationGate();
   } finally {
     killProc(server);
-    spawnSync("pkill", ["-9", "-f", "restate-server"]);
-    spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
   }
 
   const passed = results.filter((r) => r.pass).length;
@@ -505,6 +505,7 @@ async function main(): Promise<void> {
   console.log(`VERDICT: ${passed === total ? "GATE PASSED" : "GATE FAILED"}`);
   console.log(`=================================================`);
 
+  releaseHarnessLock();
   process.exitCode = passed === total ? 0 : 1;
 }
 

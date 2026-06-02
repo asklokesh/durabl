@@ -42,9 +42,12 @@ import type { ChildProcess } from "node:child_process";
 import { config } from "../config.js";
 import {
   sleep,
-  startRestateServer,
+  enterHarnessGate,
+  releaseHarnessLock,
+  harnessTeardown,
+  startRestateServerAndWait,
   startAndRegisterService,
-  waitForRestate,
+  waitForRestateDown,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -134,39 +137,22 @@ async function waitForPaused(runId: string, timeoutMs = 20000): Promise<boolean>
 async function killSubstrate(svc: ServiceHandle, server: ChildProcess): Promise<{ dead: boolean }> {
   killProc(svc.proc);
   killProc(server);
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  await sleep(2000);
-  const restateDead = !(await waitForRestate(2500));
+  await harnessTeardown();
+  const restateDead = await waitForRestateDown(8000);
   const svcDead = !isProcAlive(svc.pid) && !isProcAlive(server.pid ?? -1);
-  await stopServer(null); // ensure the ingress port is released for any restart
   return { dead: restateDead && svcDead };
 }
 
-/** Fully stop any restate-server and wait until its ingress port (8080) frees. */
+/** Fully stop restate and wait until harness ports are free (in-gate restart). */
 async function stopServer(server: ChildProcess | null): Promise<void> {
   if (server) killProc(server);
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  // Wait until the ingress port is actually released, so the next startServer is
-  // a GENUINE fresh bind (not silently riding a still-alive prior server).
-  const deadline = Date.now() + 15000;
-  while (Date.now() < deadline) {
-    const r = spawnSync("sh", ["-c", "lsof -ti tcp:8080 || true"], { encoding: "utf8" });
-    if (!(r.stdout ?? "").trim()) return;
-    await sleep(250);
-  }
+  await harnessTeardown();
 }
 
 /** Bring up a FRESH restate-server on the SAME data dir (recovers suspensions). */
 async function startServer(): Promise<ChildProcess> {
-  // Defensive: ensure no stale server is holding the port (genuine fresh bind).
-  await stopServer(null);
-  const server = startRestateServer();
-  if (!(await waitForRestate(60000))) {
-    killProc(server);
-    throw new Error("restate-server failed to become healthy");
-  }
-  return server;
+  await harnessTeardown();
+  return startRestateServerAndWait();
 }
 
 // ─── G1: pause → process-exit → restart → resume → complete ───────────────────
@@ -440,11 +426,7 @@ async function g5HitlWebUiApi(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  // Clean slate.
-  spawnSync("pkill", ["-9", "-f", "restate-server"]);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  await sleep(1500);
-  await stopServer(null); // wait until the ingress port is free for a clean bind
+  await enterHarnessGate();
   rmSync(config.restateDataDir, { recursive: true, force: true });
   resetEffects();
   resetJournal();
@@ -457,8 +439,7 @@ async function main(): Promise<void> {
     await g4();
     await g5HitlWebUiApi();
   } finally {
-    spawnSync("pkill", ["-9", "-f", "restate-server"]);
-    spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+    /* ports/server cleaned at next enterHarnessGate */
   }
 
   console.log("================ M5 GATE SUMMARY ================");
@@ -472,6 +453,7 @@ async function main(): Promise<void> {
   const allPass = passed === results.length;
   console.log(`VERDICT: ${allPass ? "GATE PASSED" : "GATE FAILED"}`);
   console.log("================================================");
+  releaseHarnessLock();
   process.exitCode = allPass ? 0 : 1;
 }
 

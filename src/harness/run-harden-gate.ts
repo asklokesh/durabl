@@ -12,6 +12,7 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { enterHarnessGate, exitHarnessGate } from "./restate-control.js";
 import { redactSecrets, ProviderError } from "../providers/provider-errors.js";
 import {
   dbosJournalSourceStub,
@@ -83,19 +84,27 @@ function gateH3(): void {
   );
 }
 
-function main(): void {
-  gateH1();
-  gateH2();
-  gateH3();
+async function main(): Promise<void> {
+  await enterHarnessGate();
+  try {
+    gateH1();
+    gateH2();
+    gateH3();
 
-  const failed = results.filter((r) => !r.pass);
-  console.log("\n================ HARDEN GATE SUMMARY ================");
-  for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.name}`);
-  console.log("-----------------------------------------------------");
-  console.log(`${results.length - failed.length}/${results.length} gates passed`);
-  console.log(failed.length === 0 ? "VERDICT: GATE PASSED" : "VERDICT: GATE FAILED");
-  console.log("=====================================================\n");
-  process.exit(failed.length === 0 ? 0 : 1);
+    const failed = results.filter((r) => !r.pass);
+    console.log("\n================ HARDEN GATE SUMMARY ================");
+    for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.name}`);
+    console.log("-----------------------------------------------------");
+    console.log(`${results.length - failed.length}/${results.length} gates passed`);
+    console.log(failed.length === 0 ? "VERDICT: GATE PASSED" : "VERDICT: GATE FAILED");
+    console.log("=====================================================\n");
+    process.exitCode = failed.length === 0 ? 0 : 1;
+  } finally {
+    await exitHarnessGate();
+  }
 }
 
-main();
+main().catch((e) => {
+  console.error("HARDEN GATE ERROR:", e);
+  process.exitCode = 3;
+});

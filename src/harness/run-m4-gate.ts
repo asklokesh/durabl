@@ -52,7 +52,7 @@ import {
   sleep,
   startDockerRestate,
   enterHarnessGate,
-  exitHarnessGate,
+  releaseHarnessLock,
   startRestateServerAndWait,
   startService,
   startServiceForTarget,
@@ -404,7 +404,7 @@ async function main(): Promise<void> {
     server = await startRestateServerAndWait();
   } catch (e) {
     console.error(String(e));
-    await exitHarnessGate({ dockerContainer });
+    releaseHarnessLock();
     process.exit(2);
   }
   console.log("restate-server healthy.\n");
@@ -434,7 +434,6 @@ async function main(): Promise<void> {
     await g4Portability(portabilityRuns);
   } finally {
     killProc(server);
-    await exitHarnessGate({ dockerContainer: dockerContainer });
   }
 
   const passed = results.filter((r) => r.pass).length;
@@ -446,6 +445,7 @@ async function main(): Promise<void> {
   console.log(`VERDICT: ${passed === total ? "GATE PASSED" : "GATE FAILED"}`);
   console.log(`=================================================`);
 
+  releaseHarnessLock();
   process.exitCode = passed === total ? 0 : 1;
 }
 
