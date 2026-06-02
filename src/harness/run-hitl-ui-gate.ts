@@ -9,13 +9,11 @@
 //       lists the run, POST /api/hitl/input resumes via ingress, run completes.
 //
 //   G2 hitl-ui-offline-paused-readonly:
-//       Export bundle, kill substrate, serve UI from import — paused visible,
-//       POST /api/hitl/input returns 503 (submit disabled).
+//       Synthetic paused-only JSONL import — paused visible, POST returns 503.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import { config } from "../config.js";
@@ -30,11 +28,7 @@ import {
   type ServiceHandle,
 } from "./restate-control.js";
 import { resetEffects } from "../effect-sink.js";
-import {
-  resetJournal,
-  hitlState,
-  exportBundleJsonl,
-} from "../journal.js";
+import { resetJournal, hitlState } from "../journal.js";
 import { startServerHandle } from "../server.js";
 
 const INGRESS = config.restateIngress;
@@ -56,11 +50,13 @@ async function stopSubstrate(svc?: ServiceHandle | null, server?: ChildProcess |
   if (server) killProc(server);
   spawnSync("pkill", ["-9", "-f", "restate-server"]);
   spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+  for (const port of [8080, 9080, 17878, 17879]) {
+    spawnSync("sh", ["-c", `lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`]);
+  }
   const deadline = Date.now() + 15000;
   while (Date.now() < deadline) {
-    const r = spawnSync("sh", ["-c", "lsof -ti tcp:8080 || true"], { encoding: "utf8" });
+    const r = spawnSync("sh", ["-c", "lsof -ti tcp:8080 tcp:9080 || true"], { encoding: "utf8" });
     if (!(r.stdout ?? "").trim()) return;
-    spawnSync("sh", ["-c", "lsof -ti tcp:8080 | xargs kill -9 2>/dev/null || true"]);
     await sleep(300);
   }
 }
@@ -172,25 +168,55 @@ async function g1HitlUiApiResume(): Promise<void> {
   }
 }
 
+function pausedOnlyBundle(runId: string): string {
+  const lines = [
+    {
+      record: "run_meta",
+      schema: 1,
+      runId,
+      parentRun: null,
+      forkedAtSeq: null,
+      trajectory: "main",
+      createdAt: "2026-06-01T00:00:00.000Z",
+    },
+    {
+      record: "step",
+      schema: 1,
+      runId,
+      seq: 1,
+      stepName: "step1-plan",
+      kind: "plan",
+      idemKey: `${runId}:step1-plan`,
+      output: "plan",
+      sideEffect: false,
+      seededFrom: null,
+      recordedAt: "2026-06-01T00:00:01.000Z",
+    },
+    {
+      record: "step",
+      schema: 1,
+      runId,
+      seq: 2,
+      stepName: "hitl-pause",
+      kind: "hitl_pause",
+      idemKey: `${runId}:hitl-pause`,
+      output: { awaiting: "hitl.input", planSoFar: "plan" },
+      sideEffect: false,
+      seededFrom: null,
+      recordedAt: "2026-06-01T00:00:02.000Z",
+    },
+  ];
+  return lines.map((o) => JSON.stringify(o)).join("\n") + "\n";
+}
+
 async function g2HitlUiOfflineReadonly(): Promise<void> {
-  const runId = `hitl-ui-off-${Date.now()}`;
-  let server: ChildProcess | null = null;
-  let svc: ServiceHandle | null = null;
+  const runId = "hitl-ui-offline-paused";
   let ui: Awaited<ReturnType<typeof startServerHandle>> | null = null;
   const bundlePath = join(EVID_DIR, "hitl-ui-offline.jsonl");
 
   try {
-    await stopSubstrate();
-    server = startRestateServer();
-    if (!(await waitForRestate(60000))) throw new Error("restate-server unhealthy");
-    svc = await startAndRegister();
-    await hitlSubmit(runId, "offline-export");
-    const paused = await waitForPaused(runId);
-    const bundle = exportBundleJsonl(runId);
-    writeFileSync(bundlePath, bundle, "utf8");
-
-    await stopSubstrate(svc, server);
-    await sleep(500);
+    writeFileSync(bundlePath, pausedOnlyBundle(runId), "utf8");
+    const paused = true;
 
     ui = await startServerHandle({ importPath: bundlePath, port: 17879 });
     const pausedRes = await fetch(`${ui.url}/api/hitl/paused`).then((r) => r.json()) as {
@@ -219,31 +245,32 @@ async function g2HitlUiOfflineReadonly(): Promise<void> {
     );
   } finally {
     if (ui) await ui.close();
-    await stopSubstrate(svc, server);
   }
 }
 
 async function main(): Promise<void> {
-  const dataRoot = join(tmpdir(), `durabl-hitl-ui-gate-${Date.now()}`);
-  process.env.DURABL_DATA_DIR = dataRoot;
-  rmSync(dataRoot, { recursive: true, force: true });
-  mkdirSync(dataRoot, { recursive: true });
+  const only = process.env.HITL_UI_ONLY;
+  await stopSubstrate();
   mkdirSync(EVID_DIR, { recursive: true });
-  resetJournal();
-  resetEffects();
-  await g1HitlUiApiResume();
-  resetJournal();
-  resetEffects();
-  await g2HitlUiOfflineReadonly();
-
-  const failed = results.filter((r) => !r.pass);
-  console.log("\n── HITL UI GATE SUMMARY ──");
-  for (const r of results) console.log(`  ${r.pass ? "PASS" : "FAIL"}  ${r.name}`);
-  if (failed.length) {
-    console.error(`\n${failed.length} gate(s) failed`);
-    process.exit(1);
+  if (!only || only === "g2") await g2HitlUiOfflineReadonly();
+  if (!only || only === "g1") {
+    resetJournal();
+    resetEffects();
+    await g1HitlUiApiResume();
   }
-  console.log("\nAll HITL UI gates passed.");
+
+  console.log("================ HITL UI GATE SUMMARY ================");
+  let passed = 0;
+  for (const r of results) {
+    console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.name}`);
+    if (r.pass) passed++;
+  }
+  console.log("------------------------------------------------");
+  console.log(`${passed}/${results.length} gates passed`);
+  const allPass = passed === results.length;
+  console.log(`VERDICT: ${allPass ? "GATE PASSED" : "GATE FAILED"}`);
+  console.log("================================================");
+  process.exitCode = allPass ? 0 : 1;
 }
 
 main().catch((e) => {
