@@ -65,6 +65,7 @@
     "cleanup:worktrees": "bash scripts/cleanup-old-worktrees.sh",
     "compose:up": "docker compose --profile docker-demo up -d",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
+    "smoke": "bash scripts/smoke-quickstart.sh",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
     "capture:ui": "npm run build && node scripts/capture-ui.mjs",
