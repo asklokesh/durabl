@@ -29,6 +29,7 @@ import {
   type RunMeta,
   type StepKind,
 } from "./step-model.js";
+import { withStepSpan, withStepSpanAsync } from "./otel.js";
 
 function open(): DatabaseSync {
   return openMigratedJournalDatabase();
@@ -91,6 +92,26 @@ export function recordStep<T>(args: {
   sideEffect: boolean;
   producer: (idemKey: IdempotencyKey) => T;
 }): RecordResult<T> {
+  const spanAttrs = {
+    runId: args.runId,
+    stepName: args.stepName,
+    kind: args.kind,
+    seq: args.seq,
+    sideEffect: args.sideEffect,
+  };
+  return withStepSpan(spanAttrs, () => recordStepBody(args), (r) => ({
+    replayed: r.replayed,
+  }));
+}
+
+function recordStepBody<T>(args: {
+  runId: string;
+  seq: number;
+  stepName: string;
+  kind: StepKind;
+  sideEffect: boolean;
+  producer: (idemKey: IdempotencyKey) => T;
+}): RecordResult<T> {
   const idemKey = deriveIdempotencyKey(args.runId, args.stepName);
   const d = open();
   try {
@@ -142,6 +163,26 @@ export function recordStep<T>(args: {
  * a first run, but replay always reads the recorded output and never re-calls.
  */
 export async function recordStepAsync<T>(args: {
+  runId: string;
+  seq: number;
+  stepName: string;
+  kind: StepKind;
+  sideEffect: boolean;
+  producer: (idemKey: IdempotencyKey) => Promise<T>;
+}): Promise<RecordResult<T>> {
+  const spanAttrs = {
+    runId: args.runId,
+    stepName: args.stepName,
+    kind: args.kind,
+    seq: args.seq,
+    sideEffect: args.sideEffect,
+  };
+  return withStepSpanAsync(spanAttrs, () => recordStepAsyncBody(args), (r) => ({
+    replayed: r.replayed,
+  }));
+}
+
+async function recordStepAsyncBody<T>(args: {
   runId: string;
   seq: number;
   stepName: string;
