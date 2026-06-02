@@ -336,7 +336,7 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const prompt = flags.prompt;
       if (!runId || typeof prompt !== "string") {
-        cliError("usage: durabl run <runId> --prompt <p> [--trajectory <t>]");
+        usageError("usage: durabl run <runId> --prompt <p> [--trajectory <t>]");
       }
       const trajectory = typeof flags.trajectory === "string" ? flags.trajectory : "main";
       const result = await ingressInvoke(runId, { prompt, trajectory });
@@ -354,7 +354,7 @@ async function main(): Promise<void> {
         typeof at !== "string" ||
         typeof prompt !== "string"
       ) {
-        cliError(
+        usageError(
           "usage: durabl fork <sourceRunId> --at <N> --new <newRunId> --prompt <p> [--trajectory <t>]",
         );
       }
@@ -373,44 +373,44 @@ async function main(): Promise<void> {
     }
     case "inspect": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl inspect <runId>");
+      if (!runId) usageError("usage: durabl inspect <runId>");
       out({ ...inspectRun(runId), lineage: lineage(runId) });
       break;
     }
     case "list-forks": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl list-forks <runId>");
+      if (!runId) usageError("usage: durabl list-forks <runId>");
       out(listForks(runId));
       break;
     }
     case "tree": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl tree <runId>");
+      if (!runId) usageError("usage: durabl tree <runId>");
       printTree(forkTree(runId));
       break;
     }
     case "diff": {
       const a = positional[0];
       const b = positional[1];
-      if (!a || !b) cliError("usage: durabl diff <runA> <runB>");
+      if (!a || !b) usageError("usage: durabl diff <runA> <runB>");
       out(diffTrajectories(a, b));
       break;
     }
     case "export": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl export <runId> [--meta]");
+      if (!runId) usageError("usage: durabl export <runId> [--meta]");
       console.log(exportJsonl(runId, flags.meta === true));
       break;
     }
     case "export-bundle": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl export-bundle <rootRunId>");
+      if (!runId) usageError("usage: durabl export-bundle <rootRunId>");
       console.log(exportBundleJsonl(runId));
       break;
     }
     case "replay": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl replay <runId> [--from <export.jsonl>]");
+      if (!runId) usageError("usage: durabl replay <runId> [--from <export.jsonl>]");
       const source = sourceFromFlags(flags);
       const r = reconstruct(source, runId);
       console.log(`# replay of ${runId} reconstructed from: ${r.reconstructedFrom}`);
@@ -439,7 +439,7 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const nFlag = flags.n;
       if (!runId || typeof nFlag !== "string") {
-        cliError("usage: durabl state-at <runId> --n <N> [--from <export.jsonl>]");
+        usageError("usage: durabl state-at <runId> --n <N> [--from <export.jsonl>]");
       }
       const n = Number(nFlag);
       if (!Number.isInteger(n)) cliError(`--n must be an integer (got ${nFlag})`);
@@ -483,7 +483,7 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const prompt = flags.prompt;
       if (!runId || typeof prompt !== "string") {
-        cliError("usage: durabl hitl-run <runId> --prompt <p> [--trajectory <t>]");
+        usageError("usage: durabl hitl-run <runId> --prompt <p> [--trajectory <t>]");
       }
       const trajectory = typeof flags.trajectory === "string" ? flags.trajectory : "main";
       await hitlSubmit(runId, prompt, trajectory);
@@ -498,7 +498,7 @@ async function main(): Promise<void> {
       const runId = positional[0];
       const decision = flags.decision;
       if (!runId || typeof decision !== "string") {
-        cliError("usage: durabl hitl-input <runId> --decision <text>");
+        usageError("usage: durabl hitl-input <runId> --decision <text>");
       }
       const res = await hitlProvideInput(runId, decision);
       out(res);
@@ -506,7 +506,7 @@ async function main(): Promise<void> {
     }
     case "hitl-status": {
       const runId = positional[0];
-      if (!runId) cliError("usage: durabl hitl-status <runId>");
+      if (!runId) usageError("usage: durabl hitl-status <runId>");
       out({ runId, state: hitlState(runId) });
       break;
     }
@@ -519,7 +519,9 @@ async function main(): Promise<void> {
       console.log(USAGE);
       break;
     default:
-      cliError(`unknown command "${cmd}"\n\n${USAGE}`);
+      failCli(`unknown command "${cmd}"`, {
+        hints: [`Run ${cliStyle.info("durabl --help")} for supported commands.`],
+      });
   }
 }
 
