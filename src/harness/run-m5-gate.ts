@@ -61,9 +61,11 @@ import {
 import { importJournalSource, liveJournalSource } from "../journal-source.js";
 import { reconstruct, assertReplayMatches } from "../replay.js";
 import { startServerHandle } from "../server.js";
+import { FIXTURE_M5_HITL } from "./fixture-paths.js";
 
 const INGRESS = config.restateIngress;
 const EVID_DIR = join(process.cwd(), "docs", "m5-evidence");
+const RUNTIME_HITL_BUNDLE = join(EVID_DIR, "hitl-run-bundle.jsonl");
 
 interface GateResult {
   name: string;
@@ -335,9 +337,11 @@ async function g4(): Promise<void> {
   // Export the full HITL run (run_meta + every step incl. HITL events + effects).
   const bundle = exportBundleJsonl(runId);
   mkdirSync(EVID_DIR, { recursive: true });
-  const bundlePath = join(EVID_DIR, "hitl-run-bundle.jsonl");
-  writeFileSync(bundlePath, bundle, "utf8");
-  console.log(`# exported HITL run bundle (${bundle.split("\n").length} lines) → ${bundlePath}\n`);
+  writeFileSync(RUNTIME_HITL_BUNDLE, bundle, "utf8");
+  console.log(
+    `# exported HITL run bundle (${bundle.split("\n").length} lines) → ${RUNTIME_HITL_BUNDLE} ` +
+      `(committed fixture: ${FIXTURE_M5_HITL})\n`,
+  );
 
   // KILL THE SUBSTRATE ENTIRELY.
   const killed = await killSubstrate(svc, server);

@@ -13,8 +13,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import { config } from "../config.js";
 import {
@@ -30,9 +28,9 @@ import {
 import { resetEffects } from "../effect-sink.js";
 import { resetJournal, hitlState } from "../journal.js";
 import { startServerHandle } from "../server.js";
+import { FIXTURE_HITL_UI_OFFLINE } from "./fixture-paths.js";
 
 const INGRESS = config.restateIngress;
-const EVID_DIR = join(process.cwd(), "docs", "hitl-ui-evidence");
 
 interface GateResult {
   name: string;
@@ -149,57 +147,14 @@ async function g1HitlUiApiResume(): Promise<void> {
   }
 }
 
-function pausedOnlyBundle(runId: string): string {
-  const lines = [
-    {
-      record: "run_meta",
-      schema: 1,
-      runId,
-      parentRun: null,
-      forkedAtSeq: null,
-      trajectory: "main",
-      createdAt: "2026-06-01T00:00:00.000Z",
-    },
-    {
-      record: "step",
-      schema: 1,
-      runId,
-      seq: 1,
-      stepName: "step1-plan",
-      kind: "plan",
-      idemKey: `${runId}:step1-plan`,
-      output: "plan",
-      sideEffect: false,
-      seededFrom: null,
-      recordedAt: "2026-06-01T00:00:01.000Z",
-    },
-    {
-      record: "step",
-      schema: 1,
-      runId,
-      seq: 2,
-      stepName: "hitl-pause",
-      kind: "hitl_pause",
-      idemKey: `${runId}:hitl-pause`,
-      output: { awaiting: "hitl.input", planSoFar: "plan" },
-      sideEffect: false,
-      seededFrom: null,
-      recordedAt: "2026-06-01T00:00:02.000Z",
-    },
-  ];
-  return lines.map((o) => JSON.stringify(o)).join("\n") + "\n";
-}
-
 async function g2HitlUiOfflineReadonly(): Promise<void> {
   const runId = "hitl-ui-offline-paused";
   let ui: Awaited<ReturnType<typeof startServerHandle>> | null = null;
-  const bundlePath = join(EVID_DIR, "hitl-ui-offline.jsonl");
 
   try {
-    writeFileSync(bundlePath, pausedOnlyBundle(runId), "utf8");
     const paused = true;
 
-    ui = await startServerHandle({ importPath: bundlePath, port: 17879 });
+    ui = await startServerHandle({ importPath: FIXTURE_HITL_UI_OFFLINE, port: 17879 });
     const pausedRes = await fetch(`${ui.url}/api/hitl/paused`).then((r) => r.json()) as {
       submitEnabled?: boolean;
       paused?: { runId: string }[];
@@ -231,7 +186,6 @@ async function g2HitlUiOfflineReadonly(): Promise<void> {
 
 async function main(): Promise<void> {
   await enterHarnessGate();
-  mkdirSync(EVID_DIR, { recursive: true });
   try {
     // Live resume is M5 G5; run `npm run gate:hitl-ui` for G2 + full M5.
     await g2HitlUiOfflineReadonly();

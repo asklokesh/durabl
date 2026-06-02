@@ -16,7 +16,7 @@ import { existsSync, statSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const root = resolve(join(import.meta.dirname, ".."));
-const bundle = process.argv[2] ?? join(root, "docs", "m3-evidence", "portable-bundle.jsonl");
+const bundle = process.argv[2] ?? join(root, "test", "fixtures", "m3-portable-bundle.jsonl");
 const outDir = process.argv[3] ?? join(root, "docs", "m3-evidence", "screenshots");
 const port = Number(process.argv[4] ?? process.env.DURABL_UI_PORT ?? 7890);
 const BROWSE = process.env.GSTACK_BROWSE ?? join(process.env.HOME ?? "", ".cursor/skills/gstack/browse/dist/browse");
@@ -32,7 +32,7 @@ function nonBlank(p) {
 }
 
 async function main() {
-  if (!existsSync(bundle)) throw new Error(`bundle not found: ${bundle} (run npm run gate:m3 first)`);
+  if (!existsSync(bundle)) throw new Error(`bundle not found: ${bundle} (see test/fixtures/README.md)`);
   if (!existsSync(BROWSE)) throw new Error(`gstack browse not found at ${BROWSE}`);
   mkdirSync(outDir, { recursive: true });
 

@@ -6,12 +6,16 @@ dist/
 *.log
 .DS_Store
 
-# Committed proof: gate evidence is a deliverable, not a transient log.
+# Runtime gate JSONL exports (stable copies live in test/fixtures/).
+docs/*-evidence/*.jsonl
+docs/hitl-ui-evidence/*.jsonl
+
+# Committed proof: gate evidence logs are deliverables, not transient logs.
 !docs/m1-evidence/gate-evidence.log
 !docs/m2-evidence/
 !docs/m2-evidence/*.log
 !docs/m3-evidence/
-!docs/m3-evidence/**
+!docs/m3-evidence/*.log
 !docs/m4-evidence/
-!docs/m4-evidence/**
+!docs/m4-evidence/*.log
 .gstack/
