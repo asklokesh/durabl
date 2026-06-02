@@ -64,6 +64,7 @@
     "gate:all": "bash scripts/run-all-gates.sh",
     "cleanup:worktrees": "bash scripts/cleanup-old-worktrees.sh",
     "compose:up": "docker compose --profile docker-demo up -d",
+    "compose:validate": "docker compose --profile docker-demo config",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "smoke": "bash scripts/smoke-quickstart.sh",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",

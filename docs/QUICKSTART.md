@@ -59,9 +59,15 @@ node dist/cli.js hitl-input demo-1 --decision "APPROVED"
 Services are gated behind the **`docker-demo`** Compose profile (see `docker-compose.yml`).
 Without `--profile docker-demo`, no containers start.
 
+Restate runs a healthcheck on admin `GET /health`; the **durabl** service waits
+for `restate` to be healthy before starting.
+
 ```bash
+docker compose --profile docker-demo config    # validate YAML
 docker compose --profile docker-demo up --build
 # or: npm run compose:up
+
+docker compose --profile docker-demo ps        # expect restate (healthy)
 
 docker compose --profile docker-demo exec restate \
   restate deployments register http://durabl:9080
