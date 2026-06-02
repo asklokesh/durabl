@@ -94,14 +94,23 @@ journal (`journal.ts`), structural idempotency (`idempotency.ts` +
 ## Optional: Restate in Docker
 
 The default path uses **native** `restate-server` from npm (no Docker). For a
-containerized substrate:
+containerized substrate (`docker-compose.yml`, profile **`docker-demo`**):
+
+- **restate** exposes ingress `:8080` and admin `:9070`; its healthcheck probes
+  `http://127.0.0.1:9070/health` (same endpoint the harness uses).
+- **durabl** starts only after Restate is healthy (`depends_on` +
+  `service_healthy`), then serves the SDK on `:9080`.
 
 ```bash
-docker compose --profile docker-demo up -d
+docker compose --profile docker-demo config   # validate compose file
+docker compose --profile docker-demo up -d    # or: npm run compose:up
+docker compose --profile docker-demo ps       # restate should show (healthy)
+
+docker compose --profile docker-demo exec restate \
+  restate deployments register http://durabl:9080
+
 export DURABL_RESTATE_INGRESS=http://127.0.0.1:8080
 export DURABL_RESTATE_ADMIN=http://127.0.0.1:9070
-npm run service
-npx restate deployments register http://host.docker.internal:9080
 npm run demo
 ```
 
