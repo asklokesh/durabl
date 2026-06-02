@@ -5,6 +5,10 @@ A neutral, self-hostable **replay / time-travel debugging** product over a
 as the step-journal substrate, using **logical step-level fork** (never
 CRIU/process snapshot). TypeScript-first.
 
+## Why durabl
+
+Phase 0 showed the **durable execution engine** wedge is closed (Google AX, Temporal, Restate, and others). durabl targets what remains: a **neutral, portable agent execution journal** with **replay / time-travel**, **logical fork**, and **durable HITL** — your history in your infra, demonstrable offline after export. Investor narrative, ICP, GTM, and competitive matrix: [`docs/FUNDING.md`](docs/FUNDING.md). Live demo script: [`docs/DEMO-NARRATIVE.md`](docs/DEMO-NARRATIVE.md).
+
 Milestones shipped:
 - **M1** — portable step journal + structural exactly-once on Restate ([`docs/m1-slice.md`](docs/m1-slice.md)).
 - **M2** — logical step-level trajectory **fork** + read APIs ([`docs/m2-trajectory-branching.md`](docs/m2-trajectory-branching.md)).
