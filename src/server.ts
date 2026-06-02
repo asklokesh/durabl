@@ -41,6 +41,7 @@ import {
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
+import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Static assets live in <repo>/web (copied into dist via package build step, or
@@ -315,35 +316,56 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
   const port = opts.port ?? Number(process.env.DURABL_UI_PORT ?? 7878);
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    const started = performance.now();
+    const method = req.method ?? "GET";
+    let pathname = "/";
+
+    res.once("finish", () => {
+      logHttpRequest({
+        method,
+        path: pathname,
+        status: res.statusCode || 500,
+        durationMs: Math.round(performance.now() - started),
+        live: ctx.live,
+      });
+    });
+
     void (async () => {
-    try {
-      const url = new URL(req.url ?? "/", `http://${host}:${port}`);
-      if (url.pathname.startsWith("/api/")) {
-        const handled = await handleApi(ctx, url, res, req);
-        if (!handled) sendJson(res, 404, { error: "not found" });
-        return;
+      try {
+        const url = new URL(req.url ?? "/", `http://${host}:${port}`);
+        pathname = url.pathname;
+        if (url.pathname.startsWith("/api/")) {
+          const handled = await handleApi(ctx, url, res, req);
+          if (!handled) sendJson(res, 404, { error: "not found" });
+          return;
+        }
+        // static
+        let rel = url.pathname === "/" ? "/index.html" : url.pathname;
+        rel = rel.replace(/^\/+/, "");
+        const file = webFile(rel) ?? webFile("index.html");
+        if (!file) {
+          sendText(res, 404, "not found", "text/plain");
+          return;
+        }
+        const ext = file.slice(file.lastIndexOf("."));
+        sendText(res, 200, readFileSync(file, "utf8"), MIME[ext] ?? "application/octet-stream");
+      } catch (e) {
+        logServerError({
+          path: pathname,
+          message: e instanceof Error ? e.message : String(e),
+        });
+        sendJson(res, 500, { error: e instanceof Error ? e.message : String(e) });
       }
-      // static
-      let rel = url.pathname === "/" ? "/index.html" : url.pathname;
-      rel = rel.replace(/^\/+/, "");
-      const file = webFile(rel) ?? webFile("index.html");
-      if (!file) {
-        sendText(res, 404, "not found", "text/plain");
-        return;
-      }
-      const ext = file.slice(file.lastIndexOf("."));
-      sendText(res, 200, readFileSync(file, "utf8"), MIME[ext] ?? "application/octet-stream");
-    } catch (e) {
-      sendJson(res, 500, { error: e instanceof Error ? e.message : String(e) });
-    }
     })();
   });
 
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
+      const url = `http://${host}:${port}`;
+      logServerStart({ url, origin: source.origin, live });
       resolve({
-        url: `http://${host}:${port}`,
+        url,
         close: () =>
           new Promise<void>((res) => {
             server.close(() => res());
