@@ -59,6 +59,7 @@
     "gate:m5": "npm run build && node --enable-source-maps dist/harness/run-m5-gate.js",
     "gate:live": "npm run build && node --enable-source-maps dist/harness/run-live-providers-gate.js",
     "gate:harden": "npm run build && node --enable-source-maps dist/harness/run-harden-gate.js",
+    "gate:dbos-skip": "bash scripts/gate-dbos-skip.sh",
     "gate:hitl-ui": "npm run build && node --enable-source-maps dist/harness/run-hitl-ui-gate.js",
     "gate:hitl-web": "npm run gate:hitl-ui",
     "gate:all": "bash scripts/run-all-gates.sh",

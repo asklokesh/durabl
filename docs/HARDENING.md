@@ -56,7 +56,7 @@ No default key is shipped. See `src/api-auth.ts`.
 
 ## Second substrate stub
 
-`src/journal-source-dbos-stub.ts` types the future **DBOS** `JournalSource` adapter (not implemented). See [`docs/SECOND-SUBSTRATE.md`](SECOND-SUBSTRATE.md).
+`src/journal-source-dbos-stub.ts` types the future **DBOS** `JournalSource` adapter (not implemented). See [`docs/SECOND-SUBSTRATE.md`](SECOND-SUBSTRATE.md) and [`docs/integrations/dbos.md`](integrations/dbos.md). CI: `npm run gate:dbos-skip` (NOT RUN, exit 0).
 
 ---
 
