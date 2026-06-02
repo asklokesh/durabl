@@ -7,11 +7,26 @@ cd "$ROOT"
 export DURABL_DATA_DIR="${DURABL_DATA_DIR:-/tmp/durabl-gate-$$}"
 echo "DURABL_DATA_DIR=$DURABL_DATA_DIR"
 
+GATE_ALL_PID=$$
+
+is_gate_all_descendant() {
+  local pid=$1
+  local p=$pid
+  while [ -n "$p" ] && [ "$p" -gt 1 ]; do
+    [ "$p" = "$GATE_ALL_PID" ] && return 0
+    p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ' || true)
+  done
+  return 1
+}
+
 teardown() {
-  local self=$$
   pkill -9 -f restate-server 2>/dev/null || true
   pkill -9 -f dist/service.js 2>/dev/null || true
-  pgrep -f 'node.*dist/harness/run-' 2>/dev/null | grep -v "^${self}$" | xargs kill -9 2>/dev/null || true
+  while IFS= read -r pid; do
+    [ -z "$pid" ] && continue
+    is_gate_all_descendant "$pid" && continue
+    kill -9 "$pid" 2>/dev/null || true
+  done < <(pgrep -f 'node.*dist/harness/run-' 2>/dev/null || true)
   docker rm -f durabl-m4-restate 2>/dev/null || true
   for p in 8080 9070 9080 7879 17878 17879; do
     lsof -nP -iTCP:"${p}" -sTCP:LISTEN -t 2>/dev/null | xargs kill -9 2>/dev/null || true
@@ -20,7 +35,12 @@ teardown() {
   sleep 2
 }
 
-trap teardown EXIT
+on_exit() {
+  local ec=$?
+  teardown
+  exit "$ec"
+}
+trap on_exit EXIT
 
 teardown
 
