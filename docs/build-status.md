@@ -3,7 +3,7 @@
 **Date:** 2026-06-01 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
-**main HEAD:** merged `feat/productize` → `feat/fundability` → `feat/harden` → `feat/hitl-web-ui`.
+**main HEAD:** `d206675` (four tracks merged; harness teardown + M5 G5 HITL UI API).
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -43,7 +43,7 @@ npm run gate:m5   # M5 — 5/5
 
 ## Post-M5 tracks (merged to main)
 
-Integrated from `1cd52b1` via merge commits `9483a85` (fundability) → `70536ad` (harden) → `dcf7f7f` / `2c459b1` (hitl-web-ui) → `e3e5997` (productize follow-up). Core M1–M5 gates unchanged; extension gates below.
+Integrated from `1cd52b1` via merge commits `9483a85` (fundability) → `70536ad` (harden) → `dcf7f7f` / `2c459b1` (hitl-web-ui) → `e3e5997` (productize follow-up). Post-merge harness hardening: `enterHarnessGate` / `exitHarnessGate`, `registerDeploymentWithRetry`, crash-gate port cleanup, `scripts/run-all-gates.sh`. Re-verify on main: `bash scripts/run-all-gates.sh` (or the `npm test` + `gate:m2`…`m5` sequence below).
 
 | Track | Branch | Scope | Gate / entry | Docs |
 |---|---|---|---|---|

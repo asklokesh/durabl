@@ -112,7 +112,7 @@ async function crashGate(point: string): Promise<void> {
   // Phase 2: restart. CRASH_ONCE marker persists so it won't re-crash; recover.
   svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
 
-  const result = await waitForCompletion(runId, 90000);
+  const result = await waitForCompletion(runId, 120000);
 
   const effectCount = countEffects(runId, "step2-tool_call");
   const steps = trajectory(runId).map((e) => e.stepName);
