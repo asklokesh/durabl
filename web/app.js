@@ -1,6 +1,8 @@
 // durabl replay UI — vanilla JS, zero deps. Talks to the read-only replay APIs.
 "use strict";
 
+const THEME_STORAGE_KEY = "durabl.theme";
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, cls, txt) => {
   const e = document.createElement(tag);
@@ -8,6 +10,10 @@ const el = (tag, cls, txt) => {
   if (txt !== undefined) e.textContent = txt;
   return e;
 };
+
+const HITL_SUBMIT_OFFLINE_ERROR =
+  "HITL submit requires live mode (SQLite journal + Restate ingress). " +
+  "Offline export can list paused runs but cannot resolve the durable promise.";
 
 const state = {
   runs: [],
@@ -18,6 +24,7 @@ const state = {
   selectedStepSeq: null,
   live: false,
   hitlSubmitEnabled: false,
+  hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR,
   hitlState: "none",
   pausedRuns: [],
   pausedRunsLoading: false,
@@ -398,8 +405,8 @@ function updateHitlBanner() {
   }
   banner.hidden = false;
   $("#hitlBannerSub").textContent = state.selected || "";
-  const canSubmit = state.hitlSubmitEnabled && state.live;
-  form.hidden = !canSubmit;
+  const canSubmit = hitlCanSubmit();
+  form.hidden = false;
   offlineNote.hidden = canSubmit;
   if (hint) hint.hidden = !canSubmit;
   if (!canSubmit) {
@@ -900,6 +907,7 @@ $("#hitlDecision").addEventListener("keydown", (ev) => {
     await loadSource();
     await loadRuns();
     setInterval(() => {
+      void loadSource();
       void loadHitlPaused().then(() => {
         if (state.selected) void refreshHitlForRun(state.selected);
       });

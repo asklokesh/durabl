@@ -163,6 +163,7 @@ function buildSource(opts: ServerOptions): {
 interface Route {
   source: JournalSource;
   label: string;
+  connectionLabel: string;
   live: boolean;
   exportPath: string | null;
   host: string;
@@ -306,7 +307,8 @@ function handleApi(
       ok: true,
       origin: source.origin,
       source: source.origin,
-      label: ctx.label,
+      label: ctx.connectionLabel,
+      detail: ctx.label,
       live: ctx.live,
       hitlSubmitEnabled: ctx.live,
       exportPath: ctx.exportPath,
@@ -524,9 +526,7 @@ async function handleHitlInput(
 ): Promise<boolean> {
   if (!ctx.live) {
     sendJson(res, 503, {
-      error:
-        "HITL submit requires live mode (SQLite journal + Restate ingress). " +
-        "Offline export can list paused runs but cannot resolve the durable promise.",
+      error: HITL_SUBMIT_OFFLINE_ERROR,
       submitEnabled: false,
     });
     return true;
