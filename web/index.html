@@ -6,6 +6,13 @@
     <title>durabl — replay &amp; time-travel</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236366f1'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/app.css" />
+    <script>
+      (function () {
+        var k = "durabl.theme";
+        var t = localStorage.getItem(k);
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <div id="app">
@@ -17,8 +24,19 @@
             <div class="brand-sub">replay &amp; time-travel</div>
           </div>
         </div>
-        <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
-          <span class="dot"></span><span id="sourceLabel">loading…</span>
+        <div class="topbar-actions">
+          <button
+            type="button"
+            id="themeToggle"
+            class="theme-toggle btn-ghost"
+            aria-label="Switch to dark mode"
+            title="Toggle light / dark theme"
+          >
+            <span class="theme-toggle-icon" aria-hidden="true">☾</span>
+          </button>
+          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
+            <span class="dot"></span><span id="sourceLabel">loading…</span>
+          </div>
         </div>
       </header>
 
