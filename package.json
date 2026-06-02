@@ -77,6 +77,7 @@
     "test:m5": "npm run gate:m5",
     "test:hitl-ui": "npm run gate:hitl-ui",
     "lint": "eslint .",
+    "validate:fixtures": "node --experimental-strip-types scripts/validate-fixture.ts",
     "verify:npm-pack": "bash scripts/verify-npm-pack.sh"
   },
   "dependencies": {
@@ -89,6 +90,8 @@
     "@types/node": "^22.10.0",
     "typescript": "^5.7.0",
     "@eslint/js": "^9.28.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "eslint": "^9.28.0",
     "typescript-eslint": "^8.33.0"
   }
