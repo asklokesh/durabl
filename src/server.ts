@@ -13,6 +13,8 @@
 //   - Replay endpoints are read-only journal reads. M5 HITL resume endpoints
 //     (`POST /api/hitl/input`) proxy to Restate ingress in LIVE mode only;
 //     offline import mode surfaces paused runs from the export but cannot submit.
+//   - Optional WebSocket `/api/ws/runs` (live only, DURABL_ENABLE_WS=1) streams
+//     new step + HITL state events — see docs/BACKEND.md.
 //   - No secrets read or logged; config via env vars only.
 //
 // The whole point: the SAME UI renders a live run and a run imported from a
@@ -41,6 +43,11 @@ import {
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
+import {
+  handleRunsWebSocketUpgrade,
+  wsRunsEnabled,
+  WS_RUNS_PATH,
+} from "./ws-runs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Static assets live in <repo>/web (copied into dist via package build step, or
@@ -133,6 +140,7 @@ function handleApi(
   const { source } = ctx;
 
   if (p === "/api/health") {
+    const wsEnabled = wsRunsEnabled() && ctx.live;
     sendJson(res, 200, {
       ok: true,
       origin: source.origin,
@@ -140,6 +148,8 @@ function handleApi(
       label: ctx.label,
       live: ctx.live,
       hitlSubmitEnabled: ctx.live,
+      wsEnabled,
+      wsPath: wsEnabled ? WS_RUNS_PATH : null,
     });
     return true;
   }
@@ -337,6 +347,15 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
       sendJson(res, 500, { error: e instanceof Error ? e.message : String(e) });
     }
     })();
+  });
+
+  server.on("upgrade", (req, socket) => {
+    const url = new URL(req.url ?? "/", `http://${host}:${port}`);
+    if (url.pathname === WS_RUNS_PATH) {
+      handleRunsWebSocketUpgrade(ctx, url, req, socket);
+      return;
+    }
+    socket.destroy();
   });
 
   return new Promise((resolve, reject) => {
