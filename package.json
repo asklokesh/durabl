@@ -79,8 +79,8 @@
     "test:m4": "npm run gate:m4",
     "test:m5": "npm run gate:m5",
     "test:hitl-ui": "npm run gate:hitl-ui",
-
-    "demo:interactive": "bash scripts/demo-interactive.sh"
+    "demo:interactive": "bash scripts/demo-interactive.sh",
+    "test:e2e": "bash scripts/setup-e2e-artifacts.sh && npm run build && playwright test"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",
@@ -95,6 +95,7 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "eslint": "^9.28.0",
-    "typescript-eslint": "^8.33.0"
+    "typescript-eslint": "^8.33.0",
+    "@playwright/test": "^1.52.0"
   }
 }

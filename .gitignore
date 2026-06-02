@@ -32,3 +32,12 @@ docs/m3-evidence/screenshots/
 !docs/evidence/
 !docs/evidence/gate-all-*.log
 .gstack/
+
+# Playwright e2e (committed fixtures under tests/fixtures/)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+!tests/fixtures/
+!tests/fixtures/**
+
