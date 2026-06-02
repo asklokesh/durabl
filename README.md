@@ -162,6 +162,15 @@ toggles). All entries are commented placeholders — no secrets in the template.
 Real provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) live outside `DURABL_*`;
 never commit them. No credentials are read or logged by durabl itself.
 
+## Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/FAQ.md`](docs/FAQ.md) | Common questions (journal, replay, HITL, gates) |
+| [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Harness lock, port conflicts, SIGKILL teardown, offline HITL 503 |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Worktrees, serial gates, harness locking |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | First-run walkthrough |
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
