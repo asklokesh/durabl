@@ -1,6 +1,8 @@
 // durabl replay UI — vanilla JS, zero deps. Talks to the read-only replay APIs.
 "use strict";
 
+const THEME_STORAGE_KEY = "durabl.theme";
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, cls, txt) => {
   const e = document.createElement(tag);
@@ -42,6 +44,50 @@ async function apiPost(path, payload) {
 function fmtOut(v) {
   if (typeof v === "string") return v;
   try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+}
+
+function getStoredTheme() {
+  const t = localStorage.getItem(THEME_STORAGE_KEY);
+  return t === "light" || t === "dark" ? t : null;
+}
+
+function getEffectiveTheme() {
+  const stored = getStoredTheme();
+  if (stored) return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  if (theme === "light" || theme === "dark") {
+    document.documentElement.setAttribute("data-theme", theme);
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+}
+
+function updateThemeToggle() {
+  const btn = $("#themeToggle");
+  if (!btn) return;
+  const dark = getEffectiveTheme() === "dark";
+  btn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  btn.title = dark ? "Switch to light mode" : "Switch to dark mode";
+  const icon = btn.querySelector(".theme-toggle-icon");
+  if (icon) icon.textContent = dark ? "☀" : "☾";
+}
+
+function initTheme() {
+  applyTheme(getStoredTheme());
+  updateThemeToggle();
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (!getStoredTheme()) updateThemeToggle();
+  });
+}
+
+function toggleTheme() {
+  const next = getEffectiveTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_STORAGE_KEY, next);
+  applyTheme(next);
+  updateThemeToggle();
 }
 
 // ── Source banner ──────────────────────────────────────────
@@ -446,6 +492,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
+$("#themeToggle")?.addEventListener("click", toggleTheme);
+initTheme();
 
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
