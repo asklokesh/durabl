@@ -28,6 +28,26 @@ npm run gate:m5       # HITL + export
 
 Typecheck only: `npm run typecheck`.
 
+## npm package (pre-publish)
+
+Before tagging or publishing to npm, confirm the tarball matches what consumers
+install (compiled `dist/`, root `web/` for the replay UI, no `src/` or harness
+leaks):
+
+```bash
+npm run verify:npm-pack
+```
+
+This runs `npm run build`, then `npm pack --dry-run`, and asserts required paths
+are present. You can inspect the listing manually with:
+
+```bash
+npm run build && npm pack --dry-run
+```
+
+`package.json` uses `files`, `types`, and `exports` so Node resolves the public
+API at `dist/index.js` with matching `.d.ts`.
+
 ## Pull requests
 
 1. Branch from `main` (`feat/<topic>`).
