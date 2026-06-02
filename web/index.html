@@ -60,7 +60,10 @@
           <div class="hitl-banner" id="hitlBanner" hidden>
             <div class="hitl-banner-head">
               <span class="hitl-pill">Awaiting human input</span>
-              <span class="hitl-banner-sub" id="hitlBannerSub"></span>
+              <div class="hitl-banner-id-row">
+                <span class="hitl-banner-sub" id="hitlBannerSub"></span>
+                <button type="button" class="btn-copy-runid" id="hitlCopyRunIdBtn" hidden>Copy ID</button>
+              </div>
             </div>
             <form id="hitlForm" class="hitl-form">
               <label class="hitl-label" for="hitlDecision">Decision</label>
@@ -96,6 +99,7 @@
         </section>
       </div>
     </div>
+    <div id="toastHost" class="toast-host" aria-live="polite" aria-relevant="additions"></div>
     <script src="/app.js"></script>
   </body>
 </html>
