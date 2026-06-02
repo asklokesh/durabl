@@ -83,48 +83,13 @@ Phase 0 background: [`docs/phase0/`](docs/phase0/).
 
 ## Architecture
 
-```mermaid
-flowchart TB
-  subgraph client["Developer surface"]
-    CLI["durabl CLI"]
-    UI["Replay web UI"]
-    API["Programmatic API\n(src/index.ts)"]
-  end
+Full layer diagram, `src/` map, and data flows:
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-  subgraph durabl["durabl (neutral layer)"]
-    JM["Portable step journal\n(SQLite + JSONL export)"]
-    IDEM["IdempotencyKey contract"]
-    ES["Effect sink\n(exactly-once boundary)"]
-    RP["Replay engine\n(JournalSource)"]
-    FK["fork / seedFork"]
-  end
-
-  subgraph substrate["Substrate (default: Restate)"]
-    RS["restate-server"]
-    SVC["AgentRun / HitlAgentRun\nSDK service"]
-  end
-
-  CLI --> JM
-  CLI --> FK
-  CLI --> RS
-  UI --> RP
-  RP --> JM
-  API --> JM
-  SVC --> JM
-  SVC --> ES
-  SVC --> IDEM
-  FK --> JM
-  RS --> SVC
-```
-
-**Separation of concerns**
-
-- **Workflow** orchestrates durable steps on Restate; it never touches SQLite directly.
-- **Journal** owns persistence, export, and fork seeding.
-- **Effect sink** requires a branded `IdempotencyKey` — the dual-write window is
-  structurally deduped (see M1).
-- **Replay** reads only `JournalSource` (live DB or imported JSONL); no live
-  Restate state required for reconstruction.
+At a glance: Restate provides crash-durable steps; durabl owns the portable
+journal (`journal.ts`), structural idempotency (`idempotency.ts` +
+`effect-sink.ts`), logical fork (`fork.ts`), and substrate-independent replay
+(`journal-source.ts` + `replay.ts` + `web/` UI).
 
 ## Optional: Restate in Docker
 
@@ -144,19 +109,8 @@ Stop: `docker compose --profile docker-demo down`.
 
 ## Layout
 
-```
-src/
-  idempotency.ts      # branded IdempotencyKey
-  step-model.ts       # neutral journal types (schema v1)
-  journal.ts          # SQLite journal + JSONL export + forkRun
-  effect-sink.ts      # exactly-once effect boundary
-  workflow.ts         # reference agent loop on Restate
-  replay.ts           # reconstruct / state-at
-  fork.ts             # logical fork + forkAndRun
-  cli.ts              # durabl CLI
-  harness/            # adversarial gates + demo
-web/                  # replay UI static assets
-```
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the complete `src/` tree.
+Top-level: `src/` (library + CLI + harness), `web/` (replay UI), `docs/`.
 
 ## Configuration
 
