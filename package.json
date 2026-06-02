@@ -75,6 +75,7 @@
     "test:m4": "npm run gate:m4",
     "test:m5": "npm run gate:m5",
     "test:hitl-ui": "npm run gate:hitl-ui",
+    "lint": "eslint .",
     "verify:npm-pack": "bash scripts/verify-npm-pack.sh"
   },
   "dependencies": {
@@ -85,6 +86,9 @@
     "@restatedev/restate": "^1.6.2",
     "@restatedev/restate-server": "^1.6.2",
     "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "typescript-eslint": "^8.33.0"
   }
 }

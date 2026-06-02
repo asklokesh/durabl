@@ -164,8 +164,114 @@ Human-in-the-loop (Restate ingress):
   paused
 
 Environment: DURABL_DATA_DIR, DURABL_JOURNAL_DB, DURABL_RESTATE_INGRESS, …
-Docs: https://github.com/durabl/durabl#readme
+Docs: https://github.com/durabl/durabl/blob/main/docs/CLI.md
 `;
+
+const COMMAND_HELP: Record<string, string> = {
+  run: `durabl run — invoke AgentRun on Restate ingress (sync attach)
+
+Usage:
+  durabl run <runId> --prompt <p> [--trajectory <t>]
+
+Requires: DURABL_RESTATE_INGRESS`,
+
+  fork: `durabl fork — seed journal through seq N and invoke a new run
+
+Usage:
+  durabl fork <sourceRunId> --at <N> --new <newRunId> --prompt <p> [--trajectory <t>]
+
+Requires: DURABL_RESTATE_INGRESS`,
+
+  inspect: `durabl inspect — trajectory, lineage, effects, forks (journal only)
+
+Usage:
+  durabl inspect <runId>`,
+
+  "list-forks": `durabl list-forks — direct child forks of a run
+
+Usage:
+  durabl list-forks <runId>`,
+
+  tree: `durabl tree — full descendant fork tree (stdout)
+
+Usage:
+  durabl tree <runId>`,
+
+  diff: `durabl diff — per-seq divergence between two runs
+
+Usage:
+  durabl diff <runA> <runB>`,
+
+  export: `durabl export — portable JSONL for one run
+
+Usage:
+  durabl export <runId> [--meta]
+
+  --meta  Include lineage metadata line`,
+
+  "export-bundle": `durabl export-bundle — JSONL bundle for a fork tree root
+
+Usage:
+  durabl export-bundle <rootRunId>`,
+
+  replay: `durabl replay — human-readable step replay (journal only)
+
+Usage:
+  durabl replay <runId> [--from <export.jsonl>]
+
+  --from  Offline replay from exported JSONL instead of live journal`,
+
+  "state-at": `durabl state-at — time-travel state after step N
+
+Usage:
+  durabl state-at <runId> --n <N> [--from <export.jsonl>]`,
+
+  ui: `durabl ui — replay web UI (localhost)
+
+Usage:
+  durabl ui [--port <p>] [--from <export.jsonl>]
+
+  --port  HTTP port (default from config)
+  --from  Offline mode from exported JSONL`,
+
+  runs: `durabl runs — list all known run ids (journal only)
+
+Usage:
+  durabl runs`,
+
+  "hitl-run": `durabl hitl-run — start HITL run (suspends at pause)
+
+Usage:
+  durabl hitl-run <runId> --prompt <p> [--trajectory <t>]
+
+Requires: DURABL_RESTATE_INGRESS`,
+
+  "hitl-input": `durabl hitl-input — resume paused HITL run with human decision
+
+Usage:
+  durabl hitl-input <runId> --decision <text>
+
+Requires: DURABL_RESTATE_INGRESS`,
+
+  "hitl-status": `durabl hitl-status — HITL state for a run (journal + ingress)
+
+Usage:
+  durabl hitl-status <runId>`,
+
+  paused: `durabl paused — runs awaiting human input
+
+Usage:
+  durabl paused`,
+};
+
+function printCommandHelp(command: string): void {
+  const text = COMMAND_HELP[command];
+  if (text) {
+    console.log(text);
+    return;
+  }
+  console.log(USAGE);
+}
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -194,6 +300,11 @@ async function main(): Promise<void> {
     return;
   }
   const { positional, flags } = parseFlags(rest);
+
+  if (flags.help) {
+    printCommandHelp(cmd ?? "");
+    return;
+  }
 
   switch (cmd) {
     case "run": {
