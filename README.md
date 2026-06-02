@@ -9,7 +9,14 @@ structural per-step idempotency.
 **Wedge (what you get today):** a TypeScript library + CLI that proves durable
 agent runs survive real crashes, fork to alternate trajectories without
 re-firing side effects, reconstruct runs offline from JSONL exports, and resume
-HITL workflows after a full substrate restart.
+HITL workflows after a full substrate restart (CLI or replay UI).
+
+Phase 0 showed the **durable execution engine** wedge is closed (Google AX,
+Temporal, Restate, and others). durabl targets what remains: **your history in
+your infra**, demonstrable offline after export. Investor narrative and live
+demo script: [`docs/FUNDING.md`](docs/FUNDING.md),
+[`docs/DEMO-NARRATIVE.md`](docs/DEMO-NARRATIVE.md),
+[`docs/RISKS.md`](docs/RISKS.md).
 
 ## Quickstart
 
@@ -41,8 +48,13 @@ npx durabl ui --from export.jsonl   # fully offline
 **Verify (CI-style):**
 
 ```bash
-npm test            # M1 gate (== npm run gate)
-npm run gate:m2     # logical fork gate
+npm test              # M1 gate (== npm run gate)
+npm run gate:m2       # logical fork gate
+npm run gate:m3       # replay + offline UI APIs
+npm run gate:m4       # provider/deploy neutrality
+npm run gate:m5       # HITL pause/resume + export
+npm run gate:hitl-ui  # HITL web UI resume + offline 503
+npm run gate:live     # real LLM providers (skip if no API keys)
 ```
 
 ## Milestone proof
