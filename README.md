@@ -67,6 +67,8 @@ npm run gate:hitl-ui  # HITL web UI resume + offline 503
 npm run gate:live     # real LLM providers (skip if no API keys)
 ```
 
+HTTP routes for the replay UI (`/api/*` and static `web/`): [`docs/API.md`](docs/API.md).
+
 **Stuck gate / stop harness loop:** if a gate was SIGKILL'd or ports are wedged, clear the harness lock and child processes before re-running:
 
 ```bash
