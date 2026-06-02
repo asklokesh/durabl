@@ -4,6 +4,8 @@ Entry point: `durabl` (or `npx durabl` after `npm run build`). Global help: `dur
 
 Environment variables are documented in the [README](../README.md#environment-variables).
 
+TTY stderr gets colored errors and spinners for Restate/UI operations (`NO_COLOR` disables styling). Actionable hints are printed on usage and runtime failures via `src/cli-ui.ts`.
+
 ## Commands
 
 | Command | Summary | Requires Restate ingress |

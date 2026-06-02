@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config, validateConfig, ConfigError } from "./config.js";
@@ -32,6 +33,7 @@ import { reconstruct, stateAt } from "./replay.js";
 import { startServerHandle } from "./server.js";
 import { installSignalHandlers, registerGracefulShutdown } from "./lifecycle.js";
 import { ingressFetch } from "./restate-ingress.js";
+import { cliStyle, failCli, failRuntime, withSpinner } from "./cli-ui.js";
 
 const PKG = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../package.json"), "utf8"),
@@ -39,26 +41,37 @@ const PKG = JSON.parse(
 const VERSION = PKG.version;
 
 const INGRESS = config.restateIngress;
+const HARNESS_LOCK =
+  process.env.DURABL_HARNESS_LOCK ?? join(tmpdir(), "durabl-harness.lock");
+const CLI_CTX = { restateIngress: INGRESS, harnessLockPath: HARNESS_LOCK };
 
 function cliError(message: string, code = 2): never {
-  console.error(`durabl: error: ${message}`);
-  process.exit(code);
+  failCli(message, { code });
+}
+
+function usageError(usage: string): never {
+  failCli(usage, {
+    hints: [`Run ${cliStyle.info("durabl --help")} for the full command list.`],
+  });
 }
 
 /** Invoke a run on the Restate substrate via the ingress (synchronous attach). */
 async function ingressInvoke(runId: string, decision: ForkDecision): Promise<unknown> {
-  const res = await ingressFetch(`${INGRESS}/AgentRun/${runId}/run`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ prompt: decision.prompt, trajectory: decision.trajectory }),
+  return withSpinner(`invoking ${runId} via Restate`, async () => {
+    const res = await ingressFetch(`${INGRESS}/AgentRun/${runId}/run`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: decision.prompt, trajectory: decision.trajectory }),
+    });
+    if (!res.ok) {
+      throw new Error(`invoke ${runId} failed (${res.status}): ${await res.text()}`);
+    }
+    return res.json();
   });
-  if (!res.ok) {
-    throw new Error(`invoke ${runId} failed (${res.status}): ${await res.text()}`);
-  }
-  return res.json();
 }
 
 async function hitlSubmit(runId: string, prompt: string, traj: string): Promise<void> {
+  return withSpinner(`submitting HITL run ${runId}`, async () => {
   const res = await ingressFetch(`${INGRESS}/HitlAgentRun/${runId}/run/send`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -67,21 +80,24 @@ async function hitlSubmit(runId: string, prompt: string, traj: string): Promise<
   if (!res.ok) {
     throw new Error(`hitl submit ${runId} failed (${res.status}): ${await res.text()}`);
   }
+  });
 }
 
 async function hitlProvideInput(
   runId: string,
   decision: string,
 ): Promise<{ runId: string; accepted: boolean }> {
-  const res = await ingressFetch(`${INGRESS}/HitlAgentRun/${runId}/provideInput`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ decision }),
+  return withSpinner(`resuming HITL run ${runId}`, async () => {
+    const res = await ingressFetch(`${INGRESS}/HitlAgentRun/${runId}/provideInput`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ decision }),
+    });
+    if (!res.ok) {
+      throw new Error(`hitl provideInput ${runId} failed (${res.status}): ${await res.text()}`);
+    }
+    return res.json() as Promise<{ runId: string; accepted: boolean }>;
   });
-  if (!res.ok) {
-    throw new Error(`hitl provideInput ${runId} failed (${res.status}): ${await res.text()}`);
-  }
-  return res.json() as Promise<{ runId: string; accepted: boolean }>;
 }
 
 function parseFlags(args: string[]): { positional: string[]; flags: Record<string, string | boolean> } {
@@ -346,9 +362,11 @@ async function main(): Promise<void> {
       if (!Number.isInteger(throughSeq)) cliError(`--at must be an integer (got ${at})`);
       const trajectory =
         typeof flags.trajectory === "string" ? flags.trajectory : `fork-of-${sourceRunId}`;
-      const result = await forkAndRun(
-        { sourceRunId, newRunId, throughSeq, decision: { prompt, trajectory } },
-        ingressInvoke,
+      const result = await withSpinner(`forking ${sourceRunId} → ${newRunId}`, () =>
+        forkAndRun(
+          { sourceRunId, newRunId, throughSeq, decision: { prompt, trajectory } },
+          ingressInvoke,
+        ),
       );
       out(result);
       break;
@@ -442,14 +460,18 @@ async function main(): Promise<void> {
     case "ui": {
       const port = typeof flags.port === "string" ? Number(flags.port) : undefined;
       const importPath = typeof flags.from === "string" ? flags.from : undefined;
-      const handle = await startServerHandle({ port, importPath });
+      const handle = await withSpinner("starting replay UI", () =>
+        startServerHandle({ port, importPath }),
+      );
       registerGracefulShutdown(() => handle.close());
       installSignalHandlers();
-      console.log(`durabl replay UI running at ${handle.url}`);
+      console.log(`${cliStyle.info("durabl replay UI")} running at ${cliStyle.bold(handle.url)}`);
       console.log(
-        `source: ${importPath ? `imported export ${importPath} (OFFLINE — no substrate)` : "live SQLite journal"}`,
+        cliStyle.dim(
+          `source: ${importPath ? `imported export ${importPath} (OFFLINE — no substrate)` : "live SQLite journal"}`,
+        ),
       );
-      console.log(`(bound to localhost only; SIGTERM/SIGINT to stop)`);
+      console.log(cliStyle.dim("(bound to localhost only; SIGTERM/SIGINT to stop)"));
       await new Promise(() => {});
       break;
     }
@@ -502,7 +524,5 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  const message = e instanceof Error ? e.message : String(e);
-  console.error(`durabl: error: ${message}`);
-  process.exit(1);
+  failRuntime(e, CLI_CTX);
 });
