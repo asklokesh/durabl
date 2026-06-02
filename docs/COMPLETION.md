@@ -70,6 +70,32 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 
 ---
 
+## Backend / HTTP server (`src/server.ts`)
+
+**Route map:** [`BACKEND.md`](BACKEND.md)
+
+| Branch | Tip SHA | Scope |
+|--------|---------|--------|
+| `feat/backend-health` | `e7b3c9f313070d82b1cd84642d9554c38732014f` | `/health`, `/ready`, `/metrics` (JSON liveness; Prometheus text on `/metrics`) |
+| `feat/backend-security` | `3d6b0dde88d1e99126eecc6a8942793d0a574123` | CORS, headers, `DURABL_API_KEY` |
+| `feat/backend-runs-api` | `d2ef28f07641f4cbe7c793264c1509e2eb5b201a` | Paginated `GET /api/runs` |
+| `feat/backend-fork-api` | `13606e9265b3cf05b2018045c5c2531857871f71` | Fork REST + inspect |
+| `feat/backend-migrations` | `3c0b57c282be2341760ae8ef4b4cd9fd94ddce77` | SQLite journal migrations |
+| `feat/backend-otel` | `177cade9b35dab6a1dd7ef61458e47024752710c` | Optional OTEL hooks |
+| `feat/backend-lifecycle` | `588357b4de6821583083da5b3281824f32b33222` | Env validation, SIGTERM |
+| `feat/backend-auth` | `8a3519370091c77cf4e4a9ce86f7f8da1038824e` | API auth gate |
+| `feat/backend-ratelimit` | `f09d9535f8122cf372ffc10d558c9622f5e7ca69` | HITL POST rate limit |
+| `feat/backend-api-tests` | `7f79005007823a0e7809d084ae3271935535a353` | `npm run test:api` |
+| `feat/backend-ws` | `b9eeb122a746563713f1001ad0ba2b2b4ba72b80` | WS runs feed |
+
+**Skipped:** `feat/backend-logging` (wrong tree; structured logging landed via other backend branches).
+
+**Land on `main`:** `0f0f36c` + follow-up fix commit (run `git rev-parse HEAD` after pull).
+
+**Gates (backend touch):** `npm run typecheck`, `npm run test:api`, `npm run gate:m5`, `npm run gate:hitl-ui`.
+
+---
+
 ## Verified vs config-ready
 
 | Area | Status | Notes |

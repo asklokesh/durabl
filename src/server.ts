@@ -63,6 +63,16 @@ import {
 } from "./ws-runs.js";
 import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
 import { applyCors, applySecurityHeaders } from "./http-security.js";
+import {
+  exportJsonlFromSource,
+  exportBundleJsonlFromSource,
+} from "./export-source.js";
+
+const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
+
+export const HITL_SUBMIT_OFFLINE_ERROR =
+  "HITL submit requires live mode (SQLite journal + Restate ingress). " +
+  "Offline export can list paused runs but cannot resolve the durable promise.";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIRS = [
@@ -255,10 +265,24 @@ async function handleOpsProbe(
   return false;
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+async function readBodyBytes(req: IncomingMessage, maxBytes: number): Promise<Buffer> {
   const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
+  let total = 0;
+  for await (const c of req) {
+    const buf = Buffer.isBuffer(c) ? c : Buffer.from(c);
+    total += buf.length;
+    if (total > maxBytes) throw new Error("body too large");
+    chunks.push(buf);
+  }
+  return Buffer.concat(chunks);
+}
+
+async function readTextBody(req: IncomingMessage, maxBytes: number): Promise<string> {
+  return (await readBodyBytes(req, maxBytes)).toString("utf8");
+}
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const raw = (await readBodyBytes(req, MAX_IMPORT_BYTES)).toString("utf8").trim();
   if (!raw) return {};
   try {
     return JSON.parse(raw) as unknown;
@@ -289,6 +313,7 @@ function handleApi(
       uiUrl: requestUiUrl(req, ctx.host, ctx.port),
       wsEnabled,
       wsPath: wsEnabled ? WS_RUNS_PATH : null,
+      ...(ctx.live ? {} : { hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR }),
     });
     return true;
   }
@@ -402,7 +427,69 @@ function handleApi(
   if (p === "/api/fork" && req.method === "POST") {
     return handleForkPost(ctx, req, res);
   }
+  if (p === "/api/export" && req.method === "GET") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    const bundle = url.searchParams.get("bundle") !== "false";
+    try {
+      const jsonl = bundle
+        ? exportBundleJsonlFromSource(source, runId)
+        : exportJsonlFromSource(source, runId);
+      const safe = runId.replace(/[^\w.-]+/g, "_");
+      const filename = bundle ? `${safe}-bundle.jsonl` : `${safe}.jsonl`;
+      res.writeHead(200, {
+        "content-type": "application/x-ndjson; charset=utf-8",
+        "content-disposition": `attachment; filename="${filename}"`,
+        "cache-control": "no-store",
+      });
+      res.end(jsonl);
+    } catch (e) {
+      return badReq(res, e instanceof Error ? e.message : String(e));
+    }
+    return true;
+  }
+  if (p === "/api/import" && req.method === "POST") {
+    return handleImport(ctx, req, res);
+  }
   return false;
+}
+
+async function handleImport(
+  ctx: Route,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<boolean> {
+  let jsonl: string;
+  try {
+    jsonl = (await readTextBody(req, MAX_IMPORT_BYTES)).trim();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "body too large") {
+      sendJson(res, 413, { error: "import too large (max 32 MiB)" });
+      return true;
+    }
+    return badReq(res, msg);
+  }
+  if (!jsonl) return badReq(res, "empty JSONL body");
+  try {
+    const origin = `imported:upload:${Date.now()}`;
+    ctx.source = importJournalSource(jsonl, origin);
+    ctx.label = "browser upload (OFFLINE — no substrate)";
+    ctx.live = false;
+    ctx.exportPath = null;
+    sendJson(res, 200, {
+      ok: true,
+      origin: ctx.source.origin,
+      label: ctx.label,
+      live: false,
+      hitlSubmitEnabled: false,
+      hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR,
+      runs: ctx.source.allRunIds().length,
+    });
+  } catch (e) {
+    return badReq(res, e instanceof Error ? e.message : String(e));
+  }
+  return true;
 }
 
 async function handleForkPost(

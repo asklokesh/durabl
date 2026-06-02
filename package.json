@@ -72,6 +72,7 @@
     "journal:migrate": "npm run build && node --enable-source-maps dist/journal-migrate.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
     "capture:ui": "npm run build && node scripts/capture-ui.mjs",
+    "test:api": "npm run build && node --enable-source-maps --test dist/http-api.test.js",
     "test": "npm run gate",
     "test:m2": "npm run gate:m2",
     "test:m3": "npm run gate:m3",
