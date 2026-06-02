@@ -178,6 +178,15 @@ Private vulnerability reporting, no secrets in public issues, env-var-only
 credentials, and self-host data boundaries:
 [`SECURITY.md`](SECURITY.md).
 
+## Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/FAQ.md`](docs/FAQ.md) | Common questions (journal, replay, HITL, gates) |
+| [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Harness lock, port conflicts, SIGKILL teardown, offline HITL 503 |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Worktrees, serial gates, harness locking |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | First-run walkthrough |
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
