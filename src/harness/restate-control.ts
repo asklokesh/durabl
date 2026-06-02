@@ -97,6 +97,16 @@ export async function waitForService(timeoutMs = 20000): Promise<boolean> {
   return false;
 }
 
+/** Wait until nothing is listening on the SDK service port (post-SIGKILL cleanup). */
+export async function waitForServiceDown(timeoutMs = 15000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await tcpOpen(config.servicePort, 500))) return true;
+    await sleep(200);
+  }
+  return false;
+}
+
 export function registerDeployment(): { ok: boolean; out: string } {
   const r = spawnSync(
     RESTATE_CLI_BIN,
@@ -104,6 +114,41 @@ export function registerDeployment(): { ok: boolean; out: string } {
     { encoding: "utf8" },
   );
   return { ok: r.status === 0, out: (r.stdout ?? "") + (r.stderr ?? "") };
+}
+
+/** registerDeployment with bounded retries — admin can lag after service SIGKILL storms. */
+export async function registerDeploymentWithRetry(
+  tries = 8,
+): Promise<{ ok: boolean; out: string }> {
+  let last = { ok: false, out: "" };
+  for (let i = 0; i < tries; i++) {
+    await waitForRestate(5000);
+    last = registerDeployment();
+    if (last.ok) return last;
+    await sleep(400);
+  }
+  return last;
+}
+
+/** Reap stale SDK children so TCP bind + deployment register stay deterministic. */
+export function killStaleServiceProcesses(): void {
+  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+}
+
+/** Start SDK service and register deployment (shared harness helper). */
+export async function startAndRegisterService(
+  env: Record<string, string> = {},
+): Promise<ServiceHandle> {
+  killStaleServiceProcesses();
+  await sleep(400);
+  if (!(await waitForRestate(30000))) {
+    throw new Error("restate admin not reachable before deployment register");
+  }
+  const svc = startService(env);
+  if (!(await waitForService(20000))) throw new Error("service did not come up");
+  const reg = await registerDeploymentWithRetry(12);
+  if (!reg.ok) throw new Error("register failed: " + reg.out);
+  return svc;
 }
 
 export function killProc(proc: ChildProcess): void {

@@ -41,12 +41,10 @@ import { join } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import { config } from "../config.js";
 import {
-  registerDeployment,
   sleep,
   startRestateServer,
-  startService,
+  startAndRegisterService,
   waitForRestate,
-  waitForService,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -59,6 +57,7 @@ import {
 } from "../journal.js";
 import { importJournalSource, liveJournalSource } from "../journal-source.js";
 import { reconstruct, assertReplayMatches } from "../replay.js";
+import { startServerHandle } from "../server.js";
 
 const INGRESS = config.restateIngress;
 const EVID_DIR = join(process.cwd(), "docs", "m5-evidence");
@@ -81,15 +80,6 @@ function isProcAlive(pid: number): boolean {
   } catch {
     return false;
   }
-}
-
-/** Start the SDK service (optionally with a crash config) and register it. */
-async function startAndRegister(env: Record<string, string> = {}): Promise<ServiceHandle> {
-  const svc = startService(env);
-  if (!(await waitForService(15000))) throw new Error("service did not come up");
-  const reg = registerDeployment();
-  if (!reg.ok) throw new Error("register failed: " + reg.out);
-  return svc;
 }
 
 /** Submit a HITL run one-way (non-blocking) — it will advance to the pause. */
@@ -183,7 +173,7 @@ async function startServer(): Promise<ChildProcess> {
 async function g1(): Promise<void> {
   const runId = `m5-hitl-${Date.now()}`;
   let server = await startServer();
-  let svc = await startAndRegister();
+  let svc = await startAndRegisterService();
 
   await hitlSubmit(runId, "ship-it", "main");
   const paused = await waitForPaused(runId, 20000);
@@ -201,7 +191,7 @@ async function g1(): Promise<void> {
 
   // ── REAL PROCESS RESTART: fresh server + fresh service process ────────────
   server = await startServer();
-  svc = await startAndRegister();
+  svc = await startAndRegisterService();
 
   // Supply human input from the fresh process → the run resumes & completes.
   const decision = "APPROVED-by-human";
@@ -260,7 +250,7 @@ async function g2(): Promise<void> {
   const crashPoint = "on-resume:after-effect"; // effect fired, journal not committed
   let server = await startServer();
   // Service crashes ONCE at the dangerous window during resume.
-  let svc = await startAndRegister({ DURABL_CRASH_AT: crashPoint, DURABL_CRASH_ONCE: "1" });
+  let svc = await startAndRegisterService({ DURABL_CRASH_AT: crashPoint, DURABL_CRASH_ONCE: "1" });
 
   await hitlSubmit(runId, "crash-on-resume", "main");
   const paused = await waitForPaused(runId, 20000);
@@ -275,7 +265,7 @@ async function g2(): Promise<void> {
   // Restart the service (CRASH_ONCE marker persists → won't re-crash) → recover.
   killProc(svc.proc);
   await sleep(400);
-  svc = await startAndRegister({ DURABL_CRASH_AT: crashPoint, DURABL_CRASH_ONCE: "1" });
+  svc = await startAndRegisterService({ DURABL_CRASH_AT: crashPoint, DURABL_CRASH_ONCE: "1" });
 
   const result = await waitForCompletion(runId, 30000);
   const toolEffects = countEffects(runId, "step4-tool_call");
@@ -301,7 +291,7 @@ async function g2(): Promise<void> {
 async function g3(): Promise<void> {
   const runId = `m5-double-${Date.now()}`;
   const server = await startServer();
-  const svc = await startAndRegister();
+  const svc = await startAndRegisterService();
 
   await hitlSubmit(runId, "double-submit", "main");
   const paused = await waitForPaused(runId, 20000);
@@ -344,7 +334,7 @@ async function g3(): Promise<void> {
 async function g4(): Promise<void> {
   const runId = `m5-export-${Date.now()}`;
   let server = await startServer();
-  let svc = await startAndRegister();
+  let svc = await startAndRegisterService();
 
   // Produce a COMPLETE HITL run: submit, pause, resume to completion.
   await hitlSubmit(runId, "exportable", "main");
@@ -397,6 +387,58 @@ async function g4(): Promise<void> {
   // server already dead from killSubstrate; nothing to kill.
 }
 
+// ─── G5: HITL web UI — paused list + resume via HTTP API (live, no browse daemon) ─
+async function g5HitlWebUiApi(): Promise<void> {
+  const runId = `m5-ui-${Date.now()}`;
+  const uiPort = 17878;
+  let server = await startServer();
+  let svc = await startAndRegisterService();
+  let ui: Awaited<ReturnType<typeof startServerHandle>> | null = null;
+
+  try {
+    await hitlSubmit(runId, "ui-api-resume", "main");
+    const paused = await waitForPaused(runId, 20000);
+    ui = await startServerHandle({ port: uiPort });
+
+    const pausedRes = (await fetch(`${ui.url}/api/hitl/paused`).then((r) => r.json())) as {
+      submitEnabled?: boolean;
+      paused?: { runId: string }[];
+    };
+    const listed = pausedRes.paused?.some((p) => p.runId === runId) ?? false;
+    const decision = "APPROVED-VIA-WEB-UI";
+    const submitRes = await fetch(`${ui.url}/api/hitl/input`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ runId, decision }),
+    });
+    const submitBody = (await submitRes.json()) as { accepted?: boolean };
+    await waitForCompletion(runId, 45000);
+    const resumed = hitlState(runId) === "resumed";
+    const toolEffects = countEffects(runId, "step4-tool_call");
+
+    const pass =
+      paused &&
+      pausedRes.submitEnabled === true &&
+      listed &&
+      submitRes.ok &&
+      submitBody.accepted === true &&
+      resumed &&
+      toolEffects === 1;
+
+    record(
+      "G5 hitl-web-ui-api-resume",
+      pass,
+      `paused=${paused} listed=${listed} submit_http=${submitRes.status} accepted=${submitBody.accepted} ` +
+        `resumed=${resumed} tool_effects=${toolEffects}(expect 1)`,
+    );
+  } finally {
+    if (ui) await ui.close();
+    killProc(svc.proc);
+    await stopServer(server);
+    await sleep(300);
+  }
+}
+
 async function main(): Promise<void> {
   // Clean slate.
   spawnSync("pkill", ["-9", "-f", "restate-server"]);
@@ -413,6 +455,7 @@ async function main(): Promise<void> {
     await g2();
     await g3();
     await g4();
+    await g5HitlWebUiApi();
   } finally {
     spawnSync("pkill", ["-9", "-f", "restate-server"]);
     spawnSync("pkill", ["-9", "-f", "dist/service.js"]);

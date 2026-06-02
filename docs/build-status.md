@@ -1,8 +1,9 @@
-# durabl — Build Status (M0–M5)
+# durabl — Build Status (M0–M5 + parallel tracks)
 
 **Date:** 2026-06-01 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
-Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0.
+Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
+**main HEAD:** merged `feat/productize` → `feat/fundability` → `feat/harden` → `feat/hitl-web-ui`.
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -26,16 +27,35 @@ step-journal substrate, never reimplementing the durable engine.
 | **M2** | **Logical trajectory fork** as a product: `seedFork`/`forkAndRun` + read-only inspection (`inspect`/`lineage`/`tree`/`diff`) + lineage-in-export | fork-no-refire, multi-level fork, concurrent forks, **crash-during-fork** exactly-once | ✅ **6/6** | `npm run gate:m2` | `docs/m2-trajectory-branching.md`, `docs/m2-evidence/` |
 | **M3** | **Replay / time-travel** read surface over a `JournalSource`; **offline reconstruction from a portable export with the substrate killed**; local web UI | reconstruct-matches-reality, **offline-from-export (substrate killed)**, time-travel, fork-tree+diff, UI-API-offline | ✅ **5/5** | `npm run gate:m3` | `docs/m3-observability-replay.md`, `docs/m3-evidence/` |
 | **M4** | **Neutrality**: same agent across **2 model providers** and **2 deploy targets**, **config-only, no code change**; journal portability across both | provider-switch (no code change), durability-under-switch (SIGKILL), deploy-target switch, journal-portability offline | ✅ **4/4** | `npm run gate:m4` | `docs/m4-neutrality.md`, `docs/m4-evidence/` |
-| **M5** | **HITL pause/resume** across a **real process restart** (durable, journal-not-memory) + **full-journal export** of a HITL run | pause→exit→restart→resume→complete, crash-during-resume, double-submit idempotent, export+offline-replay | ✅ **4/4** | `npm run gate:m5` | `docs/m5-hitl-export.md`, `docs/m5-evidence/` |
+| **M5** | **HITL pause/resume** across a **real process restart** + export + **web UI API resume** | pause→exit→restart→resume→complete, crash-during-resume, double-submit, export+offline-replay, **hitl-web-ui-api-resume** | ✅ **5/5** | `npm run gate:m5` | `docs/m5-hitl-export.md`, `docs/m5-evidence/` |
 
-**Run everything (each exits 0 on pass):**
+**Run core milestones (each exits 0 on pass):**
 
 ```bash
 npm test          # M1 — 10/10
 npm run gate:m2   # M2 — 6/6
 npm run gate:m3   # M3 — 5/5
 npm run gate:m4   # M4 — 4/4
-npm run gate:m5   # M5 — 4/4  (HITL + state export, the final milestone)
+npm run gate:m5   # M5 — 5/5
+```
+
+---
+
+## Parallel tracks (merged to main)
+
+| Track | Branch | Scope | Gate / entry | Docs |
+|---|---|---|---|---|
+| **productize** | `feat/productize` | README polish, `package.json` metadata, `docker-compose`, `CONTRIBUTING`, quickstart | `npm run compose:up`, `docs/QUICKSTART.md`, `scripts/quickstart.sh` | `README.md`, `CONTRIBUTING.md`, `docs/QUICKSTART.md` |
+| **fundability** | `feat/fundability` | Investor narrative grounded in Phase 0 evidence | — (docs-only) | `docs/FUNDING.md`, `docs/RISKS.md`, `docs/DEMO-NARRATIVE.md` |
+| **harden** | `feat/harden` | Live provider gate (skip without keys), HTTP retry policy, second-substrate seam | `npm run gate:live` (skip exit 0), `npm run gate:harden` | `docs/HARDENING.md`, `docs/TEST-MATRIX.md`, `docs/SECOND-SUBSTRATE.md` |
+| **hitl-web-ui** | `feat/hitl-web-ui` | HITL paused list + resume in replay web UI + HTTP API | `npm run gate:hitl-ui` (offline G2; live G5 in `gate:m5`) | `docs/hitl-web-ui.md`, `docs/hitl-ui-evidence/` |
+
+**Optional / CI-safe extension gates:**
+
+```bash
+npm run gate:live      # real OpenAI/Anthropic when keys set; SKIP + exit 0 otherwise
+npm run gate:harden    # provider redaction + DBOS stub seam + delegates to gate:live
+npm run gate:hitl-ui   # offline paused read-only (G2); live resume is M5 G5
 ```
 
 ---
@@ -47,15 +67,16 @@ npm run gate:m5   # M5 — 4/4  (HITL + state export, the final milestone)
   re-fire (M2); offline replay from a portable export with the substrate genuinely
   killed (M3); provider/target switching by config with durability preserved (M4);
   HITL durable pause + resume across a **real** process/substrate restart with
-  exactly-once preserved (M5).
+  exactly-once preserved (M5 G1–G4); HITL resume via web UI HTTP API (M5 G5).
 - **Config-ready (honest):** real OpenAI/Anthropic calls activate only when
   `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` are present (else a deterministic,
-  CI-safe simulated provider runs); the Docker deploy target runs only when a
-  Docker daemon + local image are present (the gate reports CONFIG-READY-NOT-RUN
-  rather than pulling over the network or faking it). See `docs/m4-neutrality.md`.
-- **Deferred (documented):** the M3 web UI does not yet surface a pause/resume
-  affordance (HITL resume is CLI-only) — deferred to avoid the M3 browse-daemon
-  deadlock for zero gate value (`docs/m5-hitl-export.md` §6).
+  CI-safe simulated provider runs); `gate:live` **skips** when no keys are set;
+  the Docker deploy target runs only when a Docker daemon + local image are present
+  (the gate reports CONFIG-READY-NOT-RUN rather than pulling over the network or
+  faking it). See `docs/m4-neutrality.md` and `docs/HARDENING.md`.
+- **Offline HITL (by design):** exported bundles list paused runs and replay
+  `hitl_pause` steps, but `POST /api/hitl/input` returns **503** without live
+  Restate ingress — resume requires the substrate (`docs/hitl-web-ui.md`).
 
 ## Single-machine envelope (applies to all milestones)
 

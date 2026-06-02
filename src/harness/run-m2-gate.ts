@@ -30,12 +30,10 @@ import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { config } from "../config.js";
 import {
-  registerDeployment,
   sleep,
   startRestateServer,
-  startService,
+  startAndRegisterService,
   waitForRestate,
-  waitForService,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -98,17 +96,9 @@ async function waitForCompletion(runId: string, timeoutMs = 40000): Promise<any>
   throw new Error(`run ${runId} did not complete within ${timeoutMs}ms`);
 }
 
-async function startAndRegister(env: Record<string, string>): Promise<ServiceHandle> {
-  const svc = startService(env);
-  if (!(await waitForService(15000))) throw new Error("service did not come up");
-  const reg = registerDeployment();
-  if (!reg.ok) throw new Error("register failed: " + reg.out);
-  return svc;
-}
-
 // ── Gate 1: fork from step N, no re-fire of seeded effects, divergence ────────
 async function forkNoRefireGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   try {
     const source = `m2-src-${Date.now()}`;
     const srcResult = await invokeSync(source, "original-prompt", "main");
@@ -171,7 +161,7 @@ async function forkNoRefireGate(): Promise<void> {
 
 // ── Gate 2: multi-level fork (fork of a fork of a fork) ───────────────────────
 async function multiLevelForkGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   try {
     const root = `m2-ml-root-${Date.now()}`;
     await invokeSync(root, "root-prompt", "root");
@@ -233,7 +223,7 @@ async function multiLevelForkGate(): Promise<void> {
 
 // ── Gate 3: concurrent forks off the same parent ──────────────────────────────
 async function concurrentForksGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   try {
     const parent = `m2-cc-parent-${Date.now()}`;
     await invokeSync(parent, "parent-prompt", "parent");
@@ -296,7 +286,7 @@ async function concurrentForksGate(): Promise<void> {
 // of the FORKED run; on recovery the forked trajectory must be exactly-once.
 async function crashDuringForkNewEffectGate(): Promise<void> {
   // Source produced cleanly (no crash config) in a first service.
-  let svc = await startAndRegister({});
+  let svc = await startAndRegisterService({});
   const source = `m2-cdf-src-${Date.now()}`;
   await invokeSync(source, "src", "main");
   const srcEffects = countEffects(source, "step2-tool_call");
@@ -314,7 +304,7 @@ async function crashDuringForkNewEffectGate(): Promise<void> {
 
   const point = "after-effect:step2"; // the dangerous dual-write window
   // Phase 1: service SIGKILLs itself once at the after-effect window of the fork.
-  svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
+  svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
   invokeAsync(forked, "diverge", "crash-fork");
 
   const killDeadline = Date.now() + 15000;
@@ -324,7 +314,7 @@ async function crashDuringForkNewEffectGate(): Promise<void> {
   // Phase 2: restart; CRASH_ONCE marker persists; recover the forked run.
   killProc(svc.proc);
   await sleep(300);
-  svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
+  svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
   const result = await waitForCompletion(forked, 30000);
 
   const forkEffects = countEffects(forked, "step2-tool_call");
@@ -362,7 +352,7 @@ async function crashDuringForkNewEffectGate(): Promise<void> {
 // Fork from seq 2 (effect seeded). Crash the forked run mid-divergence (before
 // step3). On recovery the SEEDED effect must NOT have re-fired.
 async function crashDuringForkSeededGate(): Promise<void> {
-  let svc = await startAndRegister({});
+  let svc = await startAndRegisterService({});
   const source = `m2-cdfs-src-${Date.now()}`;
   await invokeSync(source, "src", "main");
   const srcEffects = countEffects(source, "step2-tool_call");
@@ -378,7 +368,7 @@ async function crashDuringForkSeededGate(): Promise<void> {
   });
 
   const point = "before:step3"; // crash AFTER seeded prefix, during divergence
-  svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
+  svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
   invokeAsync(forked, "diverge", "crash-seeded");
 
   const killDeadline = Date.now() + 15000;
@@ -387,7 +377,7 @@ async function crashDuringForkSeededGate(): Promise<void> {
 
   killProc(svc.proc);
   await sleep(300);
-  svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
+  svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
   const result = await waitForCompletion(forked, 30000);
 
   const forkNewEffects = countEffects(forked, "step2-tool_call");
@@ -416,7 +406,7 @@ async function crashDuringForkSeededGate(): Promise<void> {
 
 // ── Gate 5: fork validation rejects bad plans (read-only, no substrate) ───────
 async function forkValidationGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   try {
     const source = `m2-val-src-${Date.now()}`;
     await invokeSync(source, "v", "main");

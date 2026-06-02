@@ -51,7 +51,7 @@
     "gate:m5": "npm run build && node --enable-source-maps dist/harness/run-m5-gate.js",
     "gate:live": "npm run build && node --enable-source-maps dist/harness/run-live-providers-gate.js",
     "gate:harden": "npm run build && node --enable-source-maps dist/harness/run-harden-gate.js",
-    "gate:hitl-ui": "npm run build && DURABL_DATA_DIR=\"/tmp/dhui-$$\" node --enable-source-maps dist/harness/run-hitl-ui-gate.js",
+    "gate:hitl-ui": "npm run build && node --enable-source-maps dist/harness/run-hitl-ui-gate.js",
     "gate:hitl-web": "npm run gate:hitl-ui",
     "compose:up": "docker compose --profile docker-demo up -d",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",

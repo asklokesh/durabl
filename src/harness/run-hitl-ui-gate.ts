@@ -18,12 +18,10 @@ import { join } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import { config } from "../config.js";
 import {
-  registerDeployment,
   sleep,
   startRestateServer,
-  startService,
+  startAndRegisterService,
   waitForRestate,
-  waitForService,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -59,14 +57,6 @@ async function stopSubstrate(svc?: ServiceHandle | null, server?: ChildProcess |
     if (!(r.stdout ?? "").trim()) return;
     await sleep(300);
   }
-}
-
-async function startAndRegister(env: Record<string, string> = {}): Promise<ServiceHandle> {
-  const svc = startService(env);
-  if (!(await waitForService(15000))) throw new Error("service did not come up");
-  const reg = registerDeployment();
-  if (!reg.ok) throw new Error("register failed: " + reg.out);
-  return svc;
 }
 
 async function hitlSubmit(runId: string, prompt: string): Promise<void> {
@@ -121,7 +111,7 @@ async function g1HitlUiApiResume(): Promise<void> {
     await stopSubstrate();
     server = startRestateServer();
     if (!(await waitForRestate(60000))) throw new Error("restate-server unhealthy");
-    svc = await startAndRegister();
+    svc = await startAndRegisterService();
     await hitlSubmit(runId, "ui-gate");
     const paused = await waitForPaused(runId);
     ui = await startServerHandle({ port: uiPort });
@@ -249,15 +239,9 @@ async function g2HitlUiOfflineReadonly(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const only = process.env.HITL_UI_ONLY;
-  await stopSubstrate();
   mkdirSync(EVID_DIR, { recursive: true });
-  if (!only || only === "g2") await g2HitlUiOfflineReadonly();
-  if (!only || only === "g1") {
-    resetJournal();
-    resetEffects();
-    await g1HitlUiApiResume();
-  }
+  // Live resume is M5 G5; run `npm run gate:hitl-ui` for G2 + full M5.
+  await g2HitlUiOfflineReadonly();
 
   console.log("================ HITL UI GATE SUMMARY ================");
   let passed = 0;

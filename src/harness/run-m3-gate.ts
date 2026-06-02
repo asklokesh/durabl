@@ -42,12 +42,10 @@ import { rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { config } from "../config.js";
 import {
-  registerDeployment,
   sleep,
   startRestateServer,
-  startService,
+  startAndRegisterService,
   waitForRestate,
-  waitForService,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -99,14 +97,6 @@ async function invokeSync(runId: string, prompt: string, traj = "main"): Promise
   return res.json();
 }
 
-async function startAndRegister(): Promise<ServiceHandle> {
-  const svc = startService({});
-  if (!(await waitForService(15000))) throw new Error("service did not come up");
-  const reg = registerDeployment();
-  if (!reg.ok) throw new Error("register failed: " + reg.out);
-  return svc;
-}
-
 async function main(): Promise<void> {
   // Clean slate.
   spawnSync("pkill", ["-9", "-f", "restate-server"]);
@@ -131,7 +121,7 @@ async function main(): Promise<void> {
   let bundle = "";
 
   try {
-    let svc = await startAndRegister();
+    let svc = await startAndRegisterService();
 
     // ── Produce a real multi-fork run on the substrate ──────────────────────
     // 1. root run (3 steps, one side effect at step 2)

@@ -16,12 +16,11 @@ import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { config } from "../config.js";
 import {
-  registerDeployment,
   sleep,
   startRestateServer,
-  startService,
+  startAndRegisterService,
   waitForRestate,
-  waitForService,
+  waitForServiceDown,
   killProc,
   type ServiceHandle,
 } from "./restate-control.js";
@@ -84,14 +83,6 @@ function isProcAlive(pid: number): boolean {
   }
 }
 
-async function startAndRegister(env: Record<string, string>): Promise<ServiceHandle> {
-  const svc = startService(env);
-  if (!(await waitForService(15000))) throw new Error("service did not come up");
-  const reg = registerDeployment();
-  if (!reg.ok) throw new Error("register failed: " + reg.out);
-  return svc;
-}
-
 const CRASH_POINTS = [
   "before:step1",
   "after:step1",
@@ -106,7 +97,7 @@ async function crashGate(point: string): Promise<void> {
   const runId = `crash-${point.replace(/[^a-z0-9]/gi, "_")}-${Date.now()}`;
 
   // Phase 1: service will SIGKILL itself once at `point`.
-  let svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
+  let svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
   invokeAsync(runId, "crashy");
 
   const killDeadline = Date.now() + 15000;
@@ -115,8 +106,14 @@ async function crashGate(point: string): Promise<void> {
 
   // Phase 2: restart. CRASH_ONCE marker persists so it won't re-crash; recover.
   killProc(svc.proc);
-  await sleep(300);
-  svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
+  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+  if (!(await waitForServiceDown(15000))) {
+    throw new Error("service port still bound after crash restart");
+  }
+  if (!(await waitForRestate(30000))) {
+    throw new Error("restate admin not reachable before crash recovery register");
+  }
+  svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
 
   const result = await waitForCompletion(runId, 30000);
 
@@ -140,7 +137,7 @@ async function crashGate(point: string): Promise<void> {
 }
 
 async function concurrencyGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   const runId = `concurrent-${Date.now()}`;
 
   // N workers race on the SAME workflow key. Restate's run-once-per-key must
@@ -172,7 +169,7 @@ async function concurrencyGate(): Promise<void> {
 }
 
 async function forkGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   const source = `fork-src-${Date.now()}`;
   const srcResult = await invokeSync(source, "original");
   const srcEffectsBefore = countEffects(source, "step2-tool_call");
@@ -218,7 +215,7 @@ async function forkGate(): Promise<void> {
 }
 
 async function replayGate(): Promise<void> {
-  const svc = await startAndRegister({});
+  const svc = await startAndRegisterService({});
   const runId = `replay-${Date.now()}`;
   const first = await invokeSync(runId, "deterministic");
   const trajFirst = trajectory(runId).map((e) => `${e.seq}:${e.stepName}=${JSON.stringify(e.output)}`);
