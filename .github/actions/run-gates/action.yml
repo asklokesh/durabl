@@ -1,0 +1,58 @@
+name: Run durabl gates
+description: >
+  Install Node dependencies and run the full durabl gate suite
+  (`npm run gate:all`) in the calling repository's working tree.
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  node-version:
+    description: Node.js version (durabl requires >= 22.5.0).
+    required: false
+    default: "22"
+  working-directory:
+    description: Path to the package root that defines `gate:all` in package.json.
+    required: false
+    default: "."
+  npm-ci:
+    description: When true, run `npm ci`; otherwise `npm install`.
+    required: false
+    default: "true"
+  durabl-data-dir:
+    description: >
+      Optional `DURABL_DATA_DIR` for gate isolation on shared runners.
+      Leave empty to use the script default (`/tmp/durabl-gate-$$`).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        if [ "${{ inputs.npm-ci }}" = "true" ]; then
+          npm ci
+        else
+          npm install
+        fi
+
+    - name: Run all gates
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        if [ -n "${{ inputs.durabl-data-dir }}" ]; then
+          export DURABL_DATA_DIR="${{ inputs.durabl-data-dir }}"
+        fi
+        npm run gate:all
