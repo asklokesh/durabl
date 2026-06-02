@@ -1,7 +1,7 @@
 {
   "name": "durabl",
   "version": "0.1.0",
-  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork — built on Restate as the durable step-journal substrate.",
+  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork \u2014 built on Restate as the durable step-journal substrate.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -65,7 +65,8 @@
     "test:m3": "npm run gate:m3",
     "test:m4": "npm run gate:m4",
     "test:m5": "npm run gate:m5",
-    "test:hitl-ui": "npm run gate:hitl-ui"
+    "test:hitl-ui": "npm run gate:hitl-ui",
+    "demo:interactive": "bash scripts/demo-interactive.sh"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",

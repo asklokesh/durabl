@@ -21,6 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { spawnSync } from "node:child_process";
+import { createInterface } from "node:readline";
 import { rmSync } from "node:fs";
 import { config } from "../config.js";
 import {
@@ -46,6 +47,67 @@ function say(s: string): void {
 function h(title: string): void {
   console.log(`\n${"━".repeat(74)}\n${title}\n${"━".repeat(74)}`);
 }
+
+const DEMO_PAUSE = process.env.DURABL_DEMO_PAUSE === "1";
+const DEMO_NARRATE = process.env.DURABL_DEMO_NARRATE !== "0";
+
+/** Paced presenter cues — keep in sync with docs/DEMO-NARRATIVE.md */
+const NARRATION: Record<string, { cue: string; targetSec: number }> = {
+  setup: {
+    cue: "Everything you'll see uses a real Restate server and a real SIGKILL — no mocked crash recovery.",
+    targetSec: 15,
+  },
+  act1: {
+    cue: "We kill mid-run after a side effect fired but before the journal committed — the classic double-charge window. Pause on SIGKILL: true.",
+    targetSec: 75,
+  },
+  act2: {
+    cue: "Restart replays the workflow; effect sink must show fire count = 1 from the real SQLite DB.",
+    targetSec: 45,
+  },
+  act3: {
+    cue: "Portable step journal: plan → tool → summarize. Each row is replayable state.",
+    targetSec: 30,
+  },
+  act4: {
+    cue: "Fork from seq 1 — copied prefix, no re-execution; the fork makes its own tool call.",
+    targetSec: 60,
+  },
+  act5: {
+    cue: "Diff + export: original still one effect, fork one effect; JSONL is the portability wedge.",
+    targetSec: 45,
+  },
+};
+
+async function paceBefore(act: keyof typeof NARRATION): Promise<void> {
+  if (!DEMO_PAUSE) return;
+  const n = NARRATION[act];
+  if (DEMO_NARRATE && n) {
+    say(`\n  ⏱  ~${n.targetSec}s segment`);
+    say(`  💬  ${n.cue}`);
+  }
+  say("\n  ▶  Press Enter to run this segment…");
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  await new Promise<void>((resolve) => {
+    rl.question("", () => {
+      rl.close();
+      resolve();
+    });
+  });
+}
+
+async function paceHook(message: string): Promise<void> {
+  if (!DEMO_PAUSE) return;
+  say(`\n  ⏸  ${message}`);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  await new Promise<void>((resolve) => {
+    rl.question("  Press Enter when ready… ", () => {
+      rl.close();
+      resolve();
+    });
+  });
+}
+
 
 function isProcAlive(pid: number): boolean {
   try {
@@ -113,6 +175,8 @@ async function main(): Promise<void> {
     const runId = `demo-${Date.now()}`;
     const point = "after-effect:step2";
 
+    await paceBefore("setup");
+    await paceBefore("act1");
     h("ACT 1 — Kill an agent mid-run. It must NOT double-fire its side effect.");
     say(`Starting agent run ${runId}; it will be SIGKILLed at the dangerous`);
     say(`"effect fired, journal not yet committed" window (point=${point}).`);
@@ -123,8 +187,10 @@ async function main(): Promise<void> {
     while (isProcAlive(svc.pid) && Date.now() < killDeadline) await sleep(150);
     const died = !isProcAlive(svc.pid);
     say(`  → service really died (uncatchable SIGKILL): ${died}`);
+    if (died) await paceHook("Hook moment — let the room feel the SIGKILL silence.");
 
     h("ACT 2 — Resume from the exact step. Exactly-once preserved.");
+    await paceBefore("act2");
     killProc(svc.proc);
     await sleep(300);
     svc = await startAndRegister({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
@@ -137,6 +203,7 @@ async function main(): Promise<void> {
     ok = ok && died && act2Ok;
 
     h("ACT 3 — Open the trajectory from the portable journal.");
+    await paceBefore("act3");
     const ins = inspectRun(runId);
     for (const s of ins.steps) {
       say(`  seq ${s.seq} ${s.stepName} [${s.kind}]${s.sideEffect ? " (side-effect)" : ""} → ${JSON.stringify(s.output)}`);
@@ -144,6 +211,7 @@ async function main(): Promise<void> {
     say(`  effects fired by this run: ${ins.effects.length}`);
 
     h("ACT 4 — Fork from an earlier step onto an alternate path (new decision).");
+    await paceBefore("act4");
     // Restart the service WITHOUT crash config: the fork should run cleanly. (The
     // crash-during-fork path is exercised exhaustively by the M2 gate, not here.)
     killProc(svc.proc);
@@ -163,6 +231,7 @@ async function main(): Promise<void> {
     say(`  → forked run completed: ${JSON.stringify(forkRes.answer)}`);
 
     h("ACT 5 — Compare the two trajectories. Prove no cross-fire.");
+    await paceBefore("act5");
     const origEffectsAfter = countEffects(runId, "step2-tool_call");
     const forkEffects = countEffects(fork, "step2-tool_call");
     say(`  original effect fires (unchanged by the fork): ${origEffectsAfter} (expect 1)`);
