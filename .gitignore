@@ -24,7 +24,9 @@ docs/hitl-ui-evidence/*.jsonl
 !docs/m3-evidence/
 !docs/m3-evidence/*.log
 !docs/m4-evidence/
-!docs/m4-evidence/*.log
+!docs/m4-evidence/**
 !docs/m5-evidence/
 !docs/m5-evidence/*.log
+!docs/evidence/
+!docs/evidence/gate-all-*.log
 .gstack/
