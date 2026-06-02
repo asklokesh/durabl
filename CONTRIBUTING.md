@@ -28,6 +28,16 @@ npm run gate:m5       # HITL + export
 
 Typecheck only: `npm run typecheck`.
 
+## Smoke (quickstart path)
+
+Fast non-interactive check that install + the scripted demo work (not a substitute for gates):
+
+```bash
+npm run smoke
+```
+
+Runs `scripts/smoke-quickstart.sh` → `scripts/quickstart.sh` with `DURABL_SMOKE=1` and an isolated `DURABL_DATA_DIR`. Use before opening a PR when you only touched docs or packaging; run the relevant `gate:*` scripts for harness changes.
+
 ## Pull requests
 
 1. Branch from `main` (`feat/<topic>`).
