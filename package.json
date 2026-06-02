@@ -1,7 +1,7 @@
 {
   "name": "durabl",
   "version": "0.1.0",
-  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork — built on Restate as the durable step-journal substrate.",
+  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork \u2014 built on Restate as the durable step-journal substrate.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -56,6 +56,7 @@
     "gate:all": "bash scripts/run-all-gates.sh",
     "compose:up": "docker compose --profile docker-demo up -d",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
+    "examples:minimal": "npm run build && tsc -p examples/minimal-workflow/tsconfig.json && node --enable-source-maps examples/minimal-workflow/dist/run.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
     "capture:ui": "npm run build && node scripts/capture-ui.mjs",
