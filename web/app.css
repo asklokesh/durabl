@@ -284,6 +284,58 @@ select.pick {
 .step-kind.kind-hitl_pause { color: var(--amber); border-color: #fbbf2444; }
 .step-kind.kind-hitl_input { color: var(--green); border-color: #34d39944; }
 
+
+/* ── First-visit onboarding ──────────────────────────────── */
+.onboarding-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin: 0 22px 0; padding: 12px 16px;
+  border: 1px solid #6366f144; border-radius: 11px;
+  background: linear-gradient(135deg, #6366f118, #22d3ee0d);
+}
+.onboarding-banner-text { margin: 0; font-size: 13px; color: var(--text-dim); line-height: 1.45; max-width: 720px; }
+.onboarding-banner-text strong { color: var(--text); }
+.onboarding-banner-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.onboarding-tour {
+  position: fixed; inset: 0; z-index: 1000;
+  pointer-events: none;
+}
+.onboarding-tour:not([hidden]) { pointer-events: auto; }
+.onboarding-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(5, 7, 12, 0.72);
+}
+.onboarding-spotlight {
+  position: fixed; z-index: 1001;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(5, 7, 12, 0.72);
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  transition: top 0.15s ease, left 0.15s ease, width 0.15s ease, height 0.15s ease;
+}
+.onboarding-card {
+  position: fixed; z-index: 1002;
+  width: min(420px, calc(100vw - 32px));
+  padding: 18px 20px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.onboarding-progress {
+  display: flex; gap: 6px; margin-bottom: 14px;
+}
+.onboarding-progress .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); transition: background 0.12s, transform 0.12s;
+}
+.onboarding-progress .dot.active { background: var(--accent); transform: scale(1.15); }
+.onboarding-title { margin: 0 0 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.onboarding-body { margin: 0 0 16px; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.onboarding-card-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.layout.onboarding-dim { opacity: 0.35; pointer-events: none; }
+
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
