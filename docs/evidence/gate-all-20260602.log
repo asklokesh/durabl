@@ -19,9 +19,8 @@ DURABL_DATA_DIR=/tmp/durabl-gate-final-run
 > durabl@0.1.0 build
 > tsc -p tsconfig.json && node scripts/copy-web.mjs
 
-[build] copied web/ → dist/web
-Starting restate-server (single self-hostable binary)...
-restate-server healthy.
+[build] copied web/ → dist/webscripts/run-all-gates.sh: line 48: 55539 Killed: 9                  npm test
+thy.
 [restate][2026-06-02T04:18:44.197Z] INFO: Restate SDK started listening on 9080...
 [restate][2026-06-02T04:18:44.199Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
 [restate][2026-06-02T04:18:44.503Z][AgentRun/crash-before_step1-1780373924027/run][inv_16ROjJOn8gbX5YLi0l1tRlLFB0529GBONj] INFO: Starting invocation.
@@ -924,26 +923,3 @@ PASS  G2 hitl-ui-offline-paused-readonly
 VERDICT: GATE PASSED
 ================================================
 ALL GATES PASSED
-
-> durabl@0.1.0 gate:all
-> bash scripts/run-all-gates.sh
-
-DURABL_DATA_DIR=/tmp/durabl-gate-agent3
-
-> durabl@0.1.0 typecheck
-> tsc -p tsconfig.json --noEmit
-
-
-> durabl@0.1.0 test
-> npm run gate
-
-
-> durabl@0.1.0 gate
-> npm run build && node --enable-source-maps dist/harness/run-gate.js
-
-
-> durabl@0.1.0 build
-> tsc -p tsconfig.json && node scripts/copy-web.mjs
-
-[build] copied web/ → dist/web
-scripts/run-all-gates.sh: line 48: 47380 Killed: 9                  npm test

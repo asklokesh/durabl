@@ -4,7 +4,7 @@
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** (update after `gate:all`) — M0–M5 complete; post-M5 tracks merged (`productize`, `fundability`, `harden`, `hitl-web-ui`); final-wave docs/CI/hygiene merged.
+**main HEAD:** `9688dcb1c100d2c506bf3d354584d1b5f92532b4` — M0–M5 complete; final-wave + READY merges (`feat/final-gates`, `feat/backend-runs-api`, `feat/backend-ws`, `feat/backend-auth`, `feat/ux-*`, `feat/integ-*` docs). **`gate:all`:** PASS per [`docs/evidence/gate-all-20260602.log`](evidence/gate-all-20260602.log) (`ALL GATES PASSED`; run serially if parallel harness hits SIGKILL).
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
