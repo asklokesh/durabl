@@ -1,0 +1,3 @@
+{"schema":1,"runId":"fixture-m1-legacy","seq":1,"stepName":"step1-plan","kind":"plan","idemKey":"fixture-m1-legacy:step1-plan","output":"plan-output","sideEffect":false,"seededFrom":null,"recordedAt":"2026-06-01T12:00:00.000Z"}
+{"schema":1,"runId":"fixture-m1-legacy","seq":2,"stepName":"step2-tool_call","kind":"tool_call","idemKey":"fixture-m1-legacy:step2-tool_call","output":"tool-result(effectId=1)","sideEffect":true,"seededFrom":null,"recordedAt":"2026-06-01T12:00:01.000Z"}
+{"schema":1,"runId":"fixture-m1-legacy","seq":3,"stepName":"step3-summarize","kind":"summarize","idemKey":"fixture-m1-legacy:step3-summarize","output":"final-answer","sideEffect":false,"seededFrom":null,"recordedAt":"2026-06-01T12:00:02.000Z"}

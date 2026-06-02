@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://durabl.dev/schemas/journal-v1.json",
+  "title": "durabl portable journal export line (schema v1)",
+  "description": "One JSON object per line in a durabl JSONL export. Matches exportJsonl, exportJsonlWithEffects, and exportBundleJsonl in src/journal.ts.",
+  "oneOf": [
+    { "$ref": "#/$defs/runMetaRecord" },
+    { "$ref": "#/$defs/stepRecord" },
+    { "$ref": "#/$defs/effectRecord" },
+    { "$ref": "#/$defs/legacyStepEntry" }
+  ],
+  "$defs": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idemKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]+:[A-Za-z0-9._:-]+$"
+    },
+    "isoTimestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "stepKind": {
+      "type": "string",
+      "enum": ["plan", "tool_call", "summarize", "hitl_pause", "hitl_input"]
+    },
+    "legacyStepEntry": {
+      "type": "object",
+      "required": [
+        "schema",
+        "runId",
+        "seq",
+        "stepName",
+        "kind",
+        "idemKey",
+        "output",
+        "sideEffect",
+        "seededFrom",
+        "recordedAt"
+      ],
+      "not": { "required": ["record"] },
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "$ref": "#/$defs/schemaVersion" },
+        "runId": { "$ref": "#/$defs/runId" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "stepName": { "type": "string", "minLength": 1 },
+        "kind": { "$ref": "#/$defs/stepKind" },
+        "idemKey": { "$ref": "#/$defs/idemKey" },
+        "output": {},
+        "sideEffect": { "type": "boolean" },
+        "seededFrom": { "type": ["string", "null"] },
+        "recordedAt": { "$ref": "#/$defs/isoTimestamp" }
+      }
+    },
+    "runMetaRecord": {
+      "type": "object",
+      "required": [
+        "record",
+        "schema",
+        "runId",
+        "parentRun",
+        "forkedAtSeq",
+        "trajectory",
+        "createdAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "record": { "const": "run_meta" },
+        "schema": { "$ref": "#/$defs/schemaVersion" },
+        "runId": { "$ref": "#/$defs/runId" },
+        "parentRun": { "type": ["string", "null"] },
+        "forkedAtSeq": { "type": ["integer", "null"], "minimum": 1 },
+        "trajectory": { "type": "string", "minLength": 1 },
+        "createdAt": { "$ref": "#/$defs/isoTimestamp" }
+      }
+    },
+    "stepRecord": {
+      "type": "object",
+      "required": [
+        "record",
+        "schema",
+        "runId",
+        "seq",
+        "stepName",
+        "kind",
+        "idemKey",
+        "output",
+        "sideEffect",
+        "seededFrom",
+        "recordedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "record": { "const": "step" },
+        "schema": { "$ref": "#/$defs/schemaVersion" },
+        "runId": { "$ref": "#/$defs/runId" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "stepName": { "type": "string", "minLength": 1 },
+        "kind": { "$ref": "#/$defs/stepKind" },
+        "idemKey": { "$ref": "#/$defs/idemKey" },
+        "output": {},
+        "sideEffect": { "type": "boolean" },
+        "seededFrom": { "type": ["string", "null"] },
+        "recordedAt": { "$ref": "#/$defs/isoTimestamp" }
+      }
+    },
+    "effectRecord": {
+      "type": "object",
+      "required": [
+        "record",
+        "id",
+        "runId",
+        "trajectory",
+        "stepName",
+        "idemKey",
+        "payload",
+        "firedAt",
+        "pid"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "record": { "const": "effect" },
+        "id": { "type": "integer", "minimum": 1 },
+        "runId": { "$ref": "#/$defs/runId" },
+        "trajectory": { "type": "string", "minLength": 1 },
+        "stepName": { "type": "string", "minLength": 1 },
+        "idemKey": { "$ref": "#/$defs/idemKey" },
+        "payload": {},
+        "firedAt": { "$ref": "#/$defs/isoTimestamp" },
+        "pid": { "type": "integer" }
+      }
+    }
+  }
+}

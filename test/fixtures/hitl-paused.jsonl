@@ -1,0 +1,3 @@
+{"record":"run_meta","schema":1,"runId":"fixture-hitl-paused","parentRun":null,"forkedAtSeq":null,"trajectory":"main","createdAt":"2026-06-01T00:00:00.000Z"}
+{"record":"step","schema":1,"runId":"fixture-hitl-paused","seq":1,"stepName":"step1-plan","kind":"plan","idemKey":"fixture-hitl-paused:step1-plan","output":"plan","sideEffect":false,"seededFrom":null,"recordedAt":"2026-06-01T00:00:01.000Z"}
+{"record":"step","schema":1,"runId":"fixture-hitl-paused","seq":2,"stepName":"hitl-pause","kind":"hitl_pause","idemKey":"fixture-hitl-paused:hitl-pause","output":{"awaiting":"hitl.input","planSoFar":"plan"},"sideEffect":false,"seededFrom":null,"recordedAt":"2026-06-01T00:00:02.000Z"}
