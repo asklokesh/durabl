@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + post-M5 tracks)
 
-**Branch:** `feat/final-docs` · **Docs branch tip:** `c1d0aa0` · **Documented in build-status:** `5d58a92` · **Code baseline:** `077589c`
+**Branch:** `main` · **Documented in build-status:** (see `docs/build-status.md` main HEAD) · **Integration baseline:** `077589c`
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design). Commit SHAs are from `git log` on the integration line that became `main`.
 
@@ -61,7 +61,7 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 | Harness lock + lifecycle | `0b3b097` |
 | build-status / HITL offline evidence | `18cb2fa` |
 
-**After merging `feat/final-docs`:** `git rev-parse HEAD` → `c1d0aa0` (or squash). **Code integration before docs:** `077589cf571584007ecd2c17c9470712547322d8`
+**Final-wave integration:** `feat/final-*` branches merged to `main` (see gate log below).
 
 ---
 
