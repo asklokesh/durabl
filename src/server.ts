@@ -38,8 +38,15 @@ import {
   forkTreeFrom,
   lineageFrom,
   diffTrajectoriesFrom,
+  inspectRunFrom,
+  listForksFrom,
 } from "./inspect-source.js";
 import { listRunsForApi, parseRunsListQuery } from "./runs-list.js";
+import {
+  executeForkPost,
+  forkApiErrorStatus,
+  parseForkPostBody,
+} from "./api-fork.js";
 import {
   hitlStateFromSource,
   pausedRunsFromSource,
@@ -55,6 +62,7 @@ import {
   WS_RUNS_PATH,
 } from "./ws-runs.js";
 import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
+import { applyCors, applySecurityHeaders } from "./http-security.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIRS = [
@@ -197,6 +205,56 @@ function handleOps(
   return false;
 }
 
+async function restateAdminReachable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.restateAdmin}/health`, {
+      signal: AbortSignal.timeout(2_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function prometheusMetricsStub(ctx: Route): string {
+  const live = ctx.live ? "1" : "0";
+  return [
+    "# HELP durabl_up durabl replay UI process is up (1 = yes).",
+    "# TYPE durabl_up gauge",
+    "durabl_up 1",
+    "# HELP durabl_live journal source is live SQLite (1) vs imported export (0).",
+    "# TYPE durabl_live gauge",
+    `durabl_live ${live}`,
+    "",
+  ].join("\n");
+}
+
+/** K8s-style liveness/readiness + Prometheus scrape stub (not under /api/*). */
+async function handleOpsProbe(
+  ctx: Route,
+  pathname: string,
+  res: ServerResponse,
+): Promise<boolean> {
+  if (pathname === "/health") {
+    sendJson(res, 200, { ok: true });
+    return true;
+  }
+  if (pathname === "/ready") {
+    if (!ctx.live) {
+      sendJson(res, 200, { ready: true });
+      return true;
+    }
+    const ok = await restateAdminReachable();
+    sendJson(res, ok ? 200 : 503, { ready: ok });
+    return true;
+  }
+  if (pathname === "/metrics") {
+    sendText(res, 200, prometheusMetricsStub(ctx), "text/plain; version=0.0.4; charset=utf-8");
+    return true;
+  }
+  return false;
+}
+
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
   for await (const c of req) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
@@ -323,7 +381,53 @@ function handleApi(
     sendJson(res, 200, diffTrajectoriesFrom(source, a, b));
     return true;
   }
+  if (p === "/api/inspect") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    sendJson(res, 200, { source: source.origin, inspection: inspectRunFrom(source, runId) });
+    return true;
+  }
+  if (p === "/api/lineage") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    sendJson(res, 200, { source: source.origin, runId, lineage: lineageFrom(source, runId) });
+    return true;
+  }
+  if (p === "/api/forks") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    sendJson(res, 200, { source: source.origin, runId, forks: listForksFrom(source, runId) });
+    return true;
+  }
+  if (p === "/api/fork" && req.method === "POST") {
+    return handleForkPost(ctx, req, res);
+  }
   return false;
+}
+
+async function handleForkPost(
+  ctx: Route,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<boolean> {
+  let raw: unknown;
+  try {
+    raw = await readJsonBody(req);
+  } catch (e) {
+    return badReq(res, e instanceof Error ? e.message : String(e));
+  }
+  try {
+    const body = parseForkPostBody(raw);
+    const out = await executeForkPost(body, { live: ctx.live });
+    sendJson(res, 200, out);
+  } catch (e) {
+    sendJson(res, forkApiErrorStatus(e), {
+      error: e instanceof Error ? e.message : String(e),
+      live: ctx.live,
+      forkSubmitEnabled: ctx.live,
+    });
+  }
+  return true;
 }
 
 async function handleHitlInput(
@@ -425,6 +529,9 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
       try {
         const url = new URL(req.url ?? "/", `http://${host}:${port}`);
         pathname = url.pathname;
+        applySecurityHeaders(res);
+        if (!applyCors(req, res)) return;
+        if (await handleOpsProbe(ctx, url.pathname, res)) return;
         if (url.pathname.startsWith("/api/")) {
           if (!enforceMutatingApiAuth(req, res, url.pathname, sendJson)) return;
           const handled = await handleApi(ctx, url, res, req);
