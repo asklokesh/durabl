@@ -1,12 +1,23 @@
+# durabl CI — full milestone gate suite on ubuntu-latest.
+#
+# Restate binaries: `npm ci` installs @restatedev/restate-server and @restatedev/restate
+# devDependencies; the harness uses node_modules/.bin/restate-server and
+# node_modules/.bin/restate (see src/harness/restate-control.ts). No separate CLI
+# download is required for CI. For manual installs outside npm, see:
+# https://docs.restate.dev/operate/cli
+#
+# We run the full `npm run gate:all` suite (typecheck + M1–M5 + harden + hitl-ui) in one
+# job with a 15-minute cap. Each gate uses real restate-server + SIGKILL paths; sequential
+# teardown in scripts/run-all-gates.sh keeps ports exclusive. Typical wall time on a clean
+# GitHub runner is well under 15 minutes — no reduced gate subset needed.
+
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "feat/**"]
   pull_request:
-    branches: [main]
 
-# Full gate:all uses real Restate + SIGKILL paths; budget ~15m on GitHub-hosted runners.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,13 +25,14 @@ concurrency:
 jobs:
   gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      DURABL_DATA_DIR: ${{ runner.temp }}/durabl-ci-${{ github.run_id }}
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 15
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
@@ -28,9 +40,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Restate binaries (npm-provided)
+        run: |
+          test -x node_modules/.bin/restate-server
+          test -x node_modules/.bin/restate
+          node_modules/.bin/restate --version
+          node_modules/.bin/restate-server --version || true
+
       - name: Typecheck
         run: npm run typecheck
 
-      # Restate CLI/server come from @restatedev/restate-server (devDependency); harness starts them.
-      - name: Full adversarial gate suite
-        run: npm run gate:all 2>&1 | tee docs/evidence/gate-all-ci-${{ github.run_id }}.log
+      - name: Full gate suite (gate:all)
+        env:
+          DURABL_DATA_DIR: ${{ runner.temp }}/durabl-${{ github.run_id }}
+        run: npm run gate:all
