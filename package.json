@@ -67,6 +67,7 @@
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "smoke": "bash scripts/smoke-quickstart.sh",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
+    "journal:migrate": "npm run build && node --enable-source-maps dist/journal-migrate.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
     "capture:ui": "npm run build && node scripts/capture-ui.mjs",
     "test": "npm run gate",

@@ -159,3 +159,10 @@ export {
   type LaunchKind,
 } from "./deploy-target.js";
 export { recordStepAsync } from "./journal.js";
+export {
+  JOURNAL_DB_VERSION,
+  migrateJournal,
+  currentJournalDbVersion,
+  type MigrateJournalResult,
+} from "./journal-migrate.js";
+
