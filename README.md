@@ -11,6 +11,9 @@ agent runs survive real crashes, fork to alternate trajectories without
 re-firing side effects, reconstruct runs offline from JSONL exports, and resume
 HITL workflows after a full substrate restart (CLI or replay UI).
 
+**Python:** not shipped yet (Phase 0 fast-follow). Status, target API, and
+LangGraph integration sketch: [`docs/PYTHON-SDK.md`](docs/PYTHON-SDK.md).
+
 Phase 0 showed the **durable execution engine** wedge is closed (Google AX,
 Temporal, Restate, and others). durabl targets what remains: **your history in
 your infra**, demonstrable offline after export.
@@ -132,6 +135,22 @@ Stop: `docker compose --profile docker-demo down`.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the complete `src/` tree.
 Top-level: `src/` (library + CLI + harness), `web/` (replay UI), `docs/`.
+`python/` is reserved for a future SDK — see [`docs/PYTHON-SDK.md`](docs/PYTHON-SDK.md) (DEFERRED).
+
+```
+src/
+  idempotency.ts      # branded IdempotencyKey
+  step-model.ts       # neutral journal types (schema v1)
+  journal.ts          # SQLite journal + JSONL export + forkRun
+  effect-sink.ts      # exactly-once effect boundary
+  workflow.ts         # reference agent loop on Restate
+  replay.ts           # reconstruct / state-at
+  fork.ts             # logical fork + forkAndRun
+  cli.ts              # durabl CLI
+  harness/            # adversarial gates + demo
+web/                  # replay UI static assets
+python/               # reserved; see docs/PYTHON-SDK.md (DEFERRED)
+```
 
 ## Configuration
 
