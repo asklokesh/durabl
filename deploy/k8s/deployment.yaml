@@ -1,0 +1,143 @@
+# Config-only manifests: Restate substrate + durabl replay UI. No Secrets.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: durabl-config
+  labels:
+    app.kubernetes.io/part-of: durabl
+data:
+  DURABL_DEPLOY_TARGET: "external"
+  DURABL_RESTATE_INGRESS: "http://restate:8080"
+  DURABL_RESTATE_ADMIN: "http://restate:9070"
+  DURABL_UI_HOST: "0.0.0.0"
+  DURABL_UI_PORT: "7878"
+  DURABL_DATA_DIR: "/data"
+  DURABL_SERVICE_PORT: "9080"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restate-data
+  labels:
+    app.kubernetes.io/part-of: durabl
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: durabl-data
+  labels:
+    app.kubernetes.io/part-of: durabl
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: restate
+  labels:
+    app.kubernetes.io/name: restate
+    app.kubernetes.io/part-of: durabl
+spec:
+  selector:
+    app.kubernetes.io/name: restate
+  ports:
+    - {name: ingress, port: 8080, targetPort: 8080}
+    - {name: admin, port: 9070, targetPort: 9070}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restate
+  labels:
+    app.kubernetes.io/name: restate
+    app.kubernetes.io/part-of: durabl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: restate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: restate
+        app.kubernetes.io/part-of: durabl
+    spec:
+      containers:
+        - name: restate
+          image: docker.restate.dev/restatedev/restate:1.6.2
+          imagePullPolicy: IfNotPresent
+          args: ["--node-name", "durabl-k8s"]
+          ports:
+            - {name: ingress, containerPort: 8080}
+            - {name: admin, containerPort: 9070}
+          volumeMounts:
+            - {name: restate-data, mountPath: /restate-data}
+      volumes:
+        - name: restate-data
+          persistentVolumeClaim:
+            claimName: restate-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: durabl-ui
+  labels:
+    app.kubernetes.io/name: durabl-ui
+    app.kubernetes.io/part-of: durabl
+spec:
+  selector:
+    app.kubernetes.io/name: durabl-ui
+  ports:
+    - {name: http, port: 7878, targetPort: 7878}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: durabl-ui
+  labels:
+    app.kubernetes.io/name: durabl-ui
+    app.kubernetes.io/part-of: durabl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: durabl-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: durabl-ui
+        app.kubernetes.io/part-of: durabl
+    spec:
+      containers:
+        - name: ui
+          image: durabl:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: [node, --enable-source-maps, dist/cli.js, ui]
+          ports:
+            - {name: http, containerPort: 7878}
+          envFrom:
+            - configMapRef:
+                name: durabl-config
+          volumeMounts:
+            - {name: durabl-data, mountPath: /data}
+          readinessProbe:
+            httpGet: {path: /api/health, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /api/health, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: durabl-data
+          persistentVolumeClaim:
+            claimName: durabl-data
