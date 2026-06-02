@@ -1,5 +1,20 @@
 # durabl — Build Plan M0–M5 (Phase 0 revision)
 
+## Status as of 2026-06-02
+
+**M0–M5 are done** — all core gates pass on a clean machine; see [`docs/build-status.md`](../build-status.md) for reproduce commands and evidence paths.
+
+| Planned (this doc) | Shipped (main) | Note |
+|---|---|---|
+| M2 — Replay / time-travel UI | **M3** — replay UI + offline export | Order **swapped** vs plan below: fork shipped before the read-only replay surface. |
+| M3 — Logical trajectory fork | **M2** — `seedFork` / lineage / diff | Same scope, earlier milestone number. |
+| M4 — Python SDK + DBOS parity | **M4** — model/deploy **neutrality** (TS) | Python SDK and second-substrate **parity gates deferred** — see [`docs/SECOND-SUBSTRATE.md`](../SECOND-SUBSTRATE.md), [`docs/HARDENING.md`](../HARDENING.md). |
+| M5 — Managed layer + grow-down | **M5** — HITL pause/resume + export (+ web UI API on main) | Managed control plane still **roadmap**, not shipped. |
+
+**Deferred (explicit):** Python fast-follow and DBOS/Postgres substrate adapter remain design targets from Phase 0; shipping evidence is Restate-only TS. Do not infer Python or DBOS from milestone labels in the sections below — use the table above and `build-status.md`.
+
+---
+
 Date: 2026-06-01. Revised against the resolved decisions in `validation-report.md`
 and the redline in `prd-redline.md`. The original plan assumed building a durable
 execution engine; this is rejected. The plan below targets the re-scoped wedge:

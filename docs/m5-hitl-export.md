@@ -208,10 +208,10 @@ node dist/cli.js replay my-run --from hitl.jsonl
 
 ---
 
-## 6. Web-UI affordance — shipped on `feat/hitl-web-ui` (post-M5)
+## 6. Web-UI affordance — shipped on main (merged `feat/hitl-web-ui`)
 
-M5 shipped CLI-only resume. The follow-up branch adds the M3 web UI affordance
-without touching the M5 gate:
+M5 originally gated CLI-only resume; **`feat/hitl-web-ui` is merged to main** and extends
+the M3 replay web UI without changing the core M5 journal contract:
 
 - **Read:** journal-derived paused runs (`/api/hitl/paused`, `hitlState` on `/api/runs`).
 - **Write (live only):** `POST /api/hitl/input` → same `provideInput` path as `durabl hitl-input`.
@@ -233,7 +233,7 @@ See [`hitl-web-ui.md`](hitl-web-ui.md).
 - "Process restart" is a real OS process death + fresh process on the same host
   reusing the substrate's persisted state dir; cross-host failover is a substrate
   concern, untested here.
-- Web UI resume is on `feat/hitl-web-ui` (§6); M5 mainline remains CLI-only.
+- Web UI resume is on main (§6, `npm run gate:hitl-ui` / M5 G5); offline export still lists paused runs but `POST /api/hitl/input` returns 503 without live substrate.
 
 ---
 
