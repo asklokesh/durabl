@@ -1,6 +1,8 @@
 // durabl replay UI — vanilla JS, zero deps. Talks to the read-only replay APIs.
 "use strict";
 
+const THEME_STORAGE_KEY = "durabl.theme";
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, cls, txt) => {
   const e = document.createElement(tag);
@@ -20,13 +22,21 @@ const state = {
   hitlSubmitEnabled: false,
   hitlState: "none",
   pausedRuns: [],
+  exportPath: null,
+  uiUrl: "",
 };
+
+function apiErrorMessage(body, status) {
+  if (body && typeof body.hint === "string" && body.hint) return body.hint;
+  if (body && typeof body.error === "string") return body.error;
+  return `HTTP ${status}`;
+}
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(body.error || `HTTP ${res.status}`);
+    throw new Error(apiErrorMessage(body, res.status));
   }
   return body;
 }
@@ -44,14 +54,124 @@ function fmtOut(v) {
   try { return JSON.stringify(v, null, 2); } catch { return String(v); }
 }
 
+function applyTheme(mode) {
+  const root = document.documentElement;
+  if (mode === "system") delete root.dataset.theme;
+  else root.dataset.theme = mode;
+}
+
+function initThemeControls() {
+  const select = $("#themeSelect");
+  if (!select) return;
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  select.value = stored === "light" || stored === "dark" ? stored : "system";
+  applyTheme(select.value);
+  select.addEventListener("change", () => {
+    const mode = select.value;
+    if (mode === "system") {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+      applyTheme("system");
+    } else {
+      localStorage.setItem(THEME_STORAGE_KEY, mode);
+      applyTheme(mode);
+    }
+  });
+}
+
+function renderEmptyState(container, icon, title, hint) {
+  const card = el("div", "empty-state");
+  card.appendChild(el("div", "empty-icon", icon));
+  card.appendChild(el("div", "empty-title", title));
+  card.appendChild(el("div", "empty-hint", hint));
+  container.appendChild(card);
+}
+
+function renderSettings(h) {
+  const pathEl = $("#settingsExportPath");
+  const urlEl = $("#settingsLiveUrl");
+  if (!pathEl || !urlEl) return;
+  const exportPath = h.exportPath ?? state.exportPath;
+  const offline = Boolean(h.origin && String(h.origin).startsWith("imported"));
+  if (exportPath) {
+    pathEl.textContent = exportPath;
+    pathEl.title = exportPath;
+  } else if (offline) {
+    pathEl.textContent = "Unknown export file";
+  } else {
+    pathEl.textContent = "Live journal (no export file)";
+    pathEl.title = "Serving from live SQLite journal";
+  }
+  const url = h.uiUrl || state.uiUrl || window.location.origin;
+  urlEl.textContent = url;
+  urlEl.href = url;
+  urlEl.title = url;
+}
+
+
+function isOfflineHealth(h) {
+  return !h.live || (h.origin && String(h.origin).startsWith("imported"));
+}
+
+function updateOfflineBanner(offline) {
+  const banner = $("#offlineBanner");
+  if (banner) banner.hidden = !offline;
+}
+
+function updateExportButton() {
+  const btn = $("#btnExport");
+  if (btn) btn.disabled = !state.selected;
+}
+
+async function downloadExport() {
+  if (!state.selected) return;
+  const q = new URLSearchParams({ runId: state.selected, bundle: "true" });
+  const res = await fetch(`/api/export?${q}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(apiErrorMessage(body, res.status));
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get("content-disposition") || "";
+  const m = /filename="([^"]+)"/.exec(cd);
+  const filename = m ? m[1] : `${state.selected}-bundle.jsonl`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function uploadJsonl(file) {
+  const text = await file.text();
+  const res = await fetch("/api/import", {
+    method: "POST",
+    headers: { "content-type": "text/plain; charset=utf-8" },
+    body: text,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(apiErrorMessage(body, res.status));
+  }
+  state.selected = null;
+  state.replay = null;
+  await loadSource();
+  await loadRuns();
+}
+
 // ── Source banner ──────────────────────────────────────────
 async function loadSource() {
   const h = await api("/api/health");
   $("#sourceLabel").textContent = h.label;
-  const offline = h.origin && h.origin.startsWith("imported");
+  const offline = isOfflineHealth(h);
   $("#sourcePill").classList.toggle("offline", offline);
+  updateOfflineBanner(offline);
   state.live = Boolean(h.live);
   state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
+  state.exportPath = h.exportPath ?? null;
+  state.uiUrl = h.uiUrl || window.location.origin;
+  renderSettings(h);
+  updateExportButton();
 }
 
 async function submitHitlInput(ev) {
@@ -93,17 +213,25 @@ function sleep(ms) {
 
 // ── Runs + fork tree ───────────────────────────────────────
 async function loadRuns() {
-  const data = await api("/api/runs");
-  state.runs = data.runs;
-  state.roots = data.roots;
-  await loadHitlPaused();
-  await renderTree();
-  if (!state.selected && state.runs.length) {
-    // prefer a root run for the first view
-    const first = state.roots[0] || state.runs[0].runId;
-    selectRun(first);
-  } else if (state.selected) {
-    await refreshHitlForRun(state.selected);
+  renderTreeSkeleton();
+  try {
+    const data = await api("/api/runs");
+    state.runs = data.runs;
+    state.roots = data.roots;
+    await loadHitlPaused();
+    await renderTree();
+    if (!state.selected && state.runs.length) {
+      const first = state.roots[0] || state.runs[0].runId;
+      await selectRun(first);
+    } else if (state.selected) {
+      await refreshHitlForRun(state.selected);
+    }
+  } catch (e) {
+    const tree = $("#tree");
+    tree.classList.remove("is-loading");
+    tree.innerHTML = "";
+    tree.appendChild(el("div", "empty err", e.message));
+    throw e;
   }
 }
 
@@ -122,11 +250,18 @@ function renderHitlPausedList() {
   const panel = $("#hitlPanel");
   const list = $("#hitlPausedList");
   list.innerHTML = "";
+  panel.hidden = false;
   if (!state.pausedRuns.length) {
-    panel.hidden = true;
+    renderEmptyState(
+      list,
+      "◎",
+      "No paused runs",
+      state.live
+        ? "Runs awaiting human input will appear here."
+        : "Offline export: import a journal with HITL pause steps to review them.",
+    );
     return;
   }
-  panel.hidden = false;
   for (const p of state.pausedRuns) {
     const row = el("button", "hitl-paused-item");
     row.type = "button";
@@ -181,6 +316,7 @@ function updateHitlBanner() {
 
 async function renderTree() {
   const tree = $("#tree");
+  tree.classList.remove("is-loading");
   tree.innerHTML = "";
   if (!state.roots.length) {
     tree.appendChild(el("div", "empty", "No runs in this journal yet."));
@@ -210,19 +346,34 @@ function renderTreeNode(container, node, depth) {
 // ── Select + render a run ──────────────────────────────────
 async function selectRun(runId) {
   state.selected = runId;
+  updateExportButton();
   state.ttN = null;
   state.selectedStepSeq = null;
   document.querySelectorAll(".tree-node").forEach((n) => {
     n.classList.toggle("active", n.querySelector(".tname")?.textContent === runId);
   });
-  const replay = await api(`/api/replay?runId=${encodeURIComponent(runId)}`);
-  state.replay = replay;
-  renderRunHeader(replay);
-  setupTimeTravel(replay);
-  renderTimeline();
-  if (replay.steps.length) selectStep(replay.steps[replay.steps.length - 1].seq);
-  populateDiffPickers();
-  await refreshHitlForRun(runId);
+  state.replay = null;
+  renderRunHeaderSkeleton();
+  renderTimelineSkeleton();
+  renderStepDetailSkeleton();
+  $("#ttBar").hidden = true;
+  try {
+    const replay = await api(`/api/replay?runId=${encodeURIComponent(runId)}`);
+    state.replay = replay;
+    $("#runHeader").classList.remove("is-loading");
+    renderRunHeader(replay);
+    setupTimeTravel(replay);
+    renderTimeline();
+    if (replay.steps.length) selectStep(replay.steps[replay.steps.length - 1].seq);
+    populateDiffPickers();
+    await refreshHitlForRun(runId);
+  } catch (e) {
+    const tl = $("#timeline");
+    tl.classList.remove("is-loading");
+    tl.innerHTML = "";
+    tl.appendChild(el("div", "empty err", e.message));
+    throw e;
+  }
 }
 
 function renderRunHeader(r) {
@@ -239,7 +390,7 @@ function renderRunHeader(r) {
   row.appendChild(chip("trajectory", r.trajectory, "accent"));
   row.appendChild(chip("steps", r.steps.length));
   row.appendChild(chip("effects", r.effects.length));
-  row.appendChild(chip("elapsed", r.totalElapsedMs + "ms"));
+  row.appendChild(chip("elapsed", formatDuration(r.totalElapsedMs) ?? `${r.totalElapsedMs}ms`));
   const runRow = state.runs.find((x) => x.runId === r.runId);
   const hs = runRow?.hitlState || state.hitlState;
   if (hs && hs !== "none") {
@@ -289,6 +440,7 @@ function setupTimeTravel(r) {
 // ── Timeline ───────────────────────────────────────────────
 function renderTimeline() {
   const tl = $("#timeline");
+  tl.classList.remove("is-loading");
   tl.innerHTML = "";
   const r = state.replay;
   if (!r) return;
@@ -313,13 +465,22 @@ function renderTimeline() {
 
     const head = el("div", "step-head");
     head.appendChild(el("span", "step-seq", "#" + s.seq));
-    head.appendChild(el("span", "step-name", s.stepName));
+    head.appendChild(el("span", "step-label", humanStepLabel(s)));
+    const prov = providerFromJournalOutput(s.output);
+    if (prov) {
+      const pb = el("span", "provider-badge", providerIconText(prov.provider));
+      pb.title = `${prov.provider} (${prov.mode})`;
+      head.appendChild(pb);
+    }
     head.appendChild(el("span", "step-kind kind-" + s.kind, s.kind));
     const tags = el("div", "step-tags");
     if (s.sideEffect) tags.appendChild(el("span", "tag effect", "side-effect"));
     if (s.effects.length) tags.appendChild(el("span", "tag effect", `⚡ ${s.effects.length}`));
     if (s.seeded) tags.appendChild(el("span", "tag seeded", "seeded"));
-    if (s.elapsedMsFromPrev !== null) tags.appendChild(el("span", "tag timing", `+${s.elapsedMsFromPrev}ms`));
+    if (s.elapsedMsFromPrev !== null) {
+      const dur = formatDuration(s.elapsedMsFromPrev);
+      if (dur) tags.appendChild(el("span", "tag duration", dur));
+    }
     head.appendChild(tags);
     node.appendChild(head);
 
@@ -447,9 +608,28 @@ document.querySelectorAll(".tab").forEach((tab) => {
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
 
+const importFile = $("#importFile");
+if (importFile) {
+  $("#btnImport").addEventListener("click", () => importFile.click());
+  importFile.addEventListener("change", () => {
+    const file = importFile.files && importFile.files[0];
+    importFile.value = "";
+    if (!file) return;
+    void uploadJsonl(file).catch((e) => {
+      window.alert(e instanceof Error ? e.message : String(e));
+    });
+  });
+}
+$("#btnExport").addEventListener("click", () => {
+  void downloadExport().catch((e) => {
+    window.alert(e instanceof Error ? e.message : String(e));
+  });
+});
+
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
+    initThemeControls();
     await loadSource();
     await loadRuns();
     setInterval(() => {
