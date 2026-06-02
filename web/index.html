@@ -6,10 +6,18 @@
     <title>durabl — replay &amp; time-travel</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236366f1'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/app.css" />
+    <script>
+      (function () {
+        var k = "durabl.theme";
+        var t = localStorage.getItem(k);
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div id="app">
-      <header class="topbar">
+      <header class="topbar" role="banner">
         <div class="brand">
           <span class="logo" aria-hidden="true"></span>
           <div>
@@ -17,64 +25,106 @@
             <div class="brand-sub">replay &amp; time-travel</div>
           </div>
         </div>
-        <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
-          <span class="dot"></span><span id="sourceLabel">loading…</span>
+        <div class="topbar-actions">
+          <input
+            type="file"
+            id="importFile"
+            accept=".jsonl,.ndjson,application/x-ndjson,text/plain"
+            hidden
+          />
+          <button type="button" id="btnImport" class="btn-secondary" title="Replace journal with a JSONL export file">
+            Upload JSONL
+          </button>
+          <button type="button" id="btnExport" class="btn-secondary" disabled title="Select a run to export">
+            Download export
+          </button>
+          <button
+            type="button"
+            id="themeToggle"
+            class="theme-toggle btn-ghost"
+            aria-label="Switch to dark mode"
+            title="Toggle light / dark theme"
+          >
+            <span class="theme-toggle-icon" aria-hidden="true">☾</span>
+          </button>
+          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from" aria-label="Journal source">
+            <span class="dot" aria-hidden="true"></span><span id="sourceLabel">loading…</span>
+          </div>
         </div>
       </header>
 
+      <div id="offlineBanner" class="offline-banner" hidden role="status" aria-live="polite"></div>
+
       <div class="layout">
-        <!-- Left: runs + fork tree -->
-        <aside class="sidebar">
-          <div class="panel hitl-panel" id="hitlPanel" hidden>
-            <div class="panel-title">Awaiting human input</div>
-            <div id="hitlPausedList" class="hitl-paused-list"></div>
+        <aside class="sidebar" aria-label="Runs navigation">
+          <div class="panel hitl-panel" id="hitlPanel" hidden role="region" aria-labelledby="hitlPanelTitle">
+            <div class="panel-title" id="hitlPanelTitle">Awaiting human input</div>
+            <div id="hitlPausedList" class="hitl-paused-list" role="list"></div>
           </div>
-          <div class="panel">
-            <div class="panel-title">Runs &amp; fork tree</div>
-            <div id="tree" class="tree"></div>
+          <div class="panel fork-panel">
+            <div class="panel-title">Fork lineage</div>
+            <nav id="lineagePath" class="lineage-path" hidden aria-label="Lineage to selected run"></nav>
+            <div id="tree" class="tree" role="tree" aria-label="Fork tree"></div>
           </div>
         </aside>
 
-        <!-- Center: timeline + time-travel -->
-        <main class="main">
+        <main class="main" id="main-content">
           <div class="run-header" id="runHeader"></div>
 
-          <div class="hitl-banner" id="hitlBanner" hidden>
+          <div class="hitl-banner" id="hitlBanner" hidden role="region" aria-labelledby="hitlBannerTitle">
             <div class="hitl-banner-head">
-              <span class="hitl-pill">Awaiting human input</span>
+              <span class="hitl-pill" id="hitlBannerTitle">Awaiting human input</span>
               <span class="hitl-banner-sub" id="hitlBannerSub"></span>
             </div>
-            <form id="hitlForm" class="hitl-form">
+            <form id="hitlForm" class="hitl-form" aria-describedby="hitlOfflineNote">
               <label class="hitl-label" for="hitlDecision">Decision</label>
-              <textarea id="hitlDecision" name="decision" rows="2" placeholder="e.g. APPROVED — same as durabl hitl-input" required></textarea>
+              <textarea
+                id="hitlDecision"
+                name="decision"
+                rows="2"
+                placeholder="e.g. APPROVED — same as durabl hitl-input"
+                required
+                aria-required="true"
+              ></textarea>
               <div class="hitl-form-actions">
                 <button type="submit" class="btn-primary" id="hitlSubmitBtn">Submit &amp; resume</button>
-                <span class="hitl-form-msg" id="hitlFormMsg" hidden></span>
+                <span class="hitl-form-msg" id="hitlFormMsg" role="status" aria-live="polite" hidden></span>
               </div>
             </form>
             <p class="hitl-offline-note" id="hitlOfflineNote" hidden>
-              Offline export: paused runs are visible for replay only. Resume requires live mode with Restate ingress.
+              Offline mode: paused runs are visible for replay only. HITL submit needs a live journal and Restate ingress.
             </p>
           </div>
 
-          <div class="tt-bar" id="ttBar" hidden>
-            <div class="tt-label">Time-travel</div>
-            <input id="ttRange" type="range" min="1" max="1" value="1" />
-            <div class="tt-readout"><span id="ttNow">1</span> / <span id="ttMax">1</span></div>
-            <button id="ttLive" class="btn-ghost">↺ full run</button>
+          <div class="tt-bar" id="ttBar" hidden role="group" aria-labelledby="ttLabel">
+            <div class="tt-label" id="ttLabel">Time-travel</div>
+            <input
+              id="ttRange"
+              type="range"
+              min="1"
+              max="1"
+              value="1"
+              aria-valuemin="1"
+              aria-valuemax="1"
+              aria-valuenow="1"
+              aria-valuetext="Step 1 of 1"
+            />
+            <div class="tt-readout" aria-live="polite">
+              <span id="ttNow">1</span> / <span id="ttMax">1</span>
+            </div>
+            <button type="button" id="ttLive" class="btn-ghost">↺ full run</button>
           </div>
 
-          <div class="timeline" id="timeline"></div>
+          <div class="timeline" id="timeline" role="list" aria-label="Run timeline"></div>
         </main>
 
-        <!-- Right: step detail / diff -->
-        <section class="detail">
-          <div class="detail-tabs">
-            <button class="tab active" data-tab="step">Step detail</button>
-            <button class="tab" data-tab="diff">Trajectory diff</button>
+        <section class="detail" aria-label="Step detail and trajectory diff">
+          <div class="detail-tabs" role="tablist" aria-label="Detail panels">
+            <button type="button" class="tab active" role="tab" id="tab-btn-step" data-tab="step" aria-selected="true" aria-controls="tab-step" tabindex="0">Step detail</button>
+            <button type="button" class="tab" role="tab" id="tab-btn-diff" data-tab="diff" aria-selected="false" aria-controls="tab-diff" tabindex="-1">Trajectory diff</button>
           </div>
-          <div id="tab-step" class="tab-panel active"></div>
-          <div id="tab-diff" class="tab-panel"></div>
+          <div id="tab-step" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-step"></div>
+          <div id="tab-diff" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-diff" hidden></div>
         </section>
       </div>
     </div>

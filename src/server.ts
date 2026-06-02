@@ -31,6 +31,16 @@ import {
   requireApiKeyIfConfigured,
 } from "./http-security.js";
 import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
+import {
+  exportJsonlFromSource,
+  exportBundleJsonlFromSource,
+} from "./export-source.js";
+
+const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
+
+export const HITL_SUBMIT_OFFLINE_ERROR =
+  "HITL submit requires live mode (SQLite journal + Restate ingress). " +
+  "Offline export can list paused runs but cannot resolve the durable promise.";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIRS = [
@@ -79,22 +89,34 @@ export interface ServerOptions {
   readonly source?: JournalSource;
 }
 
-function buildSource(opts: ServerOptions): { source: JournalSource; label: string } {
-  if (opts.source) return { source: opts.source, label: opts.source.origin };
+function buildSource(opts: ServerOptions): {
+  source: JournalSource;
+  label: string;
+  exportPath: string | null;
+} {
+  if (opts.source) {
+    const origin = opts.source.origin;
+    const exportPath = origin.startsWith("imported:")
+      ? origin.slice("imported:".length) || null
+      : null;
+    return { source: opts.source, label: origin, exportPath };
+  }
   if (opts.importPath) {
     const jsonl = readFileSync(opts.importPath, "utf8");
     return {
       source: importJournalSource(jsonl, `imported:${opts.importPath}`),
       label: `imported export ${opts.importPath} (OFFLINE — no substrate)`,
+      exportPath: opts.importPath,
     };
   }
-  return { source: liveJournalSource(), label: "live SQLite journal" };
+  return { source: liveJournalSource(), label: "live SQLite journal", exportPath: null };
 }
 
 interface Route {
   source: JournalSource;
   label: string;
   live: boolean;
+  exportPath: string | null;
 }
 
 async function restateReady(): Promise<boolean> {
@@ -143,10 +165,24 @@ function handleOps(
   return false;
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+async function readBodyBytes(req: IncomingMessage, maxBytes: number): Promise<Buffer> {
   const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
+  let total = 0;
+  for await (const c of req) {
+    const buf = Buffer.isBuffer(c) ? c : Buffer.from(c);
+    total += buf.length;
+    if (total > maxBytes) throw new Error("body too large");
+    chunks.push(buf);
+  }
+  return Buffer.concat(chunks);
+}
+
+async function readTextBody(req: IncomingMessage, maxBytes: number): Promise<string> {
+  return (await readBodyBytes(req, maxBytes)).toString("utf8");
+}
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const raw = (await readBodyBytes(req, MAX_IMPORT_BYTES)).toString("utf8").trim();
   if (!raw) return {};
   try {
     return JSON.parse(raw) as unknown;
@@ -172,6 +208,10 @@ function handleApi(
       label: ctx.label,
       live: ctx.live,
       hitlSubmitEnabled: ctx.live,
+      exportPath: ctx.exportPath,
+      ...(ctx.live
+        ? {}
+        : { hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR }),
     });
     return true;
   }
@@ -270,7 +310,69 @@ function handleApi(
     sendJson(res, 200, diffTrajectoriesFrom(source, a, b));
     return true;
   }
+  if (p === "/api/export" && req.method === "GET") {
+    const runId = url.searchParams.get("runId");
+    if (!runId) return badReq(res, "runId required");
+    const bundle = url.searchParams.get("bundle") !== "false";
+    try {
+      const jsonl = bundle
+        ? exportBundleJsonlFromSource(source, runId)
+        : exportJsonlFromSource(source, runId);
+      const safe = runId.replace(/[^\w.-]+/g, "_");
+      const filename = bundle ? `${safe}-bundle.jsonl` : `${safe}.jsonl`;
+      res.writeHead(200, {
+        "content-type": "application/x-ndjson; charset=utf-8",
+        "content-disposition": `attachment; filename="${filename}"`,
+        "cache-control": "no-store",
+      });
+      res.end(jsonl);
+    } catch (e) {
+      return badReq(res, e instanceof Error ? e.message : String(e));
+    }
+    return true;
+  }
+  if (p === "/api/import" && req.method === "POST") {
+    return handleImport(ctx, req, res);
+  }
   return false;
+}
+
+async function handleImport(
+  ctx: Route,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<boolean> {
+  let jsonl: string;
+  try {
+    jsonl = (await readTextBody(req, MAX_IMPORT_BYTES)).trim();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "body too large") {
+      sendJson(res, 413, { error: "import too large (max 32 MiB)" });
+      return true;
+    }
+    return badReq(res, msg);
+  }
+  if (!jsonl) return badReq(res, "empty JSONL body");
+  try {
+    const origin = `imported:upload:${Date.now()}`;
+    ctx.source = importJournalSource(jsonl, origin);
+    ctx.label = "browser upload (OFFLINE — no substrate)";
+    ctx.live = false;
+    ctx.exportPath = null;
+    sendJson(res, 200, {
+      ok: true,
+      origin: ctx.source.origin,
+      label: ctx.label,
+      live: false,
+      hitlSubmitEnabled: false,
+      hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR,
+      runs: ctx.source.allRunIds().length,
+    });
+  } catch (e) {
+    return badReq(res, e instanceof Error ? e.message : String(e));
+  }
+  return true;
 }
 
 async function handleHitlInput(
@@ -280,9 +382,7 @@ async function handleHitlInput(
 ): Promise<boolean> {
   if (!ctx.live) {
     sendJson(res, 503, {
-      error:
-        "HITL submit requires live mode (SQLite journal + Restate ingress). " +
-        "Offline export can list paused runs but cannot resolve the durable promise.",
+      error: HITL_SUBMIT_OFFLINE_ERROR,
       submitEnabled: false,
     });
     return true;
@@ -346,9 +446,9 @@ export interface ServerHandle {
 }
 
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
-  const { source, label } = buildSource(opts);
+  const { source, label, exportPath } = buildSource(opts);
   const live = isLiveJournalSource(source);
-  const ctx: Route = { source, label, live };
+  const ctx: Route = { source, label, live, exportPath };
   const host = process.env.DURABL_UI_HOST ?? "127.0.0.1";
   const port = opts.port ?? Number(process.env.DURABL_UI_PORT ?? 7878);
 

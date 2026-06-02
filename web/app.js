@@ -20,6 +20,8 @@ const state = {
   hitlSubmitEnabled: false,
   hitlState: "none",
   pausedRuns: [],
+  origin: "",
+  hitlSubmitDisabledReason: "",
   /** Trajectory diff panel: "side" | "inline" */
   diffViewMode: localStorage.getItem("durabl.diffViewMode") === "inline" ? "inline" : "side",
 };
@@ -28,7 +30,8 @@ async function api(path, opts) {
   const res = await fetch(path, opts);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(body.error || `HTTP ${res.status}`);
+    const hint = body.hint ? ` (${body.hint})` : "";
+    throw new Error((body.error || `HTTP ${res.status}`) + hint);
   }
   return body;
 }
@@ -46,14 +49,81 @@ function fmtOut(v) {
   try { return JSON.stringify(v, null, 2); } catch { return String(v); }
 }
 
+function isOfflineHealth(h) {
+  const origin = h?.origin ?? state.origin ?? "";
+  return !h?.live || String(origin).startsWith("imported");
+}
+
+function updateOfflineBanner(h) {
+  const banner = $("#offlineBanner");
+  if (!banner) return;
+  const offline = isOfflineHealth(h);
+  banner.hidden = !offline;
+  if (!offline) return;
+  banner.textContent =
+    h?.hitlSubmitDisabledReason ||
+    state.hitlSubmitDisabledReason ||
+    "Viewing imported JSONL — replay only. No live substrate; HITL submit is disabled.";
+}
+
+function updateExportButton() {
+  const btn = $("#btnExport");
+  if (!btn) return;
+  btn.disabled = !state.selected;
+  btn.title = state.selected
+    ? "Download JSONL export (fork tree bundle)"
+    : "Select a run to export";
+}
+
+async function downloadExport() {
+  if (!state.selected) return;
+  const url = `/api/export?runId=${encodeURIComponent(state.selected)}&bundle=true`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const disp = res.headers.get("content-disposition") || "";
+  const m = /filename="([^"]+)"/.exec(disp);
+  const filename = m?.[1] || `${state.selected}-bundle.jsonl`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function uploadJsonl(file) {
+  const text = await file.text();
+  const res = await fetch("/api/import", {
+    method: "POST",
+    headers: { "content-type": "application/x-ndjson" },
+    body: text,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const hint = body.hint ? ` (${body.hint})` : "";
+    throw new Error((body.error || `HTTP ${res.status}`) + hint);
+  }
+  state.selected = null;
+  state.replay = null;
+  await loadSource();
+  await loadRuns();
+}
+
 // ── Source banner ──────────────────────────────────────────
 async function loadSource() {
   const h = await api("/api/health");
   $("#sourceLabel").textContent = h.label;
-  const offline = h.origin && h.origin.startsWith("imported");
+  state.origin = h.origin || "";
+  state.hitlSubmitDisabledReason = h.hitlSubmitDisabledReason || "";
+  const offline = isOfflineHealth(h);
   $("#sourcePill").classList.toggle("offline", offline);
   state.live = Boolean(h.live);
   state.hitlSubmitEnabled = Boolean(h.hitlSubmitEnabled);
+  updateOfflineBanner(h);
+  updateExportButton();
 }
 
 async function submitHitlInput(ev) {
@@ -132,7 +202,12 @@ function renderHitlPausedList() {
   for (const p of state.pausedRuns) {
     const row = el("button", "hitl-paused-item");
     row.type = "button";
-    if (p.runId === state.selected) row.classList.add("active");
+    row.setAttribute("role", "listitem");
+    row.setAttribute("aria-label", `Paused run ${p.runId}`);
+    if (p.runId === state.selected) {
+      row.classList.add("active");
+      row.setAttribute("aria-current", "true");
+    }
     row.appendChild(el("div", "run-id", p.runId));
     row.appendChild(el("div", "hint", "paused — click to review & submit"));
     row.onclick = () => selectRun(p.runId);
@@ -175,9 +250,16 @@ function updateHitlBanner() {
   const canSubmit = state.hitlSubmitEnabled && state.live;
   form.hidden = !canSubmit;
   offlineNote.hidden = canSubmit;
+  if (!canSubmit && state.hitlSubmitDisabledReason) {
+    offlineNote.textContent = state.hitlSubmitDisabledReason;
+  }
   submitBtn.disabled = !canSubmit;
+  submitBtn.setAttribute("aria-disabled", String(!canSubmit));
+  const decisionEl = $("#hitlDecision");
+  decisionEl.disabled = !canSubmit;
+  decisionEl.setAttribute("aria-disabled", String(!canSubmit));
   if (!canSubmit) {
-    $("#hitlDecision").value = "";
+    decisionEl.value = "";
   }
 }
 
@@ -188,25 +270,41 @@ async function renderTree() {
     tree.appendChild(el("div", "empty", "No runs in this journal yet."));
     return;
   }
+  const rootList = el("ul", "tree-root");
+  rootList.setAttribute("role", "group");
+  tree.appendChild(rootList);
   for (const root of state.roots) {
     const data = await api(`/api/tree?runId=${encodeURIComponent(root)}`);
-    renderTreeNode(tree, data.tree, 0);
+    renderTreeNode(rootList, data.tree, 0);
   }
 }
 
 function renderTreeNode(container, node, depth) {
-  const row = el("div", "tree-node");
+  const item = el("li", "tree-item");
+  const row = el("button", "tree-node");
+  row.type = "button";
+  row.dataset.runId = node.runId;
   row.classList.add(node.forkedAtSeq === null ? "root" : "fork");
-  if (state.selected === node.runId) row.classList.add("active");
+  if (state.selected === node.runId) {
+    row.classList.add("active");
+    row.setAttribute("aria-current", "location");
+  }
+  const traj = node.forkedAtSeq === null ? node.trajectory : `@${node.forkedAtSeq} ${node.trajectory}`;
+  row.setAttribute("aria-label", `Run ${node.runId}, trajectory ${traj}`);
   if (depth > 0) {
     row.appendChild(el("span", "twig", "  ".repeat(depth - 1) + "└─"));
   }
   row.appendChild(el("span", "tname", node.runId));
-  const badge = el("span", "traj-badge", node.forkedAtSeq === null ? node.trajectory : `@${node.forkedAtSeq} ${node.trajectory}`);
+  const badge = el("span", "traj-badge", traj);
   row.appendChild(badge);
   row.onclick = () => selectRun(node.runId);
-  container.appendChild(row);
-  for (const c of node.children) renderTreeNode(container, c, depth + 1);
+  item.appendChild(row);
+  if (node.children.length) {
+    const sub = el("ul", "tree-group");
+    for (const c of node.children) renderTreeNode(sub, c, depth + 1);
+    item.appendChild(sub);
+  }
+  container.appendChild(item);
 }
 
 // ── Select + render a run ──────────────────────────────────
@@ -215,7 +313,10 @@ async function selectRun(runId) {
   state.ttN = null;
   state.selectedStepSeq = null;
   document.querySelectorAll(".tree-node").forEach((n) => {
-    n.classList.toggle("active", n.querySelector(".tname")?.textContent === runId);
+    const on = n.dataset.runId === runId;
+    n.classList.toggle("active", on);
+    if (on) n.setAttribute("aria-current", "location");
+    else n.removeAttribute("aria-current");
   });
   const replay = await api(`/api/replay?runId=${encodeURIComponent(runId)}`);
   state.replay = replay;
@@ -225,6 +326,7 @@ async function selectRun(runId) {
   if (replay.steps.length) selectStep(replay.steps[replay.steps.length - 1].seq);
   populateDiffPickers();
   await refreshHitlForRun(runId);
+  updateExportButton();
 }
 
 function renderRunHeader(r) {
@@ -256,6 +358,16 @@ function renderRunHeader(r) {
   head.appendChild(row);
 }
 
+function syncTimeTravelAria() {
+  const range = $("#ttRange");
+  const max = Number(range.max) || 1;
+  const n = Number(range.value) || 1;
+  range.setAttribute("aria-valuemin", "1");
+  range.setAttribute("aria-valuemax", String(max));
+  range.setAttribute("aria-valuenow", String(n));
+  range.setAttribute("aria-valuetext", `Step ${n} of ${max}`);
+}
+
 // ── Time-travel ────────────────────────────────────────────
 function setupTimeTravel(r) {
   const bar = $("#ttBar");
@@ -270,11 +382,13 @@ function setupTimeTravel(r) {
   $("#ttNow").textContent = max;
   $("#ttMax").textContent = max;
   range.style.setProperty("--pct", "100%");
+  syncTimeTravelAria();
   range.oninput = () => {
     const n = Number(range.value);
     state.ttN = n === max ? null : n;
     $("#ttNow").textContent = n;
     range.style.setProperty("--pct", (n / max) * 100 + "%");
+    syncTimeTravelAria();
     renderTimeline();
     selectStep(n);
   };
@@ -283,6 +397,7 @@ function setupTimeTravel(r) {
     state.ttN = null;
     $("#ttNow").textContent = max;
     range.style.setProperty("--pct", "100%");
+    syncTimeTravelAria();
     renderTimeline();
     selectStep(max);
   };
@@ -450,7 +565,9 @@ function populateDiffPickers() {
   panel.innerHTML = "";
   const controls = el("div", "diff-controls");
   const selA = el("select", "pick");
+  selA.id = "diffRunA";
   const selB = el("select", "pick");
+  selB.id = "diffRunB";
   for (const run of state.runs) {
     const oa = el("option", null, run.runId); oa.value = run.runId;
     const ob = el("option", null, run.runId); ob.value = run.runId;
@@ -460,9 +577,13 @@ function populateDiffPickers() {
   // default B = first fork of selected, else next run
   const forkTarget = state.replay?.divergencePoints?.[0]?.forkRunId;
   selB.value = forkTarget || (state.runs.find((r) => r.runId !== state.selected)?.runId ?? state.selected);
-  controls.appendChild(el("span", "kv-label", "A"));
+  const labA = el("label", "kv-label", "A");
+  labA.htmlFor = "diffRunA";
+  controls.appendChild(labA);
   controls.appendChild(selA);
-  controls.appendChild(el("span", "kv-label", "B"));
+  const labB = el("label", "kv-label", "B");
+  labB.htmlFor = "diffRunB";
+  controls.appendChild(labB);
   controls.appendChild(selB);
 
   const viewToggle = el("div", "diff-view-toggle");
@@ -527,13 +648,37 @@ function populateDiffPickers() {
 }
 
 // ── Tabs ───────────────────────────────────────────────────
+function activateTab(tab) {
+  const tabs = [...document.querySelectorAll(".tab")];
+  const name = tab.dataset.tab;
+  tabs.forEach((t) => {
+    const on = t === tab;
+    t.classList.toggle("active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+    t.tabIndex = on ? 0 : -1;
+  });
+  document.querySelectorAll(".tab-panel").forEach((p) => {
+    const on = p.id === "tab-" + name;
+    p.classList.toggle("active", on);
+    p.hidden = !on;
+  });
+}
+
 document.querySelectorAll(".tab").forEach((tab) => {
-  tab.onclick = () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-    tab.classList.add("active");
-    $("#tab-" + tab.dataset.tab).classList.add("active");
-  };
+  tab.onclick = () => activateTab(tab);
+  tab.addEventListener("keydown", (ev) => {
+    const tabs = [...document.querySelectorAll(".tab")];
+    const i = tabs.indexOf(tab);
+    let next = i;
+    if (ev.key === "ArrowRight") next = (i + 1) % tabs.length;
+    else if (ev.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+    else if (ev.key === "Home") next = 0;
+    else if (ev.key === "End") next = tabs.length - 1;
+    else return;
+    ev.preventDefault();
+    activateTab(tabs[next]);
+    tabs[next].focus();
+  });
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
@@ -541,6 +686,30 @@ $("#hitlForm").addEventListener("submit", submitHitlInput);
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
+    const btnImport = $("#btnImport");
+    const importFile = $("#importFile");
+    if (btnImport && importFile) {
+      btnImport.addEventListener("click", () => importFile.click());
+      importFile.addEventListener("change", async () => {
+        const file = importFile.files?.[0];
+        importFile.value = "";
+        if (!file) return;
+        try {
+          btnImport.disabled = true;
+          await uploadJsonl(file);
+        } catch (e) {
+          alert(e.message);
+        } finally {
+          btnImport.disabled = false;
+        }
+      });
+    }
+    const btnExport = $("#btnExport");
+    if (btnExport) {
+      btnExport.addEventListener("click", () => {
+        void downloadExport().catch((e) => alert(e.message));
+      });
+    }
     await loadSource();
     await loadRuns();
     setInterval(() => {
