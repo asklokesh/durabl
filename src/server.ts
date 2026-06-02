@@ -1,3 +1,4 @@
+
 // ─────────────────────────────────────────────────────────────────────────────
 // LOCAL REPLAY WEB SERVER (M3) — self-hostable, neutral, zero external deps.
 //
@@ -37,42 +38,34 @@ import {
   forkTreeFrom,
   lineageFrom,
   diffTrajectoriesFrom,
-  inspectRunFrom,
-  listForksFrom,
 } from "./inspect-source.js";
 import { listRunsForApi, parseRunsListQuery } from "./runs-list.js";
-import {
-  executeForkPost,
-  forkApiErrorStatus,
-  parseForkPostBody,
-} from "./api-fork.js";
 import {
   hitlStateFromSource,
   pausedRunsFromSource,
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
-import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
-
+import { config } from "./config.js";
+import { allowHitlInputSubmit } from "./hitl-input-rate-limit.js";
 import { enforceMutatingApiAuth } from "./api-auth.js";
 import {
   handleRunsWebSocketUpgrade,
   wsRunsEnabled,
   WS_RUNS_PATH,
 } from "./ws-runs.js";
+import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// Static assets live in <repo>/web (copied into dist via package build step, or
-// served from source during dev). Resolve both.
 const WEB_DIRS = [
-  join(__dirname, "..", "web"), // when running from dist/server.js
-  join(__dirname, "..", "..", "web"), // fallback
+  join(__dirname, "..", "web"),
+  join(__dirname, "..", "..", "web"),
 ];
 
 function webFile(rel: string): string | null {
   for (const base of WEB_DIRS) {
     const p = normalize(join(base, rel));
-    if (!p.startsWith(normalize(base))) return null; // path-traversal guard
+    if (!p.startsWith(normalize(base))) return null;
     if (existsSync(p)) return p;
   }
   return null;
@@ -106,11 +99,10 @@ function sendText(res: ServerResponse, code: number, body: string, mime: string)
 
 export interface ServerOptions {
   readonly port?: number;
-  /** If set, serve a journal IMPORTED from this JSONL export file (offline). */
   readonly importPath?: string;
-  /** Provide a pre-built source directly (used by the gate harness). */
   readonly source?: JournalSource;
 }
+
 
 function exportPathFromOrigin(origin: string): string | null {
   if (!origin.startsWith("imported:")) return null;
@@ -159,6 +151,52 @@ interface Route {
   port: number;
 }
 
+async function restateReady(): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.restateAdmin}/health`, {
+      signal: AbortSignal.timeout(2000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function handleOps(
+  ctx: Route,
+  url: URL,
+  res: ServerResponse,
+): boolean | Promise<boolean> {
+  const p = url.pathname;
+  if (p === "/health") {
+    sendJson(res, 200, { ok: true, live: ctx.live, label: ctx.label });
+    return true;
+  }
+  if (p === "/ready") {
+    if (!ctx.live) {
+      sendJson(res, 200, { ready: true, mode: "offline-import" });
+      return true;
+    }
+    return restateReady().then((ready) => {
+      sendJson(res, ready ? 200 : 503, {
+        ready,
+        restateAdmin: config.restateAdmin,
+      });
+      return true;
+    });
+  }
+  if (p === "/metrics") {
+    const body = [
+      "# HELP durabl_ui_up Replay UI server process is up.",
+      "# TYPE durabl_ui_up gauge",
+      "durabl_ui_up 1",
+    ].join("\n");
+    sendText(res, 200, `${body}\n`, "text/plain; version=0.0.4; charset=utf-8");
+    return true;
+  }
+  return false;
+}
+
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
   for await (const c of req) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
@@ -189,7 +227,8 @@ function handleApi(
       label: ctx.label,
       live: ctx.live,
       hitlSubmitEnabled: ctx.live,
-
+      exportPath: ctx.exportPath,
+      uiUrl: requestUiUrl(req, ctx.host, ctx.port),
       wsEnabled,
       wsPath: wsEnabled ? WS_RUNS_PATH : null,
     });
@@ -284,53 +323,7 @@ function handleApi(
     sendJson(res, 200, diffTrajectoriesFrom(source, a, b));
     return true;
   }
-  if (p === "/api/inspect") {
-    const runId = url.searchParams.get("runId");
-    if (!runId) return badReq(res, "runId required");
-    sendJson(res, 200, { source: source.origin, inspection: inspectRunFrom(source, runId) });
-    return true;
-  }
-  if (p === "/api/lineage") {
-    const runId = url.searchParams.get("runId");
-    if (!runId) return badReq(res, "runId required");
-    sendJson(res, 200, { source: source.origin, runId, lineage: lineageFrom(source, runId) });
-    return true;
-  }
-  if (p === "/api/forks") {
-    const runId = url.searchParams.get("runId");
-    if (!runId) return badReq(res, "runId required");
-    sendJson(res, 200, { source: source.origin, runId, forks: listForksFrom(source, runId) });
-    return true;
-  }
-  if (p === "/api/fork" && req.method === "POST") {
-    return handleForkPost(ctx, req, res);
-  }
   return false;
-}
-
-async function handleForkPost(
-  ctx: Route,
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<boolean> {
-  let raw: unknown;
-  try {
-    raw = await readJsonBody(req);
-  } catch (e) {
-    return badReq(res, e instanceof Error ? e.message : String(e));
-  }
-  try {
-    const body = parseForkPostBody(raw);
-    const out = await executeForkPost(body, { live: ctx.live });
-    sendJson(res, 200, out);
-  } catch (e) {
-    sendJson(res, forkApiErrorStatus(e), {
-      error: e instanceof Error ? e.message : String(e),
-      live: ctx.live,
-      forkSubmitEnabled: ctx.live,
-    });
-  }
-  return true;
 }
 
 async function handleHitlInput(
@@ -358,6 +351,11 @@ async function handleHitlInput(
   const decision = typeof o.decision === "string" ? o.decision.trim() : "";
   if (!runId) return badReq(res, "runId required");
   if (!decision) return badReq(res, "decision required");
+
+  if (!allowHitlInputSubmit(runId)) {
+    sendJson(res, 429, { error: "too many requests" });
+    return true;
+  }
 
   const state = hitlStateFromSource(ctx.source, runId);
   if (state === "none") {
@@ -395,16 +393,11 @@ function badReq(res: ServerResponse, msg: string): boolean {
   return true;
 }
 
-/** A running server handle: its base URL and a close() to stop it. */
 export interface ServerHandle {
   readonly url: string;
   close(): Promise<void>;
 }
 
-/**
- * Start the replay UI server. Resolves to a {@link ServerHandle} once listening.
- * Binds localhost by default (DURABL_UI_HOST to override).
- */
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
   const { source, label, exportPath } = buildSource(opts);
   const live = isLiveJournalSource(source);
@@ -433,6 +426,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
         const url = new URL(req.url ?? "/", `http://${host}:${port}`);
         pathname = url.pathname;
         if (url.pathname.startsWith("/api/")) {
+          if (!enforceMutatingApiAuth(req, res, url.pathname, sendJson)) return;
           const handled = await handleApi(ctx, url, res, req);
           if (!handled) sendJson(res, 404, { error: "not found" });
           return;
@@ -469,6 +463,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
+
       const url = `http://${host}:${port}`;
       logServerStart({ url, origin: source.origin, live });
       resolve({
@@ -482,7 +477,6 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
   });
 }
 
-/** Backward-compatible: start the server and resolve to the base URL string. */
 export async function startServer(opts: ServerOptions = {}): Promise<string> {
   const h = await startServerHandle(opts);
   return h.url;
