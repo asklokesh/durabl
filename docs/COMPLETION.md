@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + post-M5 tracks)
 
-**Branch:** `merge-coordinator` → `main` · **Update after merge:** `git rev-parse HEAD` in `docs/build-status.md` and below.
+**Branch:** `main` · **Update after merge:** `git rev-parse HEAD` in `docs/build-status.md` and gate log below.
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design). Commit SHAs are from `git log` on the integration line that became `main`.
 
@@ -17,7 +17,7 @@ This checklist records what was **verified with real gates** vs **config-ready**
 | **M4** | Model + deploy neutrality (config-only) | `npm run gate:m4` — 4/4 | ✅ Gated | `f5a8df6` |
 | **M5** | HITL pause/resume across real restart + export | `npm run gate:m5` — 5/5 (incl. web UI API resume G5) | ✅ Gated | `1cd52b1` |
 
-**Full serial suite:** `npm run gate:all` → `scripts/run-all-gates.sh` (typecheck + M1 + M2–M5 + `gate:harden` + `gate:hitl-ui`). Evidence log may land on `feat/final-gates` as `docs/evidence/gate-all-*.log`.
+**Full serial suite:** `npm run gate:all` → `scripts/run-all-gates.sh` (typecheck + M1 + M2–M5 + `gate:harden` + `gate:hitl-ui`). Evidence log: `docs/evidence/gate-all-*.log`.
 
 Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `build-plan.md`, PRD redline).
 
@@ -61,7 +61,13 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 | Harness lock + lifecycle | `0b3b097` |
 | build-status / HITL offline evidence | `18cb2fa` |
 
-**Current integration HEAD:** update after `merge-coordinator` lands on `main` (`git rev-parse HEAD`).
+**Final-wave integration:** `feat/final-*` branches merged to `main` (see gate log below).
+
+---
+
+## gate:all
+
+_(Append PASS/FAIL log after `npm run gate:all` on integration HEAD.)_
 
 ---
 
@@ -71,3 +77,4 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 - [`FUNDING.md`](FUNDING.md) — investor narrative
 - [`QUICKSTART.md`](QUICKSTART.md) — operator quickstart
 - [`HARDENING.md`](HARDENING.md) · [`TEST-MATRIX.md`](TEST-MATRIX.md) — hardening tracks
+- [`ONE-PAGER.md`](ONE-PAGER.md) — investor one-pager
