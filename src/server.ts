@@ -1,4 +1,23 @@
-// Route map: docs/BACKEND.md
+// ─────────────────────────────────────────────────────────────────────────────
+// LOCAL REPLAY WEB SERVER (M3) — self-hostable, neutral, zero external deps.
+//
+// A lightweight node:http server (no framework) that serves:
+//   - the read-only replay APIs over a JournalSource (live OR imported export)
+//   - the static single-page frontend (web/index.html etc.)
+//
+// SECURITY / NEUTRALITY:
+//   - Binds 127.0.0.1 by default (localhost only). Override with DURABL_UI_HOST,
+//     but the default never exposes the journal off the machine.
+//   - No cloud, no external service, no telemetry. Runs fully locally over the
+//     journal/export.
+//   - Replay endpoints are read-only journal reads. M5 HITL resume endpoints
+//     (`POST /api/hitl/input`) proxy to Restate ingress in LIVE mode only;
+//     offline import mode surfaces paused runs from the export but cannot submit.
+//   - No secrets read or logged; config via env vars only.
+//
+// The whole point: the SAME UI renders a live run and a run imported from a
+// portable JSONL export with nothing else running (the portability wedge).
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
@@ -14,34 +33,27 @@ import {
   forkTreeFrom,
   lineageFrom,
   diffTrajectoriesFrom,
-  rootRuns,
 } from "./inspect-source.js";
+import { listRunsForApi, parseRunsListQuery } from "./runs-list.js";
 import {
   hitlStateFromSource,
   pausedRunsFromSource,
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
-import { config } from "./config.js";
-import { allowHitlInputSubmit } from "./hitl-input-rate-limit.js";
-import {
-  applyCors,
-  applySecurityHeaders,
-  isMutatingApiMethod,
-  requireApiKeyIfConfigured,
-} from "./http-security.js";
-import { logHttpRequest, logServerError, logServerStart } from "./logging.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// Static assets live in <repo>/web (copied into dist via package build step, or
+// served from source during dev). Resolve both.
 const WEB_DIRS = [
-  join(__dirname, "..", "web"),
-  join(__dirname, "..", "..", "web"),
+  join(__dirname, "..", "web"), // when running from dist/server.js
+  join(__dirname, "..", "..", "web"), // fallback
 ];
 
 function webFile(rel: string): string | null {
   for (const base of WEB_DIRS) {
     const p = normalize(join(base, rel));
-    if (!p.startsWith(normalize(base))) return null;
+    if (!p.startsWith(normalize(base))) return null; // path-traversal guard
     if (existsSync(p)) return p;
   }
   return null;
@@ -75,7 +87,9 @@ function sendText(res: ServerResponse, code: number, body: string, mime: string)
 
 export interface ServerOptions {
   readonly port?: number;
+  /** If set, serve a journal IMPORTED from this JSONL export file (offline). */
   readonly importPath?: string;
+  /** Provide a pre-built source directly (used by the gate harness). */
   readonly source?: JournalSource;
 }
 
@@ -95,52 +109,6 @@ interface Route {
   source: JournalSource;
   label: string;
   live: boolean;
-}
-
-async function restateReady(): Promise<boolean> {
-  try {
-    const res = await fetch(`${config.restateAdmin}/health`, {
-      signal: AbortSignal.timeout(2000),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-function handleOps(
-  ctx: Route,
-  url: URL,
-  res: ServerResponse,
-): boolean | Promise<boolean> {
-  const p = url.pathname;
-  if (p === "/health") {
-    sendJson(res, 200, { ok: true, live: ctx.live, label: ctx.label });
-    return true;
-  }
-  if (p === "/ready") {
-    if (!ctx.live) {
-      sendJson(res, 200, { ready: true, mode: "offline-import" });
-      return true;
-    }
-    return restateReady().then((ready) => {
-      sendJson(res, ready ? 200 : 503, {
-        ready,
-        restateAdmin: config.restateAdmin,
-      });
-      return true;
-    });
-  }
-  if (p === "/metrics") {
-    const body = [
-      "# HELP durabl_ui_up Replay UI server process is up.",
-      "# TYPE durabl_ui_up gauge",
-      "durabl_ui_up 1",
-    ].join("\n");
-    sendText(res, 200, `${body}\n`, "text/plain; version=0.0.4; charset=utf-8");
-    return true;
-  }
-  return false;
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -176,27 +144,21 @@ function handleApi(
     return true;
   }
   if (p === "/api/runs") {
-    const limitRaw = url.searchParams.get("limit");
-    const limit =
-      limitRaw !== null && limitRaw !== ""
-        ? Math.max(1, Math.min(500, Number(limitRaw) || 50))
-        : undefined;
-    let ids = source.allRunIds();
-    if (limit !== undefined) ids = ids.slice(0, limit);
-    const runs = ids.map((id) => {
-      const m = source.runMeta(id);
-      const steps = source.trajectory(id);
-      return {
-        runId: id,
-        trajectory: m?.trajectory ?? "main",
-        parentRun: m?.parentRun ?? null,
-        forkedAtSeq: m?.forkedAtSeq ?? null,
-        steps: steps.length,
-        createdAt: m?.createdAt ?? "",
-        hitlState: hitlStateFromSource(source, id),
-      };
-    });
-    sendJson(res, 200, { source: source.origin, label: ctx.label, roots: rootRuns(source), runs });
+    const parsed = parseRunsListQuery(
+      url.searchParams.get("limit"),
+      url.searchParams.get("cursor"),
+    );
+    if ("error" in parsed) return badReq(res, parsed.error);
+    try {
+      const body = listRunsForApi(source, parsed);
+      sendJson(res, 200, { source: source.origin, label: ctx.label, ...body });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "invalid cursor" || msg === "cursor not found") {
+        return badReq(res, msg);
+      }
+      throw e;
+    }
     return true;
   }
   if (p === "/api/hitl/paused") {
@@ -299,11 +261,6 @@ async function handleHitlInput(
   if (!runId) return badReq(res, "runId required");
   if (!decision) return badReq(res, "decision required");
 
-  if (!allowHitlInputSubmit(runId)) {
-    sendJson(res, 429, { error: "too many requests" });
-    return true;
-  }
-
   const state = hitlStateFromSource(ctx.source, runId);
   if (state === "none") {
     sendJson(res, 404, { error: "run has no HITL pause", runId, state });
@@ -340,11 +297,16 @@ function badReq(res: ServerResponse, msg: string): boolean {
   return true;
 }
 
+/** A running server handle: its base URL and a close() to stop it. */
 export interface ServerHandle {
   readonly url: string;
   close(): Promise<void>;
 }
 
+/**
+ * Start the replay UI server. Resolves to a {@link ServerHandle} once listening.
+ * Binds localhost by default (DURABL_UI_HOST to override).
+ */
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
   const { source, label } = buildSource(opts);
   const live = isLiveJournalSource(source);
@@ -354,49 +316,34 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     void (async () => {
-      const started = Date.now();
-      const method = req.method ?? "GET";
+    try {
       const url = new URL(req.url ?? "/", `http://${host}:${port}`);
-      const path = url.pathname;
-      res.on("finish", () => {
-        logHttpRequest(method, path, res.statusCode, Date.now() - started);
-      });
-      try {
-        applySecurityHeaders(res);
-        if (!applyCors(req, res)) return;
-        const ops = await handleOps(ctx, url, res);
-        if (ops) return;
-        if (path.startsWith("/api/")) {
-          if (isMutatingApiMethod(method) && !requireApiKeyIfConfigured(req, res)) return;
-          const handled = await handleApi(ctx, url, res, req);
-          if (!handled) sendJson(res, 404, { error: "not found" });
-          return;
-        }
-        let rel = path === "/" ? "/index.html" : path;
-        rel = rel.replace(/^\/+/, "");
-        const file = webFile(rel) ?? webFile("index.html");
-        if (!file) {
-          sendText(res, 404, "not found", "text/plain");
-          return;
-        }
-        const ext = file.slice(file.lastIndexOf("."));
-        sendText(res, 200, readFileSync(file, "utf8"), MIME[ext] ?? "application/octet-stream");
-      } catch (e) {
-        logServerError(`${method} ${path}`, e);
-        sendJson(res, 500, { error: "internal error" });
+      if (url.pathname.startsWith("/api/")) {
+        const handled = await handleApi(ctx, url, res, req);
+        if (!handled) sendJson(res, 404, { error: "not found" });
+        return;
       }
+      // static
+      let rel = url.pathname === "/" ? "/index.html" : url.pathname;
+      rel = rel.replace(/^\/+/, "");
+      const file = webFile(rel) ?? webFile("index.html");
+      if (!file) {
+        sendText(res, 404, "not found", "text/plain");
+        return;
+      }
+      const ext = file.slice(file.lastIndexOf("."));
+      sendText(res, 200, readFileSync(file, "utf8"), MIME[ext] ?? "application/octet-stream");
+    } catch (e) {
+      sendJson(res, 500, { error: e instanceof Error ? e.message : String(e) });
+    }
     })();
   });
 
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
-      const addr = server.address();
-      const actualPort =
-        typeof addr === "object" && addr !== null ? addr.port : port;
-      logServerStart(host, actualPort, label);
       resolve({
-        url: `http://${host}:${actualPort}`,
+        url: `http://${host}:${port}`,
         close: () =>
           new Promise<void>((res) => {
             server.close(() => res());
@@ -406,6 +353,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
   });
 }
 
+/** Backward-compatible: start the server and resolve to the base URL string. */
 export async function startServer(opts: ServerOptions = {}): Promise<string> {
   const h = await startServerHandle(opts);
   return h.url;
