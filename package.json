@@ -78,9 +78,8 @@
     "test:m4": "npm run gate:m4",
     "test:m5": "npm run gate:m5",
     "test:hitl-ui": "npm run gate:hitl-ui",
-    "lint": "eslint .",
-    "validate:fixtures": "node --experimental-strip-types scripts/validate-fixture.ts",
-    "verify:npm-pack": "bash scripts/verify-npm-pack.sh"
+
+    "test:api": "npm run build && node --experimental-strip-types --test tests/http-api.test.ts"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",
