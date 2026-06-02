@@ -46,10 +46,11 @@ npm run gate:live
 |---|---|
 | M1 | `docs/m1-evidence/gate-evidence.log` |
 | M2 | `docs/m2-evidence/` |
-| M3 | `docs/m3-evidence/` (+ optional screenshots via `npm run capture:ui`) |
+| M3 | `docs/m3-evidence/gate-evidence.log` (+ gitignored `portable-bundle.jsonl`, `screenshots/` from gate / `capture:ui`) |
 | M4 | `docs/m4-evidence/gate-evidence.log` |
-| M5 | `docs/m5-evidence/hitl-run-bundle.jsonl` |
+| M5 | stdout gate transcript (+ gitignored `docs/m5-evidence/hitl-run-bundle.jsonl` from gate) |
+| hitl-web | `docs/hitl-ui-evidence/hitl-ui-offline.jsonl` (pinned fixture; see README there) |
 | live | stdout only (no network without keys) |
-| hitl-web | stdout only |
+| hitl-web | stdout + pinned fixture under `docs/hitl-ui-evidence/` |
 
 See [`docs/HARDENING.md`](HARDENING.md) for provider HTTP policy and skip semantics.
