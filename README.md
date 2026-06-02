@@ -169,6 +169,12 @@ web/                  # replay UI static assets
 
 No credentials are read or logged; paths and ports only.
 
+## Security
+
+Private vulnerability reporting, no secrets in public issues, env-var-only
+credentials, and self-host data boundaries:
+[`SECURITY.md`](SECURITY.md).
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
