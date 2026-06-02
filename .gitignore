@@ -23,4 +23,6 @@ docs/m5-evidence/*.jsonl
 !docs/m3-evidence/gate-evidence.log
 !docs/m4-evidence/
 !docs/m4-evidence/**
+!docs/evidence/
+!docs/evidence/gate-all-*.log
 .gstack/
