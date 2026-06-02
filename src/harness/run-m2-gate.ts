@@ -36,10 +36,9 @@ import {
   releaseHarnessLock,
   startRestateServerAndWait,
   killProc,
-  type ServiceHandle,
 } from "./restate-control.js";
 import type { ChildProcess } from "node:child_process";
-import { countEffects, effectsFor, resetEffects } from "../effect-sink.js";
+import { countEffects, resetEffects } from "../effect-sink.js";
 import { resetJournal, trajectory } from "../journal.js";
 import { seedFork, validateForkPlan, ForkError, type ForkPlan } from "../fork.js";
 import { diffTrajectories, inspectRun, lineage } from "../inspect.js";

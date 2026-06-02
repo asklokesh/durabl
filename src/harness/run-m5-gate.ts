@@ -234,7 +234,7 @@ async function g1(): Promise<void> {
 async function g2(): Promise<void> {
   const runId = `m5-crash-${Date.now()}`;
   const crashPoint = "on-resume:after-effect"; // effect fired, journal not committed
-  let server = await startServer();
+  const server = await startServer();
   // Service crashes ONCE at the dangerous window during resume.
   let svc = await startAndRegisterService({ DURABL_CRASH_AT: crashPoint, DURABL_CRASH_ONCE: "1" });
 
@@ -319,8 +319,8 @@ async function g3(): Promise<void> {
 // ─── G4: full-journal export → offline replay reconstructs the HITL run ───────
 async function g4(): Promise<void> {
   const runId = `m5-export-${Date.now()}`;
-  let server = await startServer();
-  let svc = await startAndRegisterService();
+  const server = await startServer();
+  const svc = await startAndRegisterService();
 
   // Produce a COMPLETE HITL run: submit, pause, resume to completion.
   await hitlSubmit(runId, "exportable", "main");
@@ -377,8 +377,8 @@ async function g4(): Promise<void> {
 async function g5HitlWebUiApi(): Promise<void> {
   const runId = `m5-ui-${Date.now()}`;
   const uiPort = 17878;
-  let server = await startServer();
-  let svc = await startAndRegisterService();
+  const server = await startServer();
+  const svc = await startAndRegisterService();
   let ui: Awaited<ReturnType<typeof startServerHandle>> | null = null;
 
   try {

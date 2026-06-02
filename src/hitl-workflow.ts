@@ -43,7 +43,6 @@ import type {
   HitlWorkflowOutput,
 } from "./step-model.js";
 import { maybeCrash } from "./crash-inject.js";
-import { config } from "./config.js";
 import { getModelProvider } from "./providers/registry.js";
 
 /** The name of the workflow-bound durable promise the run blocks on. */
