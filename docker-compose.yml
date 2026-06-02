@@ -20,6 +20,12 @@ services:
     volumes:
       - restate-data:/restate-data
     command: ["--node-name", "durabl-local"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9070/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   durabl:
     profiles: ["docker-demo"]
@@ -36,7 +42,8 @@ services:
     ports:
       - "9080:9080"
     depends_on:
-      - restate
+      restate:
+        condition: service_healthy
 
 volumes:
   restate-data:
