@@ -31,6 +31,10 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 | **fundability** | Investor narrative grounded in Phase 0 | `5227c9f` (merged `9483a85`) | — (docs-only) | ✅ Docs |
 | **harden** | Live provider gate, HTTP policy, second-substrate seam | `6da9f0a` (merged `70536ad`) | `npm run gate:harden` (3/3); `npm run gate:live` | ✅ Harden gated; live **config-ready** |
 | **hitl-web-ui** | Paused list + resume in replay UI + HTTP API | `1e91a8a` / `7f0cf19` (merged `2c459b1`) | `npm run gate:hitl-ui` | ✅ Gated (offline + live G5 via M5) |
+| **ui-fork-tree** | Nested fork lineage + breadcrumb from `/api/tree` | `25a5538` (cherry-pick) | `gate:m3` fork-tree checks | ✅ Web-only |
+| **ui-dark-mode** | Light/dark theme + system preference toggle | `0536735` (cherry-pick) | manual / `capture:ui` | ✅ Web-only |
+
+Operator guide for replay UI (fork tree, diff, HITL, offline matrix): [`UI.md`](UI.md).
 
 **Harness stabilization:** serialized gates via `/tmp/durabl-harness.lock`, attach-only M1 crash recovery, Restate lifecycle fixes — `0b3b097`, `911a19a`, `9a5fb34`, `d206675`, `0a376fd`, `a33b693` (gate:all teardown preserves active gate children).
 
@@ -122,12 +126,13 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 | **Verdict in log** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui) |
 | Reproduce | `export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d).log` |
 
-**Coordinator note (2026-06-02):** Fresh `gate:all` reruns on a busy integration worktree hit **exit 137 (SIGKILL)** during M1 and/or **typecheck failures** from concurrent `feat/backend-*` / `feat/ux-*` merges into `src/server.ts`. Quiesce parallel merges, reset `src/server.ts` + `src/logging.ts` to the `b411caa` pair (or resolve conflicts), then rerun `npm run typecheck && npm run gate:all`.
+**UX/UI wave (2026-06-02):** `feat/ui-a11y` merged with HEAD settings/import/export retained; lineage tree + a11y roles from a11y branch. See gate log after final `gate:all` on integration HEAD below.
 
 ---
 
 ## Related docs
 
+- [`UI.md`](UI.md) — replay UI: fork tree, diff, HITL, offline matrix
 - [`build-status.md`](build-status.md) — gate matrix + reproduce commands
 - [`FUNDING.md`](FUNDING.md) · [`QUICKSTART.md`](QUICKSTART.md)
 - [`HARDENING.md`](HARDENING.md) · [`TEST-MATRIX.md`](TEST-MATRIX.md)
