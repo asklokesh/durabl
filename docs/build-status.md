@@ -3,7 +3,7 @@
 **Date:** 2026-06-02 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
-**main HEAD:** `0b3b097` — merged `feat/productize` → `feat/fundability` → `feat/harden` → `feat/hitl-web-ui`, plus harness lock + lifecycle stabilization.
+**main HEAD:** `18cb2fa` — merged `feat/productize` → `feat/fundability` → `feat/harden` → `feat/hitl-web-ui`, plus harness lock + lifecycle stabilization.
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
