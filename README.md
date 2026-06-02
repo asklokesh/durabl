@@ -37,6 +37,19 @@ npm run demo           # scripted M1+M2 narrative (real SIGKILL + fork)
 npm run ui             # replay UI → http://127.0.0.1:7878
 ```
 
+**Makefile** (same commands; requires `make`):
+
+| Target | npm equivalent | Purpose |
+|--------|----------------|---------|
+| `make demo` | `npm run demo` | Scripted M1+M2 narrative |
+| `make ui` | `npm run ui` | Replay UI on http://127.0.0.1:7878 |
+| `make test` | `npm test` | M1 adversarial gate |
+| `make gate-all` | `npm run gate:all` | Full serial gate suite (slow) |
+| `make typecheck` | `npm run typecheck` | TypeScript check only |
+| `make clean-data` | — | Remove harness data dirs + `/tmp/durabl-harness.lock` (respects `DURABL_DATA_DIR`) |
+
+Build artifacts: `npm run clean` (not `make clean-data`).
+
 One-liner:
 
 ```bash
