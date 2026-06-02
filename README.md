@@ -171,6 +171,10 @@ never commit them. No credentials are read or logged by durabl itself.
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Worktrees, serial gates, harness locking |
 | [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | First-run walkthrough |
 
+## Changelog
+
+Release history: [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
