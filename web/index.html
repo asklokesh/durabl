@@ -84,7 +84,7 @@
           </div>
           <div class="panel hitl-panel" id="hitlPanel" hidden role="region" aria-labelledby="hitlPanelTitle">
             <div class="panel-title" id="hitlPanelTitle">Awaiting human input</div>
-            <div id="hitlPausedList" class="hitl-paused-list" role="list"></div>
+            <div id="hitlPausedList" class="hitl-paused-list" role="list" aria-label="Paused runs" aria-busy="false"></div>
           </div>
           <div class="panel fork-panel">
             <div class="panel-title">Runs &amp; fork tree</div>
@@ -101,19 +101,19 @@
               <span class="hitl-pill" id="hitlBannerTitle">Awaiting human input</span>
               <span class="hitl-banner-sub" id="hitlBannerSub"></span>
             </div>
-            <form id="hitlForm" class="hitl-form" aria-describedby="hitlOfflineNote">
+            <form id="hitlForm" class="hitl-form" novalidate aria-describedby="hitlOfflineNote">
               <label class="hitl-label" for="hitlDecision">Decision</label>
               <textarea
                 id="hitlDecision"
                 name="decision"
                 rows="2"
                 placeholder="e.g. APPROVED — same as durabl hitl-input"
-                required
-                aria-required="true"
+                aria-describedby="hitlDecisionHint hitlFormMsg hitlOfflineNote"
               ></textarea>
+              <p class="hitl-decision-hint" id="hitlDecisionHint">Press <kbd>⌘</kbd><kbd>Enter</kbd> or <kbd>Ctrl</kbd><kbd>Enter</kbd> to submit</p>
               <div class="hitl-form-actions">
                 <button type="submit" class="btn-primary" id="hitlSubmitBtn">Submit &amp; resume</button>
-                <span class="hitl-form-msg" id="hitlFormMsg" role="status" aria-live="polite" hidden></span>
+                <span class="hitl-form-msg" id="hitlFormMsg" role="alert" aria-live="polite" hidden></span>
               </div>
             </form>
             <p class="hitl-offline-note" id="hitlOfflineNote" hidden>
