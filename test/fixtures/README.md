@@ -8,6 +8,8 @@ Stable, committed JSONL journal exports for **offline** replay and UI tests. Gat
 | `m5-hitl-run-bundle.jsonl` | Reference / manual offline HITL replay | Complete HITL run with pause, input, effect (7 lines) |
 | `hitl-ui-offline-paused.jsonl` | `npm run gate:hitl-ui` G2 | Paused-only import; resume POST must return 503 |
 
+Screenshots for HITL offline UI live under `docs/hitl-ui-evidence/` (`hitl-01-offline-paused-sidebar.png`, `hitl-02-offline-paused-banner.png`). Regenerate with `npm run capture:ui`.
+
 ## Regenerating
 
 After a passing gate, copy the runtime export if the journal schema changes:
@@ -18,7 +20,3 @@ cp docs/m5-evidence/hitl-run-bundle.jsonl test/fixtures/m5-hitl-run-bundle.jsonl
 ```
 
 `hitl-ui-offline-paused.jsonl` is hand-maintained (minimal paused-only slice).
-
-## HITL UI screenshots
-
-Pinned screenshots for the `hitl-web` gate live under [`docs/hitl-ui-evidence/`](../docs/hitl-ui-evidence/README.md) (not in this directory). Regenerate with `npm run capture:ui`.

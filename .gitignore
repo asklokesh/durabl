@@ -16,7 +16,7 @@ docs/*-evidence/*.jsonl
 docs/hitl-ui-evidence/*.jsonl
 docs/m3-evidence/screenshots/
 
-# Committed proof: gate evidence logs are deliverables, not transient logs.
+# Committed proof: gate evidence transcripts are deliverables, not transient logs.
 !docs/m1-evidence/gate-evidence.log
 !docs/m2-evidence/
 !docs/m2-evidence/*.log
@@ -24,4 +24,6 @@ docs/m3-evidence/screenshots/
 !docs/m3-evidence/*.log
 !docs/m4-evidence/
 !docs/m4-evidence/*.log
+!docs/m5-evidence/
+!docs/m5-evidence/*.log
 .gstack/
