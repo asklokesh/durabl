@@ -67,6 +67,7 @@
     "compose:validate": "docker compose --profile docker-demo config",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "smoke": "bash scripts/smoke-quickstart.sh",
+    "examples:minimal": "npm run build && tsc -p examples/minimal-workflow/tsconfig.json && node --enable-source-maps examples/minimal-workflow/dist/run.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
     "capture:ui": "npm run build && node scripts/capture-ui.mjs",
