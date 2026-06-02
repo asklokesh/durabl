@@ -22,6 +22,8 @@ const state = {
   hitlSubmitEnabled: false,
   hitlState: "none",
   pausedRuns: [],
+  /** Trajectory diff panel: "side" | "inline" */
+  diffViewMode: localStorage.getItem("durabl.diffViewMode") === "inline" ? "inline" : "side",
 };
 
 async function api(path, opts) {
@@ -429,6 +431,66 @@ function renderStepDetail(seq) {
 }
 
 // ── Diff ───────────────────────────────────────────────────
+const DIFF_STATUS_SYM = { same: "=", changed: "≠", only_a: "A", only_b: "B" };
+
+function shortRunId(runId) {
+  if (!runId || runId.length <= 22) return runId;
+  return runId.slice(0, 10) + "…" + runId.slice(-8);
+}
+
+function diffOutputPre(output) {
+  return el("pre", "diff-pre", fmtOut(output));
+}
+
+function diffCol(label, output, side) {
+  const col = el("div", "diff-col diff-col-" + side);
+  col.appendChild(el("div", "diff-col-label", label));
+  col.appendChild(diffOutputPre(output));
+  return col;
+}
+
+/** Render step output(s) for trajectory diff rows (uses /api/diff StepDiff fields). */
+function appendDiffStepOutput(parent, st, mode, runA, runB) {
+  if (st.status === "changed") {
+    const wrap = el("div", "diff-out" + (mode === "side" ? " diff-out-side" : " diff-out-inline"));
+    if (mode === "side") {
+      wrap.appendChild(diffCol(shortRunId(runA), st.aOutput, "a"));
+      wrap.appendChild(diffCol(shortRunId(runB), st.bOutput, "b"));
+    } else {
+      const a = el("div", "diff-inline-line");
+      a.appendChild(el("span", "diff-inline-tag a", "A"));
+      a.appendChild(diffOutputPre(st.aOutput));
+      wrap.appendChild(a);
+      const b = el("div", "diff-inline-line");
+      b.appendChild(el("span", "diff-inline-tag b", "B"));
+      b.appendChild(diffOutputPre(st.bOutput));
+      wrap.appendChild(b);
+    }
+    parent.appendChild(wrap);
+    return;
+  }
+  const single = el("div", "diff-out");
+  if (st.status === "only_a") {
+    single.appendChild(el("div", "diff-col-label", shortRunId(runA)));
+    single.appendChild(diffOutputPre(st.aOutput));
+  } else if (st.status === "only_b") {
+    single.appendChild(el("div", "diff-col-label", shortRunId(runB)));
+    single.appendChild(diffOutputPre(st.bOutput));
+  } else {
+    single.appendChild(diffOutputPre(st.aOutput));
+  }
+  parent.appendChild(single);
+}
+
+function setDiffViewMode(mode, rerender) {
+  state.diffViewMode = mode === "inline" ? "inline" : "side";
+  localStorage.setItem("durabl.diffViewMode", state.diffViewMode);
+  document.querySelectorAll(".diff-view-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.mode === state.diffViewMode);
+  });
+  if (typeof rerender === "function") rerender();
+}
+
 function populateDiffPickers() {
   const panel = $("#tab-diff");
   panel.innerHTML = "";
@@ -448,34 +510,63 @@ function populateDiffPickers() {
   controls.appendChild(selA);
   controls.appendChild(el("span", "kv-label", "B"));
   controls.appendChild(selB);
-  const result = el("div");
+
+  const viewToggle = el("div", "diff-view-toggle");
+  viewToggle.setAttribute("role", "group");
+  viewToggle.setAttribute("aria-label", "Diff layout");
+  for (const { mode, label } of [
+    { mode: "side", label: "Side by side" },
+    { mode: "inline", label: "Inline" },
+  ]) {
+    const btn = el("button", "diff-view-btn btn-ghost" + (state.diffViewMode === mode ? " active" : ""), label);
+    btn.type = "button";
+    btn.dataset.mode = mode;
+    btn.onclick = () => setDiffViewMode(mode, run);
+    viewToggle.appendChild(btn);
+  }
+  controls.appendChild(viewToggle);
+
+  const result = el("div", "diff-result");
   const run = async () => {
     result.innerHTML = "";
-    if (selA.value === selB.value) { result.appendChild(el("div", "empty", "Pick two different runs.")); return; }
-    const d = await api(`/api/diff?a=${encodeURIComponent(selA.value)}&b=${encodeURIComponent(selB.value)}`);
-    result.appendChild(el("div", "first-div", d.firstDivergenceSeq === null ? "identical trajectories" : `first divergence at seq ${d.firstDivergenceSeq}`));
+    if (selA.value === selB.value) {
+      result.appendChild(el("div", "empty", "Pick two different runs."));
+      return;
+    }
+    const runA = selA.value;
+    const runB = selB.value;
+    const d = await api(`/api/diff?a=${encodeURIComponent(runA)}&b=${encodeURIComponent(runB)}`);
+    const summary = el("div", "diff-summary");
+    if (d.firstDivergenceSeq === null) {
+      summary.appendChild(el("div", "first-div", "identical trajectories"));
+    } else {
+      summary.appendChild(el("div", "first-div", `first divergence at seq ${d.firstDivergenceSeq}`));
+      const jump = el("button", "btn-ghost diff-jump", "Jump to divergence");
+      jump.type = "button";
+      jump.onclick = () => {
+        const target = result.querySelector(".diff-row.divergence");
+        if (target) target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      };
+      summary.appendChild(jump);
+    }
+    result.appendChild(summary);
+
     for (const st of d.steps) {
       const row = el("div", "diff-row " + st.status);
-      const sym = { same: "=", changed: "≠", only_a: "A", only_b: "B" }[st.status];
-      row.appendChild(el("div", "diff-badge", sym));
-      const body = el("div");
-      body.appendChild(el("div", "diff-step", `#${st.seq} ${st.stepName}${st.seeded ? " (seeded)" : ""}`));
-      if (st.status === "changed") {
-        const out = el("div", "diff-out");
-        const a = el("span", "a", "A: " + fmtOut(st.aOutput)); out.appendChild(a);
-        out.appendChild(document.createElement("br"));
-        const b = el("span", "b", "B: " + fmtOut(st.bOutput)); out.appendChild(b);
-        body.appendChild(out);
-      } else if (st.status === "same") {
-        body.appendChild(el("div", "diff-out", fmtOut(st.aOutput)));
-      } else {
-        body.appendChild(el("div", "diff-out", fmtOut(st.aOutput ?? st.bOutput)));
+      if (d.firstDivergenceSeq !== null && st.seq === d.firstDivergenceSeq) {
+        row.classList.add("divergence");
       }
+      row.dataset.seq = String(st.seq);
+      row.appendChild(el("div", "diff-badge", DIFF_STATUS_SYM[st.status]));
+      const body = el("div", "diff-body");
+      body.appendChild(el("div", "diff-step", `#${st.seq} ${st.stepName}${st.seeded ? " (seeded)" : ""}`));
+      appendDiffStepOutput(body, st, state.diffViewMode, runA, runB);
       row.appendChild(body);
       result.appendChild(row);
     }
   };
-  selA.onchange = run; selB.onchange = run;
+  selA.onchange = run;
+  selB.onchange = run;
   panel.appendChild(controls);
   panel.appendChild(result);
   run();
