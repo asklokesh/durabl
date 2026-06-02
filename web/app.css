@@ -165,7 +165,14 @@ body {
 .step.active .node { border-color: var(--accent); background: var(--accent); color: #fff; }
 .step-head { display: flex; align-items: center; gap: 10px; }
 .step-seq { font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
-.step-name { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+.step-label { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
+.step-name { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+.provider-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid #6366f144; letter-spacing: 0.04em;
+}
 .step-kind {
   font-size: 10px; padding: 2px 8px; border-radius: 999px;
   background: var(--bg-elev2); color: var(--text-dim); border: 1px solid var(--border);
@@ -178,6 +185,7 @@ body {
 .tag.effect { background: #fbbf2422; color: var(--amber); }
 .tag.seeded { background: #22d3ee22; color: var(--cyan); }
 .tag.timing { background: var(--bg-elev2); color: var(--text-faint); }
+.tag.duration { background: var(--bg-elev2); color: var(--text-dim); }
 .step-out {
   margin-top: 9px; font-family: var(--mono); font-size: 12px; color: var(--text-dim);
   background: var(--bg); border: 1px solid var(--border-soft); border-radius: 7px;
@@ -208,6 +216,25 @@ pre.json {
   padding: 11px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; margin: 0;
 }
 .empty { color: var(--text-faint); font-size: 13px; padding: 24px; text-align: center; }
+.empty.err { color: var(--red); }
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--bg-elev) 25%, var(--bg-elev2) 50%, var(--bg-elev) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+.skeleton-tree { height: 36px; margin-bottom: 8px; }
+.skeleton-title { height: 22px; width: 55%; margin-bottom: 12px; }
+.skeleton-chip { display: inline-block; height: 24px; width: 72px; margin-right: 8px; border-radius: 999px; }
+.skeleton-step { height: 72px; margin-bottom: 12px; border-radius: 11px; }
+.skeleton-detail { height: 14px; margin-bottom: 10px; }
+.skeleton-detail:nth-child(odd) { width: 92%; }
+.skeleton-detail:nth-child(even) { width: 68%; }
 
 /* diff */
 .diff-controls { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }

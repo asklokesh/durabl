@@ -54,6 +54,92 @@ function fmtOut(v) {
   try { return JSON.stringify(v, null, 2); } catch { return String(v); }
 }
 
+const STEP_LABEL_BY_NAME = {
+  "step1-plan": "Plan with model",
+  "step2-tool_call": "Tool call",
+  "step3-summarize": "Summarize",
+  "step4-tool_call": "Tool call",
+  "step5-summarize": "Summarize",
+  "hitl-pause": "Awaiting human input",
+  "hitl-input": "Human decision",
+};
+
+const STEP_LABEL_BY_KIND = {
+  plan: "Plan with model",
+  tool_call: "Tool call",
+  summarize: "Summarize",
+  hitl_pause: "Awaiting human input",
+  hitl_input: "Human decision",
+};
+
+function humanStepLabel(step) {
+  return STEP_LABEL_BY_NAME[step.stepName] ?? STEP_LABEL_BY_KIND[step.kind] ?? step.stepName;
+}
+
+function providerFromJournalOutput(output) {
+  if (typeof output !== "string") return null;
+  const at = output.lastIndexOf("@");
+  if (at < 0) return null;
+  const tag = output.slice(at + 1);
+  const colon = tag.indexOf(":");
+  if (colon <= 0) return null;
+  const provider = tag.slice(0, colon).trim();
+  const mode = tag.slice(colon + 1).trim();
+  if (!provider) return null;
+  return { provider, mode };
+}
+
+function providerIconText(provider) {
+  const parts = provider.split(/[-_]/).filter(Boolean);
+  if (parts.length >= 2) {
+    return parts.map((p) => p[0]).join("").toUpperCase().slice(0, 3);
+  }
+  return provider.slice(0, 2).toUpperCase();
+}
+
+function formatDuration(ms) {
+  if (ms === null || ms === undefined) return null;
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) {
+    const s = ms / 1000;
+    return s >= 10 ? `${Math.round(s)}s` : `${s.toFixed(1)}s`;
+  }
+  const m = Math.floor(ms / 60_000);
+  const s = Math.round((ms % 60_000) / 1000);
+  return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+function renderSkeletons(container, variant, count) {
+  container.innerHTML = "";
+  container.classList.add("is-loading");
+  for (let i = 0; i < count; i++) {
+    container.appendChild(el("div", `skeleton skeleton-${variant}`));
+  }
+}
+
+function renderTreeSkeleton() {
+  renderSkeletons($("#tree"), "tree", 4);
+}
+
+function renderRunHeaderSkeleton() {
+  const head = $("#runHeader");
+  head.innerHTML = "";
+  head.classList.add("is-loading");
+  head.appendChild(el("div", "skeleton skeleton-title"));
+  const row = el("div", "run-meta-row");
+  for (let i = 0; i < 4; i++) row.appendChild(el("span", "skeleton skeleton-chip"));
+  head.appendChild(row);
+}
+
+function renderTimelineSkeleton() {
+  renderSkeletons($("#timeline"), "step", 5);
+}
+
+function renderStepDetailSkeleton() {
+  renderSkeletons($("#tab-step"), "detail", 6);
+}
+
+
 function applyTheme(mode) {
   const root = document.documentElement;
   if (mode === "system") delete root.dataset.theme;
@@ -527,11 +613,18 @@ function renderStepDetail(seq) {
     return wrap;
   };
 
-  panel.appendChild(kv("step", `#${s.seq} · ${s.stepName}`));
+  panel.appendChild(kv("step", `#${s.seq} · ${humanStepLabel(s)}`));
+  panel.appendChild(kv("logical name", s.stepName));
   panel.appendChild(kv("kind", s.kind));
+  const prov = providerFromJournalOutput(s.output);
+  if (prov) panel.appendChild(kv("model provider", `${prov.provider} (${prov.mode})`));
   panel.appendChild(kv("idempotency key", s.idemKey));
   panel.appendChild(kv("recorded at", s.recordedAt));
-  panel.appendChild(kv("timing", s.elapsedMsFromPrev === null ? "first step" : `+${s.elapsedMsFromPrev}ms from previous`));
+  const timing =
+    s.elapsedMsFromPrev === null
+      ? "first step"
+      : `${formatDuration(s.elapsedMsFromPrev) ?? s.elapsedMsFromPrev + "ms"} from previous`;
+  panel.appendChild(kv("timing", timing));
   panel.appendChild(kv("seeded", s.seeded ? `yes (from ${s.seededFrom})` : "no — natively executed"));
   panel.appendChild(kv("output", fmtOut(s.output), true));
 
@@ -574,7 +667,7 @@ function populateDiffPickers() {
       const sym = { same: "=", changed: "≠", only_a: "A", only_b: "B" }[st.status];
       row.appendChild(el("div", "diff-badge", sym));
       const body = el("div");
-      body.appendChild(el("div", "diff-step", `#${st.seq} ${st.stepName}${st.seeded ? " (seeded)" : ""}`));
+      body.appendChild(el("div", "diff-step", `#${st.seq} ${STEP_LABEL_BY_NAME[st.stepName] ?? st.stepName}${st.seeded ? " (seeded)" : ""}`));
       if (st.status === "changed") {
         const out = el("div", "diff-out");
         const a = el("span", "a", "A: " + fmtOut(st.aOutput)); out.appendChild(a);
