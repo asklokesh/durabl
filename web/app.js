@@ -182,7 +182,12 @@ function renderHitlPausedList() {
   for (const p of state.pausedRuns) {
     const row = el("button", "hitl-paused-item");
     row.type = "button";
-    if (p.runId === state.selected) row.classList.add("active");
+    row.setAttribute("role", "listitem");
+    row.setAttribute("aria-label", `Paused run ${p.runId}`);
+    if (p.runId === state.selected) {
+      row.classList.add("active");
+      row.setAttribute("aria-current", "true");
+    }
     row.appendChild(el("div", "run-id", p.runId));
     row.appendChild(el("div", "hint", "paused — click to review & submit"));
     row.onclick = () => selectRun(p.runId);
@@ -226,8 +231,12 @@ function updateHitlBanner() {
   form.hidden = !canSubmit;
   offlineNote.hidden = canSubmit;
   submitBtn.disabled = !canSubmit;
+  submitBtn.setAttribute("aria-disabled", canSubmit ? "false" : "true");
+  const decision = $("#hitlDecision");
+  decision.disabled = !canSubmit;
+  decision.setAttribute("aria-disabled", canSubmit ? "false" : "true");
   if (!canSubmit) {
-    $("#hitlDecision").value = "";
+    decision.value = "";
   }
 }
 
@@ -288,6 +297,9 @@ function renderTreeNode(ul, node, depth) {
   if (depth > 0) row.appendChild(forkTwigSvg());
   row.appendChild(el("span", "tname", node.runId));
   row.appendChild(el("span", "traj-badge", forkBadgeLabel(node)));
+  const label = `${node.forkedAtSeq === null ? "Root" : "Fork"} run ${node.runId}, ${forkBadgeLabel(node)}`;
+  row.setAttribute("aria-label", label);
+  if (node.runId === state.selected) row.setAttribute("aria-current", "location");
   row.onclick = () => selectRun(node.runId);
   li.appendChild(row);
   if (node.children.length) {
@@ -302,8 +314,11 @@ function renderTreeNode(ul, node, depth) {
 function syncTreeSelection() {
   document.querySelectorAll(".tree-node").forEach((row) => {
     const id = row.dataset.runId;
-    row.classList.toggle("active", id === state.selected);
+    const on = id === state.selected;
+    row.classList.toggle("active", on);
     row.classList.toggle("on-path", state.lineagePath.has(id));
+    if (on) row.setAttribute("aria-current", "location");
+    else row.removeAttribute("aria-current");
   });
 }
 
@@ -321,7 +336,11 @@ function renderLineageBar(chain) {
     btn.type = "button";
     btn.textContent = node.runId;
     btn.title = forkBadgeLabel(node);
-    if (node.runId === state.selected) btn.classList.add("active");
+    if (node.runId === state.selected) {
+      btn.classList.add("active");
+      btn.setAttribute("aria-current", "location");
+    }
+    btn.setAttribute("aria-label", `Lineage: ${node.runId}`);
     btn.onclick = () => selectRun(node.runId);
     bar.appendChild(btn);
   });
@@ -387,6 +406,18 @@ function renderRunHeader(r) {
 }
 
 // ── Time-travel ────────────────────────────────────────────
+function syncTimeTravelAria() {
+  const range = $("#ttRange");
+  if (!range || $("#ttBar").hidden) return;
+  const min = Number(range.min);
+  const max = Number(range.max);
+  const now = Number(range.value);
+  range.setAttribute("aria-valuemin", String(min));
+  range.setAttribute("aria-valuemax", String(max));
+  range.setAttribute("aria-valuenow", String(now));
+  range.setAttribute("aria-valuetext", `Step ${now} of ${max}`);
+}
+
 function setupTimeTravel(r) {
   const bar = $("#ttBar");
   const range = $("#ttRange");
@@ -400,11 +431,13 @@ function setupTimeTravel(r) {
   $("#ttNow").textContent = max;
   $("#ttMax").textContent = max;
   range.style.setProperty("--pct", "100%");
+  syncTimeTravelAria();
   range.oninput = () => {
     const n = Number(range.value);
     state.ttN = n === max ? null : n;
     $("#ttNow").textContent = n;
     range.style.setProperty("--pct", (n / max) * 100 + "%");
+    syncTimeTravelAria();
     renderTimeline();
     selectStep(n);
   };
@@ -413,6 +446,7 @@ function setupTimeTravel(r) {
     state.ttN = null;
     $("#ttNow").textContent = max;
     range.style.setProperty("--pct", "100%");
+    syncTimeTravelAria();
     renderTimeline();
     selectStep(max);
   };
@@ -432,7 +466,10 @@ function renderTimeline() {
   }
 
   for (const s of r.steps) {
-    const node = el("div", "step");
+    const node = el("button", "step");
+    node.type = "button";
+    node.setAttribute("role", "listitem");
+    node.setAttribute("aria-label", `Step ${s.seq}: ${s.stepName}, ${s.kind}`);
     node.classList.add("kind-" + s.kind);
     node.classList.toggle("has-effect", s.effects.length > 0);
     node.classList.toggle("seeded", s.seeded);
@@ -441,6 +478,7 @@ function renderTimeline() {
     if (state.selectedStepSeq === s.seq) node.classList.add("active");
 
     const dot = el("div", "node", String(s.seq));
+    dot.setAttribute("aria-hidden", "true");
     node.appendChild(dot);
 
     const head = el("div", "step-head");
@@ -461,8 +499,10 @@ function renderTimeline() {
 
     if (divBySeq.has(s.seq)) {
       for (const d of divBySeq.get(s.seq)) {
-        const m = el("div", "diverge-marker", `⑂ fork diverged here → ${d.forkRunId} [${d.forkTrajectory}]`);
-        m.style.cursor = "pointer";
+        const m = el("button", "diverge-marker");
+        m.type = "button";
+        m.textContent = `⑂ fork diverged here → ${d.forkRunId} [${d.forkTrajectory}]`;
+        m.setAttribute("aria-label", `Open fork run ${d.forkRunId}`);
         m.onclick = () => selectRun(d.forkRunId);
         tl.appendChild(m);
       }
@@ -474,7 +514,10 @@ function selectStep(seq) {
   state.selectedStepSeq = seq;
   document.querySelectorAll(".step").forEach((n) => {
     const sseq = Number(n.querySelector(".step-seq")?.textContent.replace("#", ""));
-    n.classList.toggle("active", sseq === seq);
+    const on = sseq === seq;
+    n.classList.toggle("active", on);
+    if (on) n.setAttribute("aria-current", "step");
+    else n.removeAttribute("aria-current");
   });
   renderStepDetail(seq);
 }
@@ -580,7 +623,9 @@ function populateDiffPickers() {
   panel.innerHTML = "";
   const controls = el("div", "diff-controls");
   const selA = el("select", "pick");
+  selA.id = "diffRunA";
   const selB = el("select", "pick");
+  selB.id = "diffRunB";
   for (const run of state.runs) {
     const oa = el("option", null, run.runId); oa.value = run.runId;
     const ob = el("option", null, run.runId); ob.value = run.runId;
@@ -590,9 +635,13 @@ function populateDiffPickers() {
   // default B = first fork of selected, else next run
   const forkTarget = state.replay?.divergencePoints?.[0]?.forkRunId;
   selB.value = forkTarget || (state.runs.find((r) => r.runId !== state.selected)?.runId ?? state.selected);
-  controls.appendChild(el("span", "kv-label", "A"));
+  const labA = el("label", "kv-label", "A");
+  labA.htmlFor = "diffRunA";
+  controls.appendChild(labA);
   controls.appendChild(selA);
-  controls.appendChild(el("span", "kv-label", "B"));
+  const labB = el("label", "kv-label", "B");
+  labB.htmlFor = "diffRunB";
+  controls.appendChild(labB);
   controls.appendChild(selB);
 
   const viewToggle = el("div", "diff-view-toggle");
@@ -657,13 +706,37 @@ function populateDiffPickers() {
 }
 
 // ── Tabs ───────────────────────────────────────────────────
+function activateTab(tab) {
+  const tabs = [...document.querySelectorAll(".tab")];
+  const name = tab.dataset.tab;
+  tabs.forEach((t) => {
+    const on = t === tab;
+    t.classList.toggle("active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+    t.tabIndex = on ? 0 : -1;
+  });
+  document.querySelectorAll(".tab-panel").forEach((p) => {
+    const on = p.id === "tab-" + name;
+    p.classList.toggle("active", on);
+    p.hidden = !on;
+  });
+}
+
 document.querySelectorAll(".tab").forEach((tab) => {
-  tab.onclick = () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-    tab.classList.add("active");
-    $("#tab-" + tab.dataset.tab).classList.add("active");
-  };
+  tab.onclick = () => activateTab(tab);
+  tab.addEventListener("keydown", (ev) => {
+    const tabs = [...document.querySelectorAll(".tab")];
+    const i = tabs.indexOf(tab);
+    let next = i;
+    if (ev.key === "ArrowRight") next = (i + 1) % tabs.length;
+    else if (ev.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+    else if (ev.key === "Home") next = 0;
+    else if (ev.key === "End") next = tabs.length - 1;
+    else return;
+    ev.preventDefault();
+    activateTab(tabs[next]);
+    tabs[next].focus();
+  });
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
