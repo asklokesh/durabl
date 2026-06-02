@@ -67,7 +67,17 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 
 ## gate:all
 
-_(Append PASS/FAIL log after `npm run gate:all` on integration HEAD.)_
+**2026-06-02** — `gate:all` **PASS** (final-wave integration).
+
+| Field | Value |
+|-------|--------|
+| HEAD (gate log) | `88c7a1a` lineage — all `feat/final-*` merged |
+| Current `main` | `41a1b74` (includes post-final backend/UI merges by other agents) |
+| Log | [`docs/evidence/gate-all-20260602.log`](evidence/gate-all-20260602.log) |
+| Verdict | `ALL GATES PASSED` |
+| Reproduce | `export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d).log` |
+
+**Final-wave merges (requested):** `feat/final-examples`, `feat/final-faq`, `feat/final-makefile`, `feat/final-release-workflow`, `feat/final-typedoc`, `feat/final-onepager` — all ancestors of `main`. **Other `feat/final-*`:** none pending.
 
 ---
 
