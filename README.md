@@ -169,6 +169,10 @@ web/                  # replay UI static assets
 
 No credentials are read or logged; paths and ports only.
 
+## Changelog
+
+Release history: [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
