@@ -1,0 +1,31 @@
+{
+  "name": "durabl",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "forwardPorts": [7878, 8080, 9070, 9080, 8081, 9071, 9081],
+  "portsAttributes": {
+    "7878": { "label": "durabl replay UI", "onAutoForward": "notify" },
+    "8080": { "label": "Restate ingress (local gates)" },
+    "9070": { "label": "Restate admin (local gates)" },
+    "9080": { "label": "durabl SDK service" },
+    "8081": { "label": "Restate ingress (M4 docker target)" },
+    "9071": { "label": "Restate admin (M4 docker target)" },
+    "9081": { "label": "durabl service (M4 docker target)" }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  },
+  "remoteUser": "node",
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb",
+    "storage": "32gb"
+  }
+}
