@@ -41,7 +41,9 @@ npm run gate:m5   # M5 — 5/5
 
 ---
 
-## Parallel tracks (merged to main)
+## Post-M5 tracks (merged to main)
+
+Integrated from `1cd52b1` via merge commits `9483a85` (fundability) → `70536ad` (harden) → `dcf7f7f` / `2c459b1` (hitl-web-ui) → `e3e5997` (productize follow-up). Core M1–M5 gates unchanged; extension gates below.
 
 | Track | Branch | Scope | Gate / entry | Docs |
 |---|---|---|---|---|

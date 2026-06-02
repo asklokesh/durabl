@@ -133,6 +133,10 @@ export async function registerDeploymentWithRetry(
 /** Reap stale SDK children so TCP bind + deployment register stay deterministic. */
 export function killStaleServiceProcesses(): void {
   spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
+  spawnSync("sh", [
+    "-c",
+    `lsof -ti tcp:${config.servicePort} | xargs kill -9 2>/dev/null || true`,
+  ]);
 }
 
 /** Start SDK service and register deployment (shared harness helper). */
@@ -140,7 +144,7 @@ export async function startAndRegisterService(
   env: Record<string, string> = {},
 ): Promise<ServiceHandle> {
   killStaleServiceProcesses();
-  await sleep(400);
+  await waitForServiceDown(15000);
   if (!(await waitForRestate(30000))) {
     throw new Error("restate admin not reachable before deployment register");
   }

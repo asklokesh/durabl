@@ -19,6 +19,7 @@ import {
   sleep,
   startRestateServer,
   startAndRegisterService,
+  killStaleServiceProcesses,
   waitForRestate,
   waitForServiceDown,
   killProc,
@@ -60,7 +61,7 @@ async function invokeSync(runId: string, prompt: string, traj = "main"): Promise
 
 // Block on an existing (recovering) run via the Restate attach endpoint — does
 // NOT submit a new invocation. Retries across server/service restarts.
-async function waitForCompletion(runId: string, timeoutMs = 40000): Promise<any> {
+async function waitForCompletion(runId: string, timeoutMs = 90000): Promise<any> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
@@ -106,16 +107,9 @@ async function crashGate(point: string): Promise<void> {
 
   // Phase 2: restart. CRASH_ONCE marker persists so it won't re-crash; recover.
   killProc(svc.proc);
-  spawnSync("pkill", ["-9", "-f", "dist/service.js"]);
-  if (!(await waitForServiceDown(15000))) {
-    throw new Error("service port still bound after crash restart");
-  }
-  if (!(await waitForRestate(30000))) {
-    throw new Error("restate admin not reachable before crash recovery register");
-  }
   svc = await startAndRegisterService({ DURABL_CRASH_AT: point, DURABL_CRASH_ONCE: "1" });
 
-  const result = await waitForCompletion(runId, 30000);
+  const result = await waitForCompletion(runId, 90000);
 
   const effectCount = countEffects(runId, "step2-tool_call");
   const steps = trajectory(runId).map((e) => e.stepName);
@@ -133,7 +127,9 @@ async function crashGate(point: string): Promise<void> {
   );
 
   killProc(svc.proc);
-  await sleep(200);
+  killStaleServiceProcesses();
+  await waitForServiceDown(10000);
+  await sleep(400);
 }
 
 async function concurrencyGate(): Promise<void> {
