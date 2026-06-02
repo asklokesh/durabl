@@ -6,6 +6,8 @@
 self-hostable binary, no Docker, no cloud. Logical fork only; never CRIU/snapshot.
 **Runtime:** Node 26 (built-in `node:sqlite`, zero native deps).
 
+**Decision record:** [ADR 001 — Portable journal, idempotency key, no CRIU](adr/001-portable-journal.md) (canonical *why*; this doc is the *how* + gate evidence).
+
 This document describes the M1 architecture, the idempotency contract, how the
 adversarial gate is verified, and pastes the **real** output of the crash harness.
 
