@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `9688dcb1c100d2c506bf3d354584d1b5f92532b4` · **Gate log:** `docs/evidence/gate-all-20260602.log` (`ALL GATES PASSED`, harness tip `a33b693`)
+**Branch:** `main` · **HEAD:** `6ec939c42596ef7b750977a0143af57541b8c647` · **Gate log:** [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) (`ALL GATES PASSED`, exit 0)
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 
@@ -107,11 +107,35 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 | Journal + idempotency + SIGKILL crash paths | **Verified** | M1–M5 gates; real `restate-server`, real SIGKILL, real SQLite sink |
 | Logical fork / offline replay / HITL restart | **Verified** | M2–M5 + `gate:hitl-ui` |
 | Provider switch (OpenAI / Anthropic) | **Verified** in gate | M4 uses test doubles; no network required for pass |
-| **Live LLM calls** | **Config-ready** | `npm run gate:live` — **SKIP + exit 0** without API keys |
-| **Docker deploy target (M4)** | **Config-ready** | CONFIG-READY-NOT-RUN without local Docker image |
-| **DBOS second substrate** | **Config-ready** | `src/journal-source-dbos-stub.ts` + `gate:harden` H2 |
-| **Offline HITL resume** | **By design** | `POST /api/hitl/input` → **503** without live Restate ingress |
-| **Python SDK** | **Config-ready** | `docs/PYTHON-SDK.md` stub only |
+| **Live LLM calls (H3)** | **CONFIG-READY** | `gate:live` / H3: SKIP exit 0 without keys; needs real OpenAI/Anthropic keys to exercise |
+| **Docker deploy target (M4)** | **CONFIG-READY** | `gate:m4` CONFIG-READY-NOT-RUN when Docker daemon/image absent |
+| **DBOS second substrate** | **NOT-PLANNED** (stub only) | `journal-source-dbos-stub.ts` + H2 stub gate — not a working DBOS product |
+| **Offline HITL live submit** | **NOT-PLANNED** (by design) | `POST /api/hitl/input` → **503** without live Restate ingress |
+| **Python SDK** | **NOT-PLANNED** (stub) | `docs/PYTHON-SDK.md` only; TS ships first |
+
+---
+
+## UX/UI + integrations merge queue (2026-06-02)
+
+All branches below are **ancestors of `main`** at HEAD `6ec939c`. Serial merge into `/private/tmp/durabl-merge-main` (integration `main`).
+
+| Branch | Scope | Merged |
+|--------|--------|--------|
+| `feat/ui-a11y` (`2acd804`) | Replay UI a11y roles, settings, lineage | ✅ (prior) |
+| `feat/ui-e2e` | Playwright `test:e2e` | ✅ `0e8f197` |
+| `feat/ui-hitl-polish` | HITL paused list + submit UX | ✅ `046ab07` |
+| `feat/ui-connection-banner` | Connection pill + offline tooltip | ✅ `de7a088` + `50efc3f` (connectionLabel) |
+| `feat/ux-cli` | CLI colors, spinner, error hints | ✅ `2ee4820` |
+| `feat/ux-errors` | (same tip as hitl-polish) | ✅ via hitl-polish |
+| `feat/ux-timeline` | Step labels, durations, provider badges | ✅ `0881c06` |
+| `feat/ux-keyboard` | Keyboard shortcuts | ✅ (prior) |
+| `feat/ux-onboarding` | First-visit tour | ✅ (prior) |
+| `feat/ux-help` | Help drawer | ✅ (prior) |
+| `feat/ux-quickstart` | Quickstart in UI | ✅ (prior) |
+| `feat/ux-demo` | Interactive demo script | ✅ (prior) |
+| `feat/ux-toasts` | HITL toasts, copy run ID | ✅ (prior) |
+| `feat/integ-index` | Integrations hub + K8s/gh-action docs | ✅ `e735c4e` |
+| `feat/final-cli` | CLI release polish | ✅ (prior) |
 
 ---
 
@@ -119,14 +143,13 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 
 | Field | Value |
 |-------|--------|
-| Integration HEAD (post ux-settings merge) | `72c0d19` |
-| Gate log HEAD (serial run) | `41a1b74` |
-| Gate fix commit | `a33b693` |
-| **Canonical log** | [`docs/evidence/gate-all-20260602.log`](evidence/gate-all-20260602.log) |
-| **Verdict in log** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui) |
-| Reproduce | `export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d).log` |
+| **Integration HEAD** | `6ec939c42596ef7b750977a0143af57541b8c647` |
+| **Canonical log** | [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) |
+| **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui) |
+| **Exit code** | `0` |
+| Reproduce | `rm -f /tmp/durabl-harness.lock && export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d-%H%M%S).log` |
 
-**UX/UI wave (2026-06-02):** `feat/ui-a11y` merged with HEAD settings/import/export retained; lineage tree + a11y roles from a11y branch. See gate log after final `gate:all` on integration HEAD below.
+**H3 live-providers (`gate:harden`):** **VERIFIED** skip path — no `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` → `[SKIP] live-providers-gate` exit 0. Placeholder keys are **not** valid; they force real HTTP and fail. Real keys required for a full H3 pass (`npm run gate:live`).
 
 ---
 

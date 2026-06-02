@@ -4,7 +4,7 @@
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** `9688dcb1c100d2c506bf3d354584d1b5f92532b4` — M0–M5 complete; final-wave + READY merges (`feat/final-gates`, `feat/backend-runs-api`, `feat/backend-ws`, `feat/backend-auth`, `feat/ux-*`, `feat/integ-*` docs). **`gate:all`:** PASS per [`docs/evidence/gate-all-20260602.log`](evidence/gate-all-20260602.log) (`ALL GATES PASSED`; run serially if parallel harness hits SIGKILL).
+**main HEAD:** `6ec939c42596ef7b750977a0143af57541b8c647` — M0–M5 + UX/UI merge queue + `feat/integ-index` on integration `main`. **`gate:all`:** PASS per [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) (`ALL GATES PASSED`, exit 0). Run serially; do not set placeholder API keys (H3 would call real endpoints and fail).
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -97,11 +97,15 @@ Checklist with commit SHAs and verified vs config-ready: [`docs/COMPLETION.md`](
 
 ---
 
-## Out of scope (current release)
+## Release boundary (verified vs config-ready vs not planned)
 
-| Item | Status | Doc |
-|------|--------|-----|
-| **Python SDK** (LangGraph / agent-loop bindings) | **DEFERRED** — Phase 0 fast-follow; TS ships first | [`docs/PYTHON-SDK.md`](PYTHON-SDK.md) |
-| Reimplementing the durable execution engine | Rejected in Phase 0 | `docs/phase0/validation-report.md` |
-| Process snapshot / CRIU fork | Rejected — step-journal fork only | `docs/m2-trajectory-branching.md` |
-| Managed hosted control plane | Post-M5 / fundability narrative only | `docs/FUNDING.md` |
+| Item | Status | Notes |
+|------|--------|--------|
+| M0–M5 + `gate:harden` H1/H2 + `gate:hitl-ui` G2 | **VERIFIED** | `npm run gate:all` @ HEAD `6ec939c`; log [`gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) |
+| H3 live LLM (`gate:harden` / `gate:live`) | **CONFIG-READY** | SKIP exit 0 with no API keys; real keys required for live provider exercise |
+| M4 Docker deploy target | **CONFIG-READY** | Skipped when Docker daemon/image absent |
+| **DBOS second substrate** | **NOT-PLANNED** | Interface stub + H2 gate only — not a working DBOS integration |
+| **Offline HITL live submit** | **NOT-PLANNED** | Export lists paused runs; resume requires live Restate (`503` offline) |
+| **Python SDK** | **NOT-PLANNED** | Stub/docs only; TS first ([`PYTHON-SDK.md`](PYTHON-SDK.md)) |
+| Reimplementing durable engine / CRIU fork | **NOT-PLANNED** | Phase 0 rejection — step-journal fork only |
+| Managed hosted control plane | **NOT-PLANNED** | Narrative only ([`FUNDING.md`](FUNDING.md)) |
