@@ -211,26 +211,72 @@ pre.json {
 
 /* diff */
 .diff-controls { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+.diff-view-toggle {
+  display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+.diff-view-toggle .diff-view-btn {
+  border-radius: 0; border: none; padding: 6px 10px; font-size: 11px;
+}
+.diff-view-toggle .diff-view-btn.active {
+  background: var(--accent-soft); color: var(--accent);
+}
 select.pick {
   background: var(--bg-elev); color: var(--text); border: 1px solid var(--border);
   padding: 7px 9px; border-radius: 7px; font-family: var(--mono); font-size: 12px; max-width: 100%;
 }
+.diff-summary {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.diff-summary .first-div { margin-bottom: 0; }
+.diff-jump { font-size: 11px; padding: 4px 8px; }
+.diff-result { max-height: calc(100vh - 220px); overflow-y: auto; }
 .diff-row {
   display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start;
   padding: 9px 10px; border-radius: 8px; margin-bottom: 6px;
   border: 1px solid var(--border); background: var(--bg-elev);
 }
 .diff-row.changed { border-color: #fbbf2455; }
+.diff-row.divergence {
+  border-color: var(--amber); box-shadow: 0 0 0 1px #fbbf2433;
+}
 .diff-row.same { opacity: 0.7; }
 .diff-badge { font-family: var(--mono); font-size: 11px; text-align: center; padding-top: 2px; }
 .diff-row.same .diff-badge { color: var(--green); }
 .diff-row.changed .diff-badge { color: var(--amber); }
 .diff-row.only_a .diff-badge, .diff-row.only_b .diff-badge { color: var(--cyan); }
-.diff-step { font-family: var(--mono); font-size: 12px; }
-.diff-out { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
-.diff-out .a { color: var(--text-dim); }
-.diff-out .b { color: var(--accent); }
-.first-div { color: var(--amber); font-family: var(--mono); font-size: 12px; margin-bottom: 12px; }
+.diff-step { font-family: var(--mono); font-size: 12px; margin-bottom: 6px; }
+.diff-out { margin-top: 2px; }
+.diff-out-side {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start;
+}
+@media (max-width: 720px) {
+  .diff-out-side { grid-template-columns: 1fr; }
+}
+.diff-col {
+  min-width: 0; background: var(--bg); border: 1px solid var(--border-soft);
+  border-radius: 7px; padding: 8px;
+}
+.diff-col-a { border-top: 2px solid var(--text-faint); }
+.diff-col-b { border-top: 2px solid var(--accent); }
+.diff-col-label {
+  font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-faint); margin-bottom: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.diff-col-b .diff-col-label { color: var(--accent); }
+.diff-pre {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  max-height: 200px; overflow: auto;
+}
+.diff-out-inline { display: flex; flex-direction: column; gap: 8px; }
+.diff-inline-line { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; }
+.diff-inline-tag {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 4px; background: var(--bg-elev2); color: var(--text-faint);
+}
+.diff-inline-tag.b { color: var(--accent); }
+.first-div { color: var(--amber); font-family: var(--mono); font-size: 12px; }
 
 /* ── HITL pause / resume ─────────────────────────────────── */
 .hitl-panel { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
