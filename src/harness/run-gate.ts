@@ -24,7 +24,6 @@ import {
   startRestateServerAndWait,
   waitForServiceDown,
   killProc,
-  type ServiceHandle,
 } from "./restate-control.js";
 import { countEffects, resetEffects } from "../effect-sink.js";
 import { forkRun, resetJournal, runMeta, trajectory } from "../journal.js";

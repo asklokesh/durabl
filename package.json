@@ -1,7 +1,7 @@
 {
   "name": "durabl",
   "version": "0.1.0",
-  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork — built on Restate as the durable step-journal substrate.",
+  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork \u2014 built on Restate as the durable step-journal substrate.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {

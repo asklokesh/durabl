@@ -49,7 +49,6 @@ import {
   startAndRegisterService,
   waitForRestateDown,
   killProc,
-  type ServiceHandle,
 } from "./restate-control.js";
 import { resetEffects } from "../effect-sink.js";
 import { resetJournal, exportBundleJsonl } from "../journal.js";
@@ -118,20 +117,20 @@ async function main(): Promise<void> {
   let bundle = "";
 
   try {
-    let svc = await startAndRegisterService();
+    const svc = await startAndRegisterService();
 
     // ── Produce a real multi-fork run on the substrate ──────────────────────
     // 1. root run (3 steps, one side effect at step 2)
     const rootRes = await invokeSync(rootId, "original-prompt", "main");
     // 2. forkA from seq 2 (effect in seeded prefix → no re-fire), diverge
     seedFork({ sourceRunId: rootId, newRunId: forkA, throughSeq: 2, decision: { prompt: "what-if-A", trajectory: "what-if-A" } });
-    const forkARes = await invokeSync(forkA, "what-if-A", "what-if-A");
+    await invokeSync(forkA, "what-if-A", "what-if-A");
     // 3. forkB from seq 1 (fires its OWN effect), diverge
     seedFork({ sourceRunId: rootId, newRunId: forkB, throughSeq: 1, decision: { prompt: "what-if-B", trajectory: "what-if-B" } });
-    const forkBRes = await invokeSync(forkB, "what-if-B", "what-if-B");
+    await invokeSync(forkB, "what-if-B", "what-if-B");
     // 4. sub-fork of forkB from seq 2 (fork of a fork → multi-level tree)
     seedFork({ sourceRunId: forkB, newRunId: subFork, throughSeq: 2, decision: { prompt: "what-if-B2", trajectory: "what-if-B2" } });
-    const subRes = await invokeSync(subFork, "what-if-B2", "what-if-B2");
+    await invokeSync(subFork, "what-if-B2", "what-if-B2");
 
     const live = liveJournalSource();
 

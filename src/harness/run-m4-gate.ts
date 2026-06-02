@@ -54,13 +54,10 @@ import {
   enterHarnessGate,
   releaseHarnessLock,
   startRestateServerAndWait,
-  startService,
   startServiceForTarget,
   stopDockerRestate,
   waitForPort,
-  waitForRestate,
   waitForRestateAt,
-  waitForService,
   type ServiceHandle,
 } from "./restate-control.js";
 import { countEffects, resetEffects } from "../effect-sink.js";
@@ -280,7 +277,7 @@ async function g3DeployNeutrality(): Promise<{ localRun: string; dockerRun: stri
   // Target A = local (already proven to work above; run once more by target id).
   const localTarget = getDeployTarget("local");
   const hashBeforeLocal = agentSourceHash().hash;
-  let svc = await startLocalService({ DURABL_MODEL_PROVIDER: "fake-echo" });
+  const svc = await startLocalService({ DURABL_MODEL_PROVIDER: "fake-echo" });
   const localRun = `m4-g3-local-${Date.now()}`;
   const localRes = await invokeSync(localTarget.ingress, localRun, "target-neutral");
   killProc(svc.proc);
