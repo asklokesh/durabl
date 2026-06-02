@@ -93,21 +93,47 @@ export interface ServerOptions {
   readonly source?: JournalSource;
 }
 
-function buildSource(opts: ServerOptions): { source: JournalSource; label: string } {
-  if (opts.source) return { source: opts.source, label: opts.source.origin };
+/** Shown in the web UI when POST /api/hitl/input is blocked offline (503). */
+export const HITL_SUBMIT_OFFLINE_ERROR =
+  "HITL submit requires live mode (SQLite journal + Restate ingress). " +
+  "Offline export can list paused runs but cannot resolve the durable promise.";
+
+const CONNECTION_LABEL_LIVE = "Live Restate";
+const CONNECTION_LABEL_OFFLINE = "Offline export";
+
+function buildSource(opts: ServerOptions): {
+  source: JournalSource;
+  label: string;
+  connectionLabel: string;
+} {
+  if (opts.source) {
+    const source = opts.source;
+    const live = isLiveJournalSource(source);
+    return {
+      source,
+      label: source.origin,
+      connectionLabel: live ? CONNECTION_LABEL_LIVE : CONNECTION_LABEL_OFFLINE,
+    };
+  }
   if (opts.importPath) {
     const jsonl = readFileSync(opts.importPath, "utf8");
     return {
       source: importJournalSource(jsonl, `imported:${opts.importPath}`),
-      label: `imported export ${opts.importPath} (OFFLINE — no substrate)`,
+      label: `imported export ${opts.importPath}`,
+      connectionLabel: CONNECTION_LABEL_OFFLINE,
     };
   }
-  return { source: liveJournalSource(), label: "live SQLite journal" };
+  return {
+    source: liveJournalSource(),
+    label: "live SQLite journal",
+    connectionLabel: CONNECTION_LABEL_LIVE,
+  };
 }
 
 interface Route {
   source: JournalSource;
   label: string;
+  connectionLabel: string;
   live: boolean;
 }
 
@@ -137,9 +163,13 @@ function handleApi(
       ok: true,
       origin: source.origin,
       source: source.origin,
-      label: ctx.label,
+      label: ctx.connectionLabel,
+      detail: ctx.label,
       live: ctx.live,
       hitlSubmitEnabled: ctx.live,
+      ...(ctx.live
+        ? {}
+        : { hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR }),
     });
     return true;
   }
@@ -242,9 +272,7 @@ async function handleHitlInput(
 ): Promise<boolean> {
   if (!ctx.live) {
     sendJson(res, 503, {
-      error:
-        "HITL submit requires live mode (SQLite journal + Restate ingress). " +
-        "Offline export can list paused runs but cannot resolve the durable promise.",
+      error: HITL_SUBMIT_OFFLINE_ERROR,
       submitEnabled: false,
     });
     return true;
@@ -308,9 +336,9 @@ export interface ServerHandle {
  * Binds localhost by default (DURABL_UI_HOST to override).
  */
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
-  const { source, label } = buildSource(opts);
+  const { source, label, connectionLabel } = buildSource(opts);
   const live = isLiveJournalSource(source);
-  const ctx: Route = { source, label, live };
+  const ctx: Route = { source, label, connectionLabel, live };
   const host = process.env.DURABL_UI_HOST ?? "127.0.0.1";
   const port = opts.port ?? Number(process.env.DURABL_UI_PORT ?? 7878);
 
@@ -333,8 +361,8 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
       }
       const ext = file.slice(file.lastIndexOf("."));
       sendText(res, 200, readFileSync(file, "utf8"), MIME[ext] ?? "application/octet-stream");
-    } catch (e) {
-      sendJson(res, 500, { error: e instanceof Error ? e.message : String(e) });
+    } catch {
+      sendJson(res, 500, { error: "internal error" });
     }
     })();
   });

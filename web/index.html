@@ -17,8 +17,8 @@
             <div class="brand-sub">replay &amp; time-travel</div>
           </div>
         </div>
-        <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
-          <span class="dot"></span><span id="sourceLabel">loading…</span>
+        <div class="connection-banner source-pill" id="sourcePill" role="status" aria-live="polite" title="Connection mode">
+          <span class="dot" aria-hidden="true"></span><span id="sourceLabel">loading…</span>
         </div>
       </header>
 
@@ -48,7 +48,9 @@
               <label class="hitl-label" for="hitlDecision">Decision</label>
               <textarea id="hitlDecision" name="decision" rows="2" placeholder="e.g. APPROVED — same as durabl hitl-input" required></textarea>
               <div class="hitl-form-actions">
+                <span class="hitl-submit-wrap" id="hitlSubmitWrap">
                 <button type="submit" class="btn-primary" id="hitlSubmitBtn">Submit &amp; resume</button>
+              </span>
                 <span class="hitl-form-msg" id="hitlFormMsg" hidden></span>
               </div>
             </form>
@@ -78,6 +80,7 @@
         </section>
       </div>
     </div>
+    <script src="/errors.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

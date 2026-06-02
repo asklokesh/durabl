@@ -61,6 +61,11 @@ body {
 }
 .source-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 .source-pill.offline .dot { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.connection-banner.offline { border-color: #fbbf2444; }
+.hitl-submit-wrap { display: inline-flex; }
+.hitl-submit-wrap[title]:not([title=""]) { cursor: not-allowed; }
+.hitl-form textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+
 
 /* ── Layout ──────────────────────────────────────────────── */
 .layout {
