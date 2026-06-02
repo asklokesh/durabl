@@ -1,6 +1,8 @@
 // durabl replay UI — vanilla JS, zero deps. Talks to the read-only replay APIs.
 "use strict";
 
+const THEME_STORAGE_KEY = "durabl.theme";
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, cls, txt) => {
   const e = document.createElement(tag);
@@ -21,10 +23,8 @@ const state = {
   hitlState: "none",
   pausedRuns: [],
 
-  /** runIds on root→selected lineage (from GET /api/tree). */
-  lineagePath: new Set(),
-  /** root runId → ForkTreeNode from GET /api/tree */
-  forkTrees: new Map(),
+  /** Trajectory diff panel: "side" | "inline" */
+  diffViewMode: localStorage.getItem("durabl.diffViewMode") === "inline" ? "inline" : "side",
 };
 
 const THEME_STORAGE_KEY = "durabl.theme";
@@ -53,67 +53,112 @@ function fmtOut(v) {
 }
 
 
-function isOfflineHealth(h) {
-  const origin = h?.origin ?? state.origin ?? "";
-  return !h?.live || String(origin).startsWith("imported");
+function getStoredTheme() {
+  const t = localStorage.getItem(THEME_STORAGE_KEY);
+  return t === "light" || t === "dark" ? t : null;
 }
 
-function updateOfflineBanner(h) {
-  const banner = $("#offlineBanner");
-  if (!banner) return;
-  const offline = isOfflineHealth(h);
-  banner.hidden = !offline;
-  if (!offline) return;
-  banner.textContent =
-    h?.hitlSubmitDisabledReason ||
-    state.hitlSubmitDisabledReason ||
-    "Viewing imported JSONL — replay only. No live substrate; HITL submit is disabled.";
+function getEffectiveTheme() {
+  const stored = getStoredTheme();
+  if (stored) return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function updateExportButton() {
-  const btn = $("#btnExport");
+function applyTheme(theme) {
+  if (theme === "light" || theme === "dark") {
+    document.documentElement.setAttribute("data-theme", theme);
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+}
+
+function updateThemeToggle() {
+  const btn = $("#themeToggle");
   if (!btn) return;
-  btn.disabled = !state.selected;
-  btn.title = state.selected
-    ? "Download JSONL export (fork tree bundle)"
-    : "Select a run to export";
+  const dark = getEffectiveTheme() === "dark";
+  btn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  btn.title = dark ? "Switch to light mode" : "Switch to dark mode";
+  const icon = btn.querySelector(".theme-toggle-icon");
+  if (icon) icon.textContent = dark ? "☀" : "☾";
 }
 
-async function downloadExport() {
-  if (!state.selected) return;
-  const url = `/api/export?runId=${encodeURIComponent(state.selected)}&bundle=true`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  const blob = await res.blob();
-  const disp = res.headers.get("content-disposition") || "";
-  const m = /filename="([^"]+)"/.exec(disp);
-  const filename = m?.[1] || `${state.selected}-bundle.jsonl`;
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-async function uploadJsonl(file) {
-  const text = await file.text();
-  const res = await fetch("/api/import", {
-    method: "POST",
-    headers: { "content-type": "application/x-ndjson" },
-    body: text,
+function initTheme() {
+  applyTheme(getStoredTheme());
+  updateThemeToggle();
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (!getStoredTheme()) updateThemeToggle();
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const hint = body.hint ? ` (${body.hint})` : "";
-    throw new Error((body.error || `HTTP ${res.status}`) + hint);
+}
+
+function toggleTheme() {
+  const next = getEffectiveTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_STORAGE_KEY, next);
+  applyTheme(next);
+  updateThemeToggle();
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+const TOAST_MS = { ok: 4200, err: 6200, info: 3800 };
+
+function showToast(message, kind) {
+  const host = $("#toastHost");
+  if (!host || !message) return;
+  const k = kind === "err" || kind === "ok" ? kind : "info";
+  const toast = el("div", "toast toast-" + k);
+  toast.setAttribute("role", k === "err" ? "alert" : "status");
+  toast.textContent = message;
+  if (prefersReducedMotion()) toast.classList.add("toast--static");
+  host.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("toast-visible"));
+
+  const remove = () => {
+    if (!toast.isConnected) return;
+    if (prefersReducedMotion()) {
+      toast.remove();
+      return;
+    }
+    toast.classList.add("toast-leaving");
+    toast.addEventListener(
+      "animationend",
+      () => toast.remove(),
+      { once: true },
+    );
+    setTimeout(() => toast.remove(), 320);
+  };
+  window.setTimeout(remove, TOAST_MS[k] ?? TOAST_MS.info);
+}
+
+async function copyRunId(runId, btn) {
+  if (!runId) return;
+  try {
+    await navigator.clipboard.writeText(runId);
+    showToast("Run ID copied to clipboard", "ok");
+    if (btn) {
+      const label = btn.dataset.label || btn.textContent;
+      btn.dataset.label = label;
+      btn.textContent = "Copied";
+      btn.classList.add("copied");
+      window.setTimeout(() => {
+        btn.textContent = label;
+        btn.classList.remove("copied");
+      }, 1600);
+    }
+  } catch {
+    showToast("Could not copy run ID", "err");
   }
-  state.selected = null;
-  state.replay = null;
-  await loadSource();
-  await loadRuns();
+}
+
+function makeCopyRunIdButton(runId) {
+  const btn = el("button", "btn-copy-runid");
+  btn.type = "button";
+  btn.title = "Copy run ID";
+  btn.setAttribute("aria-label", "Copy run ID to clipboard");
+  btn.textContent = "Copy ID";
+  btn.onclick = () => void copyRunId(runId, btn);
+  return btn;
 }
 
 // ── Source banner ──────────────────────────────────────────
@@ -136,7 +181,15 @@ async function submitHitlInput(ev) {
   const decision = $("#hitlDecision").value.trim();
   const msg = $("#hitlFormMsg");
   const btn = $("#hitlSubmitBtn");
-  if (!state.selected || !decision) return;
+  if (!state.selected) {
+    showToast("Select a paused run first", "err");
+    return;
+  }
+  if (!decision) {
+    showToast("Enter a decision before submitting", "err");
+    $("#hitlDecision").focus();
+    return;
+  }
   btn.disabled = true;
   msg.hidden = false;
   msg.className = "hitl-form-msg";
@@ -144,13 +197,17 @@ async function submitHitlInput(ev) {
   try {
     const res = await apiPost("/api/hitl/input", { runId: state.selected, decision });
     if (res.accepted === false && res.state !== "resumed") {
+      const text = "Input not accepted (duplicate or already resumed).";
       msg.classList.add("err");
-      msg.textContent = "Input not accepted (duplicate or already resumed).";
+      msg.textContent = text;
+      showToast(text, "err");
     } else {
+      const text = res.accepted
+        ? "HITL input accepted — run resuming"
+        : "Run already resumed (idempotent)";
       msg.classList.add("ok");
-      msg.textContent = res.accepted
-        ? "Accepted — run resuming…"
-        : "Already resumed (idempotent no-op).";
+      msg.textContent = text;
+      showToast(text, "ok");
       $("#hitlDecision").value = "";
       await sleep(800);
       await loadRuns();
@@ -159,6 +216,7 @@ async function submitHitlInput(ev) {
   } catch (e) {
     msg.classList.add("err");
     msg.textContent = e.message;
+    showToast(e.message || "Submit failed", "err");
   } finally {
     btn.disabled = !state.hitlSubmitEnabled;
   }
@@ -256,7 +314,15 @@ function updateHitlBanner() {
     return;
   }
   banner.hidden = false;
+  banner.classList.remove("hitl-banner--enter");
+  void banner.offsetWidth;
+  banner.classList.add("hitl-banner--enter");
   $("#hitlBannerSub").textContent = state.selected || "";
+  const copyBtn = $("#hitlCopyRunIdBtn");
+  if (copyBtn) {
+    copyBtn.hidden = !state.selected;
+    copyBtn.onclick = () => void copyRunId(state.selected, copyBtn);
+  }
   const canSubmit = state.hitlSubmitEnabled && state.live;
   form.hidden = !canSubmit;
   offlineNote.hidden = canSubmit;
@@ -410,7 +476,10 @@ async function selectRun(runId) {
 function renderRunHeader(r) {
   const head = $("#runHeader");
   head.innerHTML = "";
-  head.appendChild(el("div", "run-title", r.runId));
+  const titleRow = el("div", "run-title-row");
+  titleRow.appendChild(el("div", "run-title", r.runId));
+  titleRow.appendChild(makeCopyRunIdButton(r.runId));
+  head.appendChild(titleRow);
   const row = el("div", "run-meta-row");
   const chip = (label, val, cls) => {
     const c = el("span", "chip" + (cls ? " " + cls : ""));
@@ -760,6 +829,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 $("#hitlForm").addEventListener("submit", submitHitlInput);
+$("#themeToggle")?.addEventListener("click", toggleTheme);
+initTheme();
 
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {

@@ -27,18 +27,7 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <input
-            type="file"
-            id="importFile"
-            accept=".jsonl,.ndjson,application/x-ndjson,text/plain"
-            hidden
-          />
-          <button type="button" id="btnImport" class="btn-secondary" title="Replace journal with a JSONL export file">
-            Upload JSONL
-          </button>
-          <button type="button" id="btnExport" class="btn-secondary" disabled title="Select a run to export">
-            Download export
-          </button>
+
           <button
             type="button"
             id="themeToggle"
@@ -48,8 +37,9 @@
           >
             <span class="theme-toggle-icon" aria-hidden="true">☾</span>
           </button>
-          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from" aria-label="Journal source">
-            <span class="dot" aria-hidden="true"></span><span id="sourceLabel">loading…</span>
+
+          <div class="source-pill" id="sourcePill" title="where this journal is reconstructed from">
+            <span class="dot"></span><span id="sourceLabel">loading…</span>
           </div>
         </div>
       </header>
@@ -75,8 +65,12 @@
 
           <div class="hitl-banner" id="hitlBanner" hidden role="region" aria-labelledby="hitlBannerTitle">
             <div class="hitl-banner-head">
-              <span class="hitl-pill" id="hitlBannerTitle">Awaiting human input</span>
-              <span class="hitl-banner-sub" id="hitlBannerSub"></span>
+
+              <span class="hitl-pill">Awaiting human input</span>
+              <div class="hitl-banner-id-row">
+                <span class="hitl-banner-sub" id="hitlBannerSub"></span>
+                <button type="button" class="btn-copy-runid" id="hitlCopyRunIdBtn" hidden>Copy ID</button>
+              </div>
             </div>
             <form id="hitlForm" class="hitl-form" aria-describedby="hitlOfflineNote">
               <label class="hitl-label" for="hitlDecision">Decision</label>
@@ -130,6 +124,7 @@
         </section>
       </div>
     </div>
+    <div id="toastHost" class="toast-host" aria-live="polite" aria-relevant="additions"></div>
     <script src="/app.js"></script>
   </body>
 </html>
