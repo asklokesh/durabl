@@ -832,6 +832,233 @@ $("#hitlForm").addEventListener("submit", submitHitlInput);
 $("#themeToggle")?.addEventListener("click", toggleTheme);
 initTheme();
 
+// ── First-visit onboarding (replay → fork → HITL) ───────────
+const ONBOARDING_STORAGE_KEY = "durabl.onboarding.dismissed";
+
+const ONBOARDING_STEPS = [
+  {
+    title: "1. Replay",
+    body:
+      "Select a run and scrub the timeline or use the time-travel slider to reconstruct execution step-by-step. Click any step for inputs, outputs, and side effects.",
+    target: "#timeline",
+    placeCard: "above",
+  },
+  {
+    title: "2. Fork",
+    body:
+      "The left sidebar shows the fork tree: root runs and branches diverging at a step (⑂ markers on the timeline jump to child runs). Compare trajectories in the Trajectory diff tab.",
+    target: "#tree",
+    placeCard: "right",
+  },
+  {
+    title: "3. HITL",
+    body:
+      "Runs paused awaiting human input appear in the sidebar and as a banner on the run. In live mode, submit a decision to resume — same path as durabl hitl-input.",
+    target: "#hitlPanel",
+    fallbackTarget: "#hitlBanner",
+    placeCard: "below",
+  },
+];
+
+function onboardingDismissed() {
+  try {
+    return localStorage.getItem(ONBOARDING_STORAGE_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+function setOnboardingDismissed() {
+  try {
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+  } catch {
+    /* storage blocked */
+  }
+}
+
+function hideOnboardingBanner() {
+  const banner = $("#onboardingBanner");
+  if (banner) banner.hidden = true;
+}
+
+function finishOnboarding() {
+  setOnboardingDismissed();
+  hideOnboardingBanner();
+  closeOnboardingTour();
+}
+
+function isElementVisible(node) {
+  if (!node || node.hidden) return false;
+  const r = node.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
+}
+
+function resolveTourTarget(step) {
+  const primary = step.target ? $(step.target) : null;
+  if (primary && isElementVisible(primary)) return primary;
+  if (step.fallbackTarget) {
+    const fallback = $(step.fallbackTarget);
+    if (fallback && isElementVisible(fallback)) return fallback;
+  }
+  return primary || (step.fallbackTarget ? $(step.fallbackTarget) : null);
+}
+
+const onboarding = { stepIndex: 0, open: false };
+
+function positionOnboardingCard(target, placeCard) {
+  const card = $(".onboarding-card");
+  if (!card) return;
+  const pad = 14;
+  const margin = 12;
+  card.style.top = "";
+  card.style.left = "";
+  card.style.right = "";
+  card.style.bottom = "";
+  card.style.transform = "";
+
+  if (!target || !isElementVisible(target)) {
+    card.style.top = "50%";
+    card.style.left = "50%";
+    card.style.transform = "translate(-50%, -50%)";
+    return;
+  }
+
+  const tr = target.getBoundingClientRect();
+  const cr = card.getBoundingClientRect();
+  let top;
+  let left;
+
+  switch (placeCard) {
+    case "above":
+      top = tr.top - cr.height - pad;
+      left = tr.left + tr.width / 2 - cr.width / 2;
+      break;
+    case "below":
+      top = tr.bottom + pad;
+      left = tr.left + tr.width / 2 - cr.width / 2;
+      break;
+    case "right":
+      top = tr.top + tr.height / 2 - cr.height / 2;
+      left = tr.right + pad;
+      break;
+    default:
+      top = tr.bottom + pad;
+      left = tr.left;
+  }
+
+  left = Math.max(margin, Math.min(left, window.innerWidth - cr.width - margin));
+  top = Math.max(margin, Math.min(top, window.innerHeight - cr.height - margin));
+  card.style.top = `${top}px`;
+  card.style.left = `${left}px`;
+}
+
+function positionOnboardingSpotlight(target) {
+  const spot = $("#onboardingSpotlight");
+  if (!spot) return;
+  if (!target || !isElementVisible(target)) {
+    spot.hidden = true;
+    return;
+  }
+  const pad = 6;
+  const r = target.getBoundingClientRect();
+  spot.hidden = false;
+  spot.style.top = `${Math.max(0, r.top - pad)}px`;
+  spot.style.left = `${Math.max(0, r.left - pad)}px`;
+  spot.style.width = `${r.width + pad * 2}px`;
+  spot.style.height = `${r.height + pad * 2}px`;
+}
+
+function renderOnboardingStep() {
+  const step = ONBOARDING_STEPS[onboarding.stepIndex];
+  const title = $("#onboardingTitle");
+  const body = $("#onboardingBody");
+  const progress = $("#onboardingProgress");
+  const nextBtn = $("#onboardingTourNext");
+  if (!step || !title || !body || !progress || !nextBtn) return;
+
+  title.textContent = step.title;
+  body.textContent = step.body;
+  progress.innerHTML = "";
+  for (let i = 0; i < ONBOARDING_STEPS.length; i++) {
+    progress.appendChild(el("span", "dot" + (i === onboarding.stepIndex ? " active" : "")));
+  }
+  nextBtn.textContent =
+    onboarding.stepIndex >= ONBOARDING_STEPS.length - 1 ? "Done" : "Next";
+
+  const target = resolveTourTarget(step);
+  positionOnboardingSpotlight(target);
+  positionOnboardingCard(target, step.placeCard);
+}
+
+function openOnboardingTour() {
+  const tour = $("#onboardingTour");
+  if (!tour) return;
+  hideOnboardingBanner();
+  onboarding.open = true;
+  onboarding.stepIndex = 0;
+  tour.hidden = false;
+  tour.setAttribute("aria-hidden", "false");
+  document.querySelector(".layout")?.classList.add("onboarding-dim");
+  renderOnboardingStep();
+  window.addEventListener("resize", onOnboardingResize);
+  document.addEventListener("keydown", onOnboardingKeydown);
+}
+
+function closeOnboardingTour() {
+  const tour = $("#onboardingTour");
+  if (!tour) return;
+  onboarding.open = false;
+  tour.hidden = true;
+  tour.setAttribute("aria-hidden", "true");
+  const spot = $("#onboardingSpotlight");
+  if (spot) spot.hidden = true;
+  document.querySelector(".layout")?.classList.remove("onboarding-dim");
+  window.removeEventListener("resize", onOnboardingResize);
+  document.removeEventListener("keydown", onOnboardingKeydown);
+}
+
+function onOnboardingResize() {
+  if (onboarding.open) renderOnboardingStep();
+}
+
+function onOnboardingKeydown(ev) {
+  if (!onboarding.open) return;
+  if (ev.key === "Escape") finishOnboarding();
+}
+
+function advanceOnboardingTour() {
+  if (onboarding.stepIndex >= ONBOARDING_STEPS.length - 1) {
+    finishOnboarding();
+    return;
+  }
+  onboarding.stepIndex += 1;
+  renderOnboardingStep();
+}
+
+function initOnboarding() {
+  const banner = $("#onboardingBanner");
+  const startBtn = $("#onboardingStartTour");
+  const dismissBtn = $("#onboardingDismiss");
+  const tour = $("#onboardingTour");
+  const skipBtn = $("#onboardingTourSkip");
+  const nextBtn = $("#onboardingTourNext");
+  const backdrop = $("#onboardingBackdrop");
+  if (!banner || !startBtn || !dismissBtn || !tour) return;
+
+  if (onboardingDismissed()) {
+    banner.hidden = true;
+    return;
+  }
+
+  banner.hidden = false;
+  startBtn.onclick = () => openOnboardingTour();
+  dismissBtn.onclick = () => finishOnboarding();
+  if (skipBtn) skipBtn.onclick = () => finishOnboarding();
+  if (nextBtn) nextBtn.onclick = () => advanceOnboardingTour();
+  if (backdrop) backdrop.onclick = () => finishOnboarding();
+}
+
+
 // ── Boot ───────────────────────────────────────────────────
 (async function boot() {
   try {
@@ -862,6 +1089,7 @@ initTheme();
     }
     await loadSource();
     await loadRuns();
+    initOnboarding();
     setInterval(() => {
       void loadHitlPaused().then(() => {
         if (state.selected) void refreshHitlForRun(state.selected);

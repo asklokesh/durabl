@@ -44,7 +44,17 @@
         </div>
       </header>
 
-      <div id="offlineBanner" class="offline-banner" hidden role="status" aria-live="polite"></div>
+
+      <div class="onboarding-banner" id="onboardingBanner" hidden role="region" aria-label="Getting started">
+        <p class="onboarding-banner-text">
+          <strong>First visit?</strong>
+          Replay agent steps, fork alternate trajectories, and resume runs paused for human input (HITL).
+        </p>
+        <div class="onboarding-banner-actions">
+          <button type="button" class="btn-primary" id="onboardingStartTour">3-step tour</button>
+          <button type="button" class="btn-ghost" id="onboardingDismiss">Dismiss</button>
+        </div>
+      </div>
 
       <div class="layout">
 
@@ -124,7 +134,22 @@
         </section>
       </div>
     </div>
-    <div id="toastHost" class="toast-host" aria-live="polite" aria-relevant="additions"></div>
+
+
+    <div class="onboarding-tour" id="onboardingTour" hidden aria-hidden="true">
+      <div class="onboarding-backdrop" id="onboardingBackdrop"></div>
+      <div class="onboarding-spotlight" id="onboardingSpotlight" hidden></div>
+      <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+        <div class="onboarding-progress" id="onboardingProgress" aria-hidden="true"></div>
+        <h2 class="onboarding-title" id="onboardingTitle"></h2>
+        <p class="onboarding-body" id="onboardingBody"></p>
+        <div class="onboarding-card-actions">
+          <button type="button" class="btn-ghost" id="onboardingTourSkip">Skip</button>
+          <button type="button" class="btn-primary" id="onboardingTourNext">Next</button>
+        </div>
+      </div>
+    </div>
+
     <script src="/app.js"></script>
   </body>
 </html>
