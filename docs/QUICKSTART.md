@@ -52,12 +52,28 @@ node dist/cli.js hitl-input demo-1 --decision "APPROVED"
 
 ## 5. Docker demo stack (optional)
 
+Services are gated behind the **`docker-demo`** Compose profile (see `docker-compose.yml`).
+Without `--profile docker-demo`, no containers start.
+
 ```bash
-docker compose up --build
-docker compose exec restate restate deployments register http://durabl:9080
+docker compose --profile docker-demo up --build
+# or: npm run compose:up
+
+docker compose --profile docker-demo exec restate \
+  restate deployments register http://durabl:9080
 ```
 
 Set `DURABL_RESTATE_INGRESS=http://localhost:8080` when invoking from the host.
+Stop with `docker compose --profile docker-demo down`.
+
+## Release verification (maintainers)
+
+| Check | Command | Result (`feat/final-release`) |
+|-------|---------|-------------------------------|
+| Build + pack | `npm run build && npm pack --dry-run` | **PASS** |
+| Typecheck | `bash scripts/verify-release.sh` | **PASS** (typecheck only) |
+| Quickstart smoke | `timeout 300 bash scripts/quickstart.sh` | **FAIL** (exit 3) — demo `registerDeployment` after SIGKILL restart: `META0003` / `localhost:9080` connection refused |
+| Full gates | `npm run gate:all` | not run here (slow); run before merge |
 
 ## Next
 
