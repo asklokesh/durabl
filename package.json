@@ -55,6 +55,7 @@
     "gate:hitl-web": "npm run gate:hitl-ui",
     "gate:all": "bash scripts/run-all-gates.sh",
     "compose:up": "docker compose --profile docker-demo up -d",
+    "compose:validate": "docker compose --profile docker-demo config",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
