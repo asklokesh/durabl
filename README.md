@@ -13,8 +13,12 @@ HITL workflows after a full substrate restart (CLI or replay UI).
 
 Phase 0 showed the **durable execution engine** wedge is closed (Google AX,
 Temporal, Restate, and others). durabl targets what remains: **your history in
-your infra**, demonstrable offline after export. Investor narrative and live
-demo script: [`docs/FUNDING.md`](docs/FUNDING.md),
+your infra**, demonstrable offline after export.
+
+**Completion checklist** (M0–M5, post-M5 tracks, verified vs config-ready):
+[`docs/COMPLETION.md`](docs/COMPLETION.md).
+
+Investor narrative and live demo script: [`docs/FUNDING.md`](docs/FUNDING.md),
 [`docs/DEMO-NARRATIVE.md`](docs/DEMO-NARRATIVE.md),
 [`docs/RISKS.md`](docs/RISKS.md).
 
@@ -48,6 +52,12 @@ npx durabl ui --from export.jsonl   # fully offline
 **Verify (CI-style):**
 
 ```bash
+npm run gate:all      # typecheck + M1–M5 + harden + hitl-ui (serial; ~15–25 min)
+```
+
+Individual gates:
+
+```bash
 npm test              # M1 gate (== npm run gate)
 npm run gate:m2       # logical fork gate
 npm run gate:m3       # replay + offline UI APIs
@@ -57,7 +67,20 @@ npm run gate:hitl-ui  # HITL web UI resume + offline 503
 npm run gate:live     # real LLM providers (skip if no API keys)
 ```
 
+<<<<<<< HEAD
 HTTP routes for the replay UI (`/api/*` and static `web/`): [`docs/API.md`](docs/API.md).
+=======
+**Stuck gate / stop harness loop:** if a gate was SIGKILL'd or ports are wedged, clear the harness lock and child processes before re-running:
+
+```bash
+rm -f /tmp/durabl-harness.lock
+pkill -9 -f restate-server 2>/dev/null || true
+pkill -9 -f dist/service.js 2>/dev/null || true
+pkill -9 -f 'dist/harness/run-' 2>/dev/null || true
+```
+
+Then run gates **one at a time** or `npm run gate:all` (which tears down between gates). See [`docs/build-status.md`](docs/build-status.md).
+>>>>>>> feat/final-docs
 
 ## Milestone proof
 
@@ -71,7 +94,7 @@ Full matrix, evidence paths, and reproduce commands:
 | **M2** | Logical trajectory fork + inspect APIs | `npm run gate:m2` | ✅ 6/6 |
 | **M3** | Replay / time-travel + offline export + UI | `npm run gate:m3` | ✅ 5/5 |
 | **M4** | Model + deploy neutrality (config-only) | `npm run gate:m4` | ✅ 4/4 |
-| **M5** | HITL pause/resume across real restart | `npm run gate:m5` | ✅ 4/4 |
+| **M5** | HITL pause/resume across real restart | `npm run gate:m5` | ✅ 5/5 |
 
 Deep dives: [`docs/m1-slice.md`](docs/m1-slice.md),
 [`docs/m2-trajectory-branching.md`](docs/m2-trajectory-branching.md),
