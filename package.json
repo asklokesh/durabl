@@ -79,8 +79,7 @@
     "test:m5": "npm run gate:m5",
     "test:hitl-ui": "npm run gate:hitl-ui",
 
-    "verify:npm-pack": "bash scripts/verify-npm-pack.sh",
-    "gate:api-auth": "npm run build && node --enable-source-maps dist/harness/run-api-auth-gate.js"
+    "demo:interactive": "bash scripts/demo-interactive.sh"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "1.14.4",

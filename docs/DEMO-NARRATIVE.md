@@ -2,7 +2,32 @@
 
 **Audience:** Investors or design partners · **Runtime:** ~5 minutes · **Prereqs:** Node ≥ 22.5, `npm install && npm run build` once
 
-**Commands referenced:** `npm run demo` (Acts 1–5) · optional Acts 6–8 (offline replay + HITL)
+**Commands referenced:**
+
+| Mode | Command | UX |
+|---|---|---|
+| Continuous (CI, rehearsal) | `npm run demo` | No pauses; ~4–5 min wall clock |
+| **Paced (live room)** | `npm run demo:interactive` or `bash scripts/demo-interactive.sh` | Enter between acts; narrator cues on screen |
+
+Set `DURABL_DEMO_PAUSE=1` (and optional `DURABL_DEMO_NARRATE=0` to hide cues) to pace `npm run demo` yourself.
+
+---
+
+## Interactive UX timing (paced mode)
+
+Presenter cues and target segment lengths are embedded in `src/harness/demo.ts` (`NARRATION`); keep this table aligned when editing the script.
+
+| Pause point | Target | On-screen cue theme |
+|---|---|---|
+| Before Act 1 | 0:15 | Real Restate + real SIGKILL |
+| After SIGKILL `true` | +0:10 | **Hook** — silence until Enter |
+| Before Act 2 | 0:45 | Exactly-once, effect count = 1 |
+| Before Act 3 | 0:30 | Portable journal rows |
+| Before Act 4 | 1:00 | Fork prefix, no re-fire |
+| Before Act 5 | 0:45 | Diff + JSONL export |
+| Verdict | 0:30 | Q&A buffer |
+
+**Wall clock with pauses:** plan **6–8 minutes** (audience questions during Enter waits are normal).
 
 ---
 
@@ -141,12 +166,12 @@ node dist/cli.js inspect "$RUN_ID"
 
 ## Timing cheat sheet
 
-| Segment | Target |
-|---|---|
-| Acts 1–2 (kill + resume) | 2:00 |
-| Acts 3–5 (journal + fork + diff) | 2:15 |
-| Verdict + Q&A buffer | 0:45 |
-| Acts 6–8 (if live) | +2:00 (separate “deep dive”) |
+| Segment | Continuous (`npm run demo`) | Paced (`npm run demo:interactive`) |
+|---|---|---|
+| Acts 1–2 (kill + resume) | 2:00 | 2:30 (+ hook pause) |
+| Acts 3–5 (journal + fork + diff) | 2:15 | 3:00 (+ Enter between acts) |
+| Verdict + Q&A buffer | 0:45 | 1:00–2:00 |
+| Acts 6–8 (if live) | +2:00 (separate “deep dive”) | same |
 
 ---
 
@@ -163,6 +188,7 @@ node dist/cli.js inspect "$RUN_ID"
 ## Evidence pointers
 
 - Demo source: `src/harness/demo.ts`
+- Interactive driver: `scripts/demo-interactive.sh` · `npm run demo:interactive`
 - M1 crash gates: `npm test`
 - Full milestone table: [`docs/build-status.md`](build-status.md)
 - Fundability framing: [`docs/FUNDING.md`](FUNDING.md)
