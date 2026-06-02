@@ -3,6 +3,7 @@
 // Resume writes go through Restate ingress (live mode only).
 
 import { config } from "./config.js";
+import { ingressFetch } from "./restate-ingress.js";
 import type { JournalSource } from "./journal-source.js";
 import type { HitlState } from "./journal.js";
 import type { HitlInput } from "./step-model.js";
@@ -33,7 +34,7 @@ export async function provideInputViaIngress(
   decision: string,
   ingress = config.restateIngress,
 ): Promise<{ runId: string; accepted: boolean }> {
-  const res = await fetch(`${ingress}/HitlAgentRun/${runId}/provideInput`, {
+  const res = await ingressFetch(`${ingress}/HitlAgentRun/${runId}/provideInput`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ decision } satisfies HitlInput),

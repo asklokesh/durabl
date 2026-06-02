@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { config } from "./config.js";
+import { config, validateConfig, ConfigError } from "./config.js";
 import {
   exportJsonl,
   exportBundleJsonl,
@@ -29,7 +29,9 @@ import {
   type JournalSource,
 } from "./journal-source.js";
 import { reconstruct, stateAt } from "./replay.js";
-import { startServer } from "./server.js";
+import { startServerHandle } from "./server.js";
+import { installSignalHandlers, registerGracefulShutdown } from "./lifecycle.js";
+import { ingressFetch } from "./restate-ingress.js";
 
 const PKG = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../package.json"), "utf8"),
@@ -45,7 +47,7 @@ function cliError(message: string, code = 2): never {
 
 /** Invoke a run on the Restate substrate via the ingress (synchronous attach). */
 async function ingressInvoke(runId: string, decision: ForkDecision): Promise<unknown> {
-  const res = await fetch(`${INGRESS}/AgentRun/${runId}/run`, {
+  const res = await ingressFetch(`${INGRESS}/AgentRun/${runId}/run`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ prompt: decision.prompt, trajectory: decision.trajectory }),
@@ -57,7 +59,7 @@ async function ingressInvoke(runId: string, decision: ForkDecision): Promise<unk
 }
 
 async function hitlSubmit(runId: string, prompt: string, traj: string): Promise<void> {
-  const res = await fetch(`${INGRESS}/HitlAgentRun/${runId}/run/send`, {
+  const res = await ingressFetch(`${INGRESS}/HitlAgentRun/${runId}/run/send`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ prompt, trajectory: traj }),
@@ -71,7 +73,7 @@ async function hitlProvideInput(
   runId: string,
   decision: string,
 ): Promise<{ runId: string; accepted: boolean }> {
-  const res = await fetch(`${INGRESS}/HitlAgentRun/${runId}/provideInput`, {
+  const res = await ingressFetch(`${INGRESS}/HitlAgentRun/${runId}/provideInput`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ decision }),
@@ -306,6 +308,13 @@ async function main(): Promise<void> {
     return;
   }
 
+  try {
+    validateConfig();
+  } catch (e) {
+    if (e instanceof ConfigError) cliError(e.message);
+    throw e;
+  }
+
   switch (cmd) {
     case "run": {
       const runId = positional[0];
@@ -433,12 +442,14 @@ async function main(): Promise<void> {
     case "ui": {
       const port = typeof flags.port === "string" ? Number(flags.port) : undefined;
       const importPath = typeof flags.from === "string" ? flags.from : undefined;
-      const host = await startServer({ port, importPath });
-      console.log(`durabl replay UI running at ${host}`);
+      const handle = await startServerHandle({ port, importPath });
+      registerGracefulShutdown(() => handle.close());
+      installSignalHandlers();
+      console.log(`durabl replay UI running at ${handle.url}`);
       console.log(
         `source: ${importPath ? `imported export ${importPath} (OFFLINE — no substrate)` : "live SQLite journal"}`,
       );
-      console.log(`(bound to localhost only; Ctrl-C to stop)`);
+      console.log(`(bound to localhost only; SIGTERM/SIGINT to stop)`);
       await new Promise(() => {});
       break;
     }
