@@ -11,6 +11,9 @@ agent runs survive real crashes, fork to alternate trajectories without
 re-firing side effects, reconstruct runs offline from JSONL exports, and resume
 HITL workflows after a full substrate restart (CLI or replay UI).
 
+**Python:** not shipped yet (Phase 0 fast-follow). Status, target API, and
+LangGraph integration sketch: [`docs/PYTHON-SDK.md`](docs/PYTHON-SDK.md).
+
 Phase 0 showed the **durable execution engine** wedge is closed (Google AX,
 Temporal, Restate, and others). durabl targets what remains: **your history in
 your infra**, demonstrable offline after export. Investor narrative and live
@@ -154,6 +157,7 @@ src/
   cli.ts              # durabl CLI
   harness/            # adversarial gates + demo
 web/                  # replay UI static assets
+python/               # reserved; see docs/PYTHON-SDK.md (DEFERRED)
 ```
 
 ## Configuration

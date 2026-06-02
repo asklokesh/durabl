@@ -83,3 +83,14 @@ npm run gate:hitl-ui   # G2 offline readonly (+ M5 G5 when run via full gate:m5)
   the Docker deploy target runs only when a Docker daemon + local image are present
   (the gate reports CONFIG-READY-NOT-RUN rather than pulling over the network).
 - **Offline HITL (by design):** exported bundles list paused runs; `POST /api/hitl/input` returns **503** without live Restate ingress (`docs/hitl-web-ui.md`).
+
+---
+
+## Out of scope (current release)
+
+| Item | Status | Doc |
+|------|--------|-----|
+| **Python SDK** (LangGraph / agent-loop bindings) | **DEFERRED** — Phase 0 fast-follow; TS ships first | [`docs/PYTHON-SDK.md`](PYTHON-SDK.md) |
+| Reimplementing the durable execution engine | Rejected in Phase 0 | `docs/phase0/validation-report.md` |
+| Process snapshot / CRIU fork | Rejected — step-journal fork only | `docs/m2-trajectory-branching.md` |
+| Managed hosted control plane | Post-M5 / fundability narrative only | `docs/FUNDING.md` |
