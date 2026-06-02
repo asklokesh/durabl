@@ -42,8 +42,6 @@ const state = {
   forkTrees: new Map(),
 };
 
-const THEME_STORAGE_KEY = "durabl.theme";
-
 async function api(path, opts) {
   const res = await fetch(path, opts);
   const body = await res.json().catch(() => ({}));
@@ -201,6 +199,44 @@ async function uploadJsonl(file) {
   await loadRuns();
 }
 
+// ── Hash routing (#/run/:id/step/:n) ───────────────────────
+let suppressHashSync = false;
+
+/** @returns {{ runId: string, step: number | null } | null} */
+function parseRouteHash() {
+  const raw = location.hash.replace(/^#/, "");
+  if (!raw) return null;
+  const m = raw.match(/^\/run\/([^/]+)(?:\/step\/(\d+))?$/);
+  if (!m) return null;
+  const step = m[2] != null ? Number(m[2]) : null;
+  if (step != null && (!Number.isFinite(step) || step < 1)) return null;
+  return { runId: decodeURIComponent(m[1]), step };
+}
+
+function syncRouteHash() {
+  if (suppressHashSync || !state.selected) return;
+  let path = `/run/${encodeURIComponent(state.selected)}`;
+  if (state.selectedStepSeq != null) path += `/step/${state.selectedStepSeq}`;
+  const next = "#" + path;
+  if (location.hash === next) return;
+  suppressHashSync = true;
+  history.replaceState(null, "", next);
+  suppressHashSync = false;
+}
+
+async function restoreFromRouteHash() {
+  const route = parseRouteHash();
+  if (!route) return false;
+  if (!state.runs.some((r) => r.runId === route.runId)) return false;
+  await selectRun(route.runId, { routeStep: route.step, fromHash: true });
+  return true;
+}
+
+window.addEventListener("hashchange", () => {
+  if (suppressHashSync || !state.runs.length) return;
+  void restoreFromRouteHash();
+});
+
 // ── Source banner ──────────────────────────────────────────
 async function loadSource() {
   const h = await api("/api/health");
@@ -297,8 +333,11 @@ async function loadRuns() {
     await loadHitlPaused();
     await renderTree();
     if (!state.selected && state.runs.length) {
-      const first = state.roots[0] || state.runs[0].runId;
-      await selectRun(first);
+      const restored = await restoreFromRouteHash();
+      if (!restored) {
+        const first = state.roots[0] || state.runs[0].runId;
+        await selectRun(first);
+      }
     } else if (state.selected) {
       await refreshHitlForRun(state.selected);
     }
@@ -553,7 +592,7 @@ async function refreshLineageForRun(runId) {
 }
 
 // ── Select + render a run ──────────────────────────────────
-async function selectRun(runId) {
+async function selectRun(runId, opts = {}) {
   state.selected = runId;
   updateExportButton();
   state.ttN = null;
@@ -563,11 +602,25 @@ async function selectRun(runId) {
   state.replay = replay;
   renderRunHeader(replay);
   setupTimeTravel(replay);
+
+  let initialSeq = null;
+  if (opts.routeStep != null && replay.steps.length) {
+    const max = replay.steps.length;
+    const n = Math.min(Math.max(1, opts.routeStep), max);
+    const step = replay.steps.find((s) => s.seq === n) ?? replay.steps[max - 1];
+    initialSeq = step.seq;
+    if (max > 1) applyTimeTravelStep(n, max);
+  }
+
   renderTimeline();
-  if (replay.steps.length) selectStep(replay.steps[replay.steps.length - 1].seq);
+  if (replay.steps.length) {
+    const seq = initialSeq ?? replay.steps[replay.steps.length - 1].seq;
+    selectStep(seq, { skipHash: true });
+  }
   populateDiffPickers();
   await refreshHitlForRun(runId);
   updateExportButton();
+  if (!opts.fromHash) syncRouteHash();
 }
 
 function renderRunHeader(r) {
@@ -600,6 +653,15 @@ function renderRunHeader(r) {
 }
 
 // ── Time-travel ────────────────────────────────────────────
+function applyTimeTravelStep(n, max) {
+  const range = $("#ttRange");
+  if (!range || max <= 1) return;
+  state.ttN = n === max ? null : n;
+  range.value = String(n);
+  $("#ttNow").textContent = String(n);
+  range.style.setProperty("--pct", (n / max) * 100 + "%");
+}
+
 function setupTimeTravel(r) {
   const bar = $("#ttBar");
   const range = $("#ttRange");
@@ -615,17 +677,12 @@ function setupTimeTravel(r) {
   range.style.setProperty("--pct", "100%");
   range.oninput = () => {
     const n = Number(range.value);
-    state.ttN = n === max ? null : n;
-    $("#ttNow").textContent = n;
-    range.style.setProperty("--pct", (n / max) * 100 + "%");
+    applyTimeTravelStep(n, max);
     renderTimeline();
     selectStep(n);
   };
   $("#ttLive").onclick = () => {
-    range.value = max;
-    state.ttN = null;
-    $("#ttNow").textContent = max;
-    range.style.setProperty("--pct", "100%");
+    applyTimeTravelStep(max, max);
     renderTimeline();
     selectStep(max);
   };
@@ -693,13 +750,14 @@ function renderTimeline() {
   }
 }
 
-function selectStep(seq) {
+function selectStep(seq, opts = {}) {
   state.selectedStepSeq = seq;
   document.querySelectorAll(".step").forEach((n) => {
     const sseq = Number(n.querySelector(".step-seq")?.textContent.replace("#", ""));
     n.classList.toggle("active", sseq === seq);
   });
   renderStepDetail(seq);
+  if (!opts.skipHash) syncRouteHash();
 }
 
 function renderStepDetail(seq) {
