@@ -137,27 +137,45 @@ function requestUiUrl(req: IncomingMessage, host: string, port: number): string 
   return `${proto}://${h}`;
 }
 
+const CONNECTION_LABEL_LIVE = "Live Restate";
+const CONNECTION_LABEL_OFFLINE = "Offline export";
+
+function connectionLabelForSource(source: JournalSource): string {
+  return isLiveJournalSource(source) ? CONNECTION_LABEL_LIVE : CONNECTION_LABEL_OFFLINE;
+}
+
 function buildSource(opts: ServerOptions): {
   source: JournalSource;
   label: string;
+  connectionLabel: string;
   exportPath: string | null;
 } {
   if (opts.source) {
+    const source = opts.source;
     return {
-      source: opts.source,
-      label: opts.source.origin,
-      exportPath: exportPathFromOrigin(opts.source.origin),
+      source,
+      label: source.origin,
+      connectionLabel: connectionLabelForSource(source),
+      exportPath: exportPathFromOrigin(source.origin),
     };
   }
   if (opts.importPath) {
     const jsonl = readFileSync(opts.importPath, "utf8");
+    const source = importJournalSource(jsonl, `imported:${opts.importPath}`);
     return {
-      source: importJournalSource(jsonl, `imported:${opts.importPath}`),
+      source,
       label: `imported export ${opts.importPath} (OFFLINE — no substrate)`,
+      connectionLabel: CONNECTION_LABEL_OFFLINE,
       exportPath: opts.importPath,
     };
   }
-  return { source: liveJournalSource(), label: "live SQLite journal", exportPath: null };
+  const source = liveJournalSource();
+  return {
+    source,
+    label: "live SQLite journal",
+    connectionLabel: CONNECTION_LABEL_LIVE,
+    exportPath: null,
+  };
 }
 
 interface Route {
@@ -590,11 +608,11 @@ export interface ServerHandle {
 }
 
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
-  const { source, label, exportPath } = buildSource(opts);
+  const { source, label, connectionLabel, exportPath } = buildSource(opts);
   const live = isLiveJournalSource(source);
   const host = process.env.DURABL_UI_HOST ?? "127.0.0.1";
   const port = opts.port ?? Number(process.env.DURABL_UI_PORT ?? 7878);
-  const ctx: Route = { source, label, live, exportPath, host, port };
+  const ctx: Route = { source, label, connectionLabel, live, exportPath, host, port };
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const started = performance.now();
