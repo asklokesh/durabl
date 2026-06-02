@@ -1,69 +1,172 @@
-# MCP (Model Context Protocol) integration
+# MCP integration (design)
 
-**Status:** **NOT IMPLEMENTED** — tool schema design and journal seam only. No MCP server
-binary, stdio transport, or `@modelcontextprotocol/sdk` dependency in the core repo.
+Durabl exposes a **tool dispatch stub** (`durabl/mcp`, `handleDurablMcpToolCall`) for Model Context Protocol hosts. The stub maps MCP tool calls to the existing journal inspection, replay, and fork APIs. A production MCP server still needs a transport (stdio or HTTP), authentication, and rate limits in the host process.
 
-**Related:** [`docs/m1-slice.md`](../m1-slice.md), [`src/workflow.ts`](../../src/workflow.ts),
-tool step pattern (`step2-tool_call` + `fireEffect`).
+## Transport and trust boundary
 
----
+| Layer | Responsibility |
+| --- | --- |
+| MCP host (Cursor, Claude Desktop, custom) | Authentication, network policy, argument size limits, logging redaction |
+| `handleDurablMcpToolCall` | Typed dispatch, read-only inspect/replay, bounded fork mutations |
+| Journal / substrate | Durable storage and workflow execution (not invoked by `fork_and_run` stub) |
 
-## What durabl owns vs MCP
+**SECURITY-REVIEW:** Treat all MCP client input as untrusted. The optional `jsonl` argument hydrates an in-memory journal via `importJournalSource` and must be size-capped and validated by the transport before it reaches Durabl. Never pass credentials in tool arguments; use environment variables or the host secret store.
 
-| Layer | MCP (typical) | durabl |
-|-------|---------------|--------|
-| Tool discovery / JSON Schema | MCP host + server | — |
-| Invoking tools with arguments | Host calls `tools/call` | Your code inside a **journaled** step |
-| Crash durability | Host-defined | **Restate `ctx.run`** + journal |
-| Exactly-once side effects | Host responsibility | **`fireEffect`** + `IdempotencyKey` |
+**SECURITY-REVIEW:** External calls (future HTTP/SSE MCP transport, remote journal fetch) require TLS 1.2+, allowlisted origins, and no PII in URLs or logs.
 
-durabl does not replace an MCP host. It records **logical tool steps** the same way as
-the reference workflow’s tool step.
+## Tool catalog
 
----
+Stable names are listed in `DURABL_MCP_TOOLS` in `src/mcp-server.ts`.
 
-## Tool schema design (journal `output`)
+### Inspect (read-only)
 
-When wrapping an MCP tool as one journal step, persist a JSON `output` shape that is
-stable for replay:
+#### `inspect_run`
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `mcp.tool` | string | MCP tool name (stable idempotency key input) |
-| `mcp.arguments` | object | Redacted/summary args (no secrets) |
-| `mcp.resultSummary` | string | Truncated result for UI |
-| `mcp.isError` | boolean | Maps from MCP error flag |
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "jsonl": {
+      "type": "string",
+      "description": "Optional portable export; when omitted, reads the live SQLite journal."
+    }
+  }
+}
+```
 
-**`stepName`:** use `mcp-tool-<toolName>` or graph node id — must be stable across retries.
+#### `inspect_lineage`
 
-**`sideEffect`:** `true` for any tool that touches network, filesystem, or external state.
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "jsonl": { "type": "string" }
+  }
+}
+```
 
-**`fireEffect`:** required before returning success (see [`src/workflow.ts`](../../src/workflow.ts)).
+#### `inspect_list_forks`
 
----
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "jsonl": { "type": "string" }
+  }
+}
+```
 
-## Mapping MCP → reference workflow
+#### `inspect_fork_tree`
 
-| MCP concept | durabl field |
-|-------------|--------------|
-| Tool name | `stepName` suffix + `output.mcp.tool` |
-| `tools/call` invocation | `recordStep` producer |
-| Host session id | Map to `runId` (workflow key) |
-| Multiple tools in one turn | One step per tool **or** one aggregated step (document choice) |
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rootId"],
+  "properties": {
+    "rootId": { "type": "string", "minLength": 1 },
+    "jsonl": { "type": "string" }
+  }
+}
+```
 
----
+### Replay (read-only)
 
-## DEFERRED
+#### `replay_reconstruct`
 
-| Item | Status |
-|------|--------|
-| `src/mcp-server.ts` stub exposing journal inspect | **DEFERRED** |
-| MCP resources / prompts | **DEFERRED** |
-| Hosted MCP in `npm run service` | **DEFERRED** |
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "jsonl": { "type": "string" }
+  }
+}
+```
 
----
+#### `replay_state_at`
 
-## Related
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId", "n"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "n": { "type": "integer", "minimum": 1 },
+    "jsonl": { "type": "string" }
+  }
+}
+```
 
-- [`docs/INTEGRATIONS.md`](../INTEGRATIONS.md)
-- GitHub Actions CI: [`github-actions.md`](github-actions.md)
+### Fork
+
+#### `fork_validate` (read-only)
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sourceRunId", "newRunId", "throughSeq", "decision"],
+  "properties": {
+    "sourceRunId": { "type": "string", "minLength": 1 },
+    "newRunId": { "type": "string", "minLength": 1 },
+    "throughSeq": { "type": "integer", "minimum": 1 },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt", "trajectory"],
+      "properties": {
+        "prompt": { "type": "string" },
+        "trajectory": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
+```
+
+#### `fork_seed` (mutates local journal)
+
+Same input schema as `fork_validate`. Seeds entries through `throughSeq` into `newRunId`; does not invoke the substrate.
+
+#### `fork_and_run`
+
+Same input schema as `fork_validate`. **Not implemented** in the stub: returns `NOT_IMPLEMENTED`. Use `fork_seed` plus your workflow ingress with an injected `SubstrateInvoke`.
+
+## Response envelope
+
+All tools return:
+
+```json
+{
+  "type": "object",
+  "required": ["ok"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "data": {},
+    "error": { "type": "string" },
+    "code": { "type": "string" }
+  }
+}
+```
+
+## Package import
+
+```ts
+import {
+  DURABL_MCP_TOOLS,
+  handleDurablMcpToolCall,
+  type DurablMcpToolName,
+} from "durabl/mcp";
+```

@@ -15,6 +15,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./mcp": {
+      "types": "./dist/mcp-server.d.ts",
+      "import": "./dist/mcp-server.js",
+      "default": "./dist/mcp-server.js"
+    },
     "./package.json": "./package.json"
   },
   "bin": {
