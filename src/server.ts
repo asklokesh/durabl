@@ -2,6 +2,7 @@
 // LOCAL REPLAY WEB SERVER (M3) — self-hostable, neutral, zero external deps.
 //
 // A lightweight node:http server (no framework) that serves:
+//   - ops probes: GET /health, GET /ready, GET /metrics (Prometheus stub)
 //   - the read-only replay APIs over a JournalSource (live OR imported export)
 //   - the static single-page frontend (web/index.html etc.)
 //
@@ -41,6 +42,7 @@ import {
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
+import { config } from "./config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Static assets live in <repo>/web (copied into dist via package build step, or
@@ -109,6 +111,55 @@ interface Route {
   source: JournalSource;
   label: string;
   live: boolean;
+}
+
+const RESTATE_PROBE_TIMEOUT_MS = 3000;
+
+/** Restate admin `/health` — same reachability check as the gate harness. */
+async function restateAdminReachable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.restateAdmin}/health`, {
+      signal: AbortSignal.timeout(RESTATE_PROBE_TIMEOUT_MS),
+    });
+    return res.status < 500;
+  } catch {
+    return false;
+  }
+}
+
+function prometheusMetricsStub(ctx: Route): string {
+  const live = ctx.live ? "1" : "0";
+  return [
+    "# HELP durabl_up durabl replay UI process is up (1 = yes).",
+    "# TYPE durabl_up gauge",
+    "durabl_up 1",
+    "# HELP durabl_live journal source is live SQLite (1) vs imported export (0).",
+    "# TYPE durabl_live gauge",
+    `durabl_live ${live}`,
+    "",
+  ].join("\n");
+}
+
+/** K8s-style liveness/readiness + optional Prometheus scrape stub (not /api/*). */
+async function handleOpsProbe(ctx: Route, pathname: string, res: ServerResponse): Promise<boolean> {
+  if (pathname === "/health") {
+    sendText(res, 200, "ok\n", "text/plain; charset=utf-8");
+    return true;
+  }
+  if (pathname === "/ready") {
+    if (!ctx.live) {
+      sendText(res, 200, "ready\n", "text/plain; charset=utf-8");
+      return true;
+    }
+    const ok = await restateAdminReachable();
+    sendText(res, ok ? 200 : 503, ok ? "ready\n" : "not ready\n", "text/plain; charset=utf-8");
+    return true;
+  }
+  if (pathname === "/metrics") {
+    sendText(res, 200, prometheusMetricsStub(ctx), "text/plain; version=0.0.4; charset=utf-8");
+    return true;
+  }
+  return false;
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -318,6 +369,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
     void (async () => {
     try {
       const url = new URL(req.url ?? "/", `http://${host}:${port}`);
+      if (await handleOpsProbe(ctx, url.pathname, res)) return;
       if (url.pathname.startsWith("/api/")) {
         const handled = await handleApi(ctx, url, res, req);
         if (!handled) sendJson(res, 404, { error: "not found" });
