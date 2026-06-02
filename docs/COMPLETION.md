@@ -31,6 +31,10 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 | **fundability** | Investor narrative grounded in Phase 0 | `5227c9f` (merged `9483a85`) | — (docs-only) | ✅ Docs |
 | **harden** | Live provider gate, HTTP policy, second-substrate seam | `6da9f0a` (merged `70536ad`) | `npm run gate:harden` (3/3); `npm run gate:live` | ✅ Harden gated; live **config-ready** |
 | **hitl-web-ui** | Paused list + resume in replay UI + HTTP API | `1e91a8a` / `7f0cf19` (merged `2c459b1`) | `npm run gate:hitl-ui` | ✅ Gated (offline + live G5 via M5) |
+| **ui-fork-tree** | Nested fork lineage + breadcrumb from `/api/tree` | `25a5538` (cherry-pick) | `gate:m3` fork-tree checks | ✅ Web-only |
+| **ui-dark-mode** | Light/dark theme + system preference toggle | `0536735` (cherry-pick) | manual / `capture:ui` | ✅ Web-only |
+
+Operator guide for replay UI (fork tree, diff, HITL, offline matrix): [`UI.md`](UI.md).
 
 **Harness stabilization (post-merge, on main):** serialized gates via `/tmp/durabl-harness.lock`, attach-only M1 crash recovery, Restate lifecycle fixes — `0b3b097`, `911a19a`, `9a5fb34`, `d206675`, `0a376fd`.
 
@@ -67,12 +71,22 @@ Phase 0 narrative and re-scope: `4e795a3` (`docs/phase0/validation-report.md`, `
 
 ## gate:all
 
-_(Append PASS/FAIL log after `npm run gate:all` on integration HEAD.)_
+**2026-06-02** — `gate:all` **PASS** on integration `main` (`b411caa` after final-wave + post-merge UI).
+
+| Field | Value |
+|-------|--------|
+| HEAD | `b411caa` |
+| Log | [`docs/evidence/gate-all-20260602.log`](evidence/gate-all-20260602.log) |
+| Verdict | `ALL GATES PASSED` (M0–M3 serial via `scripts/run-all-gates.sh`) |
+| Reproduce | `export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d).log` |
+
+Final-wave branches merged (all `feat/final-*` with commits): `feat/final-examples`, `feat/final-faq`, `feat/final-makefile`, `feat/final-release-workflow`, `feat/final-typedoc`, `feat/final-onepager`, plus prior-wave `feat/final-*` (adr, api, arch, ci, docs, gates, hygiene-v2, openapi, schema, etc.) — none pending vs `main`.
 
 ---
 
 ## Related docs
 
+- [`UI.md`](UI.md) — replay UI: fork tree, diff, HITL, offline matrix
 - [`build-status.md`](build-status.md) — gate matrix + reproduce commands
 - [`FUNDING.md`](FUNDING.md) — investor narrative
 - [`QUICKSTART.md`](QUICKSTART.md) — operator quickstart
