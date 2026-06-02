@@ -6,9 +6,13 @@ Get from clone to a passing M1 gate, then skim replay and HITL surfaces.
 
 ```bash
 git clone <your-fork> durabl && cd durabl
+cp .env.example .env   # optional: uncomment DURABL_* vars you need
 npm install
 npm run build
 ```
+
+See [`.env.example`](../.env.example) for every `DURABL_*` knob (data dir, deploy
+target, Restate ports, providers, UI). Template has comments only — no secrets.
 
 ## 2. Prove the journal (M1)
 
