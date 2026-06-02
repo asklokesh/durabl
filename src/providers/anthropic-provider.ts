@@ -16,6 +16,11 @@ import type {
   ModelRequest,
   ProviderDescriptor,
 } from "./provider.js";
+import { ProviderError } from "./provider-errors.js";
+import {
+  defaultProviderHttpPolicy,
+  fetchWithProviderPolicy,
+} from "./provider-http.js";
 
 export function anthropicProvider(): ModelProvider {
   const model = process.env.DURABL_ANTHROPIC_MODEL ?? "claude-3-5-haiku-latest";
@@ -45,22 +50,36 @@ export function anthropicProvider(): ModelProvider {
       }
       // SECURITY-REVIEW: external HTTP call with key from env (x-api-key header
       // only); key value is never logged or returned.
-      const res = await fetch(`${baseUrl}/messages`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": key,
-          "anthropic-version": version,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: req.maxTokens ?? 256,
-          system: req.system,
-          messages: [{ role: "user", content: req.prompt }],
-        }),
-      });
-      if (!res.ok) {
-        throw new Error(`anthropic provider HTTP ${res.status}`);
+      const policy = defaultProviderHttpPolicy("anthropic");
+      let res: Response;
+      try {
+        res = await fetchWithProviderPolicy(
+          `${baseUrl}/messages`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-api-key": key,
+              "anthropic-version": version,
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: req.maxTokens ?? 64,
+              system: req.system,
+              messages: [{ role: "user", content: req.prompt }],
+            }),
+          },
+          policy,
+        );
+      } catch (e) {
+        if (e instanceof ProviderError) throw e;
+        throw new ProviderError(
+          "network",
+          "anthropic",
+          "anthropic provider request failed",
+          undefined,
+          e,
+        );
       }
       const data = (await res.json()) as {
         content?: Array<{ type?: string; text?: string }>;

@@ -136,6 +136,22 @@ export {
   DEFAULT_PROVIDER_ID,
 } from "./providers/registry.js";
 export {
+  ProviderError,
+  redactSecrets,
+  type ProviderErrorCode,
+} from "./providers/provider-errors.js";
+export {
+  defaultProviderHttpPolicy,
+  fetchWithProviderPolicy,
+  type ProviderHttpPolicy,
+} from "./providers/provider-http.js";
+export {
+  dbosJournalSourceStub,
+  dbosJournalSourceAvailable,
+  resolveJournalSourceHint,
+  type DbosJournalSourceConfig,
+} from "./journal-source-dbos-stub.js";
+export {
   getDeployTarget,
   configuredDeployTargetId,
   DEFAULT_DEPLOY_TARGET,

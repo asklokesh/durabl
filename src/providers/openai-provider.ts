@@ -22,6 +22,11 @@ import type {
   ModelRequest,
   ProviderDescriptor,
 } from "./provider.js";
+import { ProviderError } from "./provider-errors.js";
+import {
+  defaultProviderHttpPolicy,
+  fetchWithProviderPolicy,
+} from "./provider-http.js";
 
 export function openAiProvider(): ModelProvider {
   const model = process.env.DURABL_OPENAI_MODEL ?? "gpt-4o-mini";
@@ -51,24 +56,31 @@ export function openAiProvider(): ModelProvider {
       }
       // SECURITY-REVIEW: external HTTP call with key from env (Authorization
       // header only); key value is never logged or returned.
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: req.maxTokens ?? 256,
-          messages: [
-            { role: "system", content: req.system },
-            { role: "user", content: req.prompt },
-          ],
-        }),
-      });
-      if (!res.ok) {
-        // Generic error — never include the key or full provider internals.
-        throw new Error(`openai provider HTTP ${res.status}`);
+      const policy = defaultProviderHttpPolicy("openai");
+      let res: Response;
+      try {
+        res = await fetchWithProviderPolicy(
+          `${baseUrl}/chat/completions`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: req.maxTokens ?? 64,
+              messages: [
+                { role: "system", content: req.system },
+                { role: "user", content: req.prompt },
+              ],
+            }),
+          },
+          policy,
+        );
+      } catch (e) {
+        if (e instanceof ProviderError) throw e;
+        throw new ProviderError("network", "openai", "openai provider request failed", undefined, e);
       }
       const data = (await res.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
