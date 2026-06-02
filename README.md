@@ -144,16 +144,23 @@ Top-level: `src/` (library + CLI + harness), `web/` (replay UI), `docs/`.
 
 ## Configuration
 
+Copy [`.env.example`](.env.example) to `.env` for the full list of `DURABL_*`
+variables (data paths, deploy target, Restate ports, model providers, UI, harness
+toggles). All entries are commented placeholders — no secrets in the template.
+
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `DURABL_DATA_DIR` | `$TMPDIR/durabl-m1` | Root for journal/effect/engine data |
 | `DURABL_JOURNAL_DB` | `<root>/journal.db` | Portable step journal |
 | `DURABL_EFFECT_DB` | `<root>/effects.db` | Idempotent effect sink |
+| `DURABL_DEPLOY_TARGET` | `local` | `local` \| `docker` \| `external` |
+| `DURABL_MODEL_PROVIDER` | `fake-echo` | Provider id (config-only switch) |
 | `DURABL_SERVICE_PORT` | `9080` | Restate SDK service port |
 | `DURABL_RESTATE_INGRESS` | `http://localhost:8080` | Restate ingress |
 | `DURABL_RESTATE_ADMIN` | `http://localhost:9070` | Restate admin |
 
-No credentials are read or logged; paths and ports only.
+Real provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) live outside `DURABL_*`;
+never commit them. No credentials are read or logged by durabl itself.
 
 ## Contributing
 
