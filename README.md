@@ -81,6 +81,12 @@ Deep dives: [`docs/m1-slice.md`](docs/m1-slice.md),
 
 Phase 0 background: [`docs/phase0/`](docs/phase0/).
 
+**Roadmap (M6+):** [`docs/ROADMAP.md`](docs/ROADMAP.md) — managed layer, Python SDK,
+DBOS parity (honest status).
+
+**Comparison:** [`docs/COMPARISON.md`](docs/COMPARISON.md) — vs LangSmith, Braintrust,
+Google AX (cites Phase 0 [`validation-report.md`](docs/phase0/validation-report.md)).
+
 ## Architecture
 
 Full layer diagram, `src/` map, and data flows:
