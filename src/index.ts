@@ -103,6 +103,13 @@ export {
 export { agentRun, type AgentRunService } from "./workflow.js";
 export { config } from "./config.js";
 
+export {
+  isOtelEnabled,
+  withStepSpan,
+  withStepSpanAsync,
+  type StepSpanAttributes,
+} from "./otel.js";
+
 // M5 — human-in-the-loop (HITL) pause/resume + journal-derived pause state.
 export {
   hitlAgentRun,

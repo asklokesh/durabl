@@ -19,6 +19,11 @@ export const config = {
   /** Restate ingress + admin (single self-hostable binary). */
   restateIngress: process.env.DURABL_RESTATE_INGRESS ?? "http://localhost:8080",
   restateAdmin: process.env.DURABL_RESTATE_ADMIN ?? "http://localhost:9070",
+  /**
+   * Optional HTTP endpoint for step-span JSON POSTs (see `src/otel.ts`).
+   * Unset → tracing hooks are no-ops with zero network I/O.
+   */
+  otelEndpoint: process.env.DURABL_OTEL_ENDPOINT ?? "",
 } as const;
 
 export const DATA_ROOT = ROOT;

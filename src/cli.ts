@@ -163,7 +163,8 @@ Human-in-the-loop (Restate ingress):
   hitl-status <runId>
   paused
 
-Environment: DURABL_DATA_DIR, DURABL_JOURNAL_DB, DURABL_RESTATE_INGRESS, …
+Environment: DURABL_DATA_DIR, DURABL_JOURNAL_DB, DURABL_RESTATE_INGRESS,
+  DURABL_OTEL_ENDPOINT (optional step tracing), …
 Docs: https://github.com/durabl/durabl#readme
 `;
 
