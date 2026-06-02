@@ -1,139 +1,153 @@
 # durabl
 
-A neutral, self-hostable **replay / time-travel debugging** product over a
-**portable agent execution journal**, built on [Restate](https://restate.dev)
-as the step-journal substrate, using **logical step-level fork** (never
-CRIU/process snapshot). TypeScript-first.
+**durabl** is a neutral, self-hostable **agent execution journal** with **replay /
+time-travel**, **logical step-level fork**, and **human-in-the-loop pause/resume**.
+It uses [Restate](https://restate.dev) as the durable step-journal substrate and
+never relies on process snapshots (CRIU) — only portable journal records and
+structural per-step idempotency.
 
-Milestones shipped:
-- **M1** — portable step journal + structural exactly-once on Restate ([`docs/m1-slice.md`](docs/m1-slice.md)).
-- **M2** — logical step-level trajectory **fork** + read APIs ([`docs/m2-trajectory-branching.md`](docs/m2-trajectory-branching.md)).
-- **M3** — **observability / replay / time-travel** read surface: reconstruct any
-  run from its journal, time-travel to any step, visualize the fork tree, diff
-  trajectories — including **fully offline from a portable JSONL export with no
-  substrate running**. Web UI + CLI. ([`docs/m3-observability-replay.md`](docs/m3-observability-replay.md)).
+**Wedge (what you get today):** a TypeScript library + CLI that proves durable
+agent runs survive real crashes, fork to alternate trajectories without
+re-firing side effects, reconstruct runs offline from JSONL exports, and resume
+HITL workflows after a full substrate restart.
 
-See `docs/phase0/` for the validation report, build plan, and M0 findings.
+## Quickstart
 
-## M3 quick start — replay & time-travel
-
-```bash
-npm run gate:m3            # adversarial M3 gate (kills Restate, replays from export)
-npm run ui                 # local replay UI over the live journal (http://127.0.0.1:7878)
-node dist/cli.js export-bundle <rootRunId> > run.jsonl
-node dist/cli.js ui --from run.jsonl       # the SAME UI, fully offline (no substrate)
-node dist/cli.js replay <runId> --from run.jsonl
-node dist/cli.js state-at <runId> --n 2 --from run.jsonl
-npm run capture:ui         # headless UI screenshots (gstack browse) → docs/m3-evidence/screenshots
-```
-
-The replay engine reads only a `JournalSource` (live SQLite **or** imported JSONL),
-so reconstruction never depends on live Restate state. The web server binds
-`127.0.0.1` by default and is strictly read-only.
-
-## What M1 is
-
-A 3-step agent-style workflow with one side-effecting tool call, run on Restate,
-persisting to a **portable, substrate-agnostic step journal** with a
-**structurally enforced per-step idempotency contract**. The journal + the
-idempotency contract are the durable assets; the workflow is a reference loop
-that exercises them.
-
-The **core correctness contract** (the hard requirement surfaced by M0): every
-side-effecting step fires through a deterministic idempotency key
-(`runId:stepName`), so the dual-write double-fire — a crash landing *after the
-effect fires but before its result is journaled* — is structurally deduped to
-**exactly once**. This is enforced by types, not convention (see
-[`docs/m1-slice.md`](docs/m1-slice.md)).
-
-## Layout
-
-Single-package `src/` layout (not a monorepo). A `packages/` split is deferred to
-M4, where the Python SDK and a second substrate land and a workspace split earns
-its keep. For M1 a flat package keeps the vertical slice legible.
-
-```
-src/
-  idempotency.ts    # the contract: branded deterministic IdempotencyKey
-  step-model.ts     # neutral, substrate-free journal/step types (schema v1)
-  journal.ts        # portable SQLite step journal + JSONL export + forkRun
-  effect-sink.ts    # idempotent effect sink — REQUIRES an IdempotencyKey
-  workflow.ts       # 3-step agent loop on Restate (ctx.run durable steps)
-  crash-inject.ts   # test-only: real SIGKILL at a named boundary (no-op in prod)
-  service.ts        # Restate SDK service entry point
-  index.ts          # public API surface (no substrate detail re-exported)
-  config.ts         # env-driven config (no hardcoded secrets/paths)
-  harness/
-    restate-control.ts  # drive the local restate-server + SDK service
-    run-gate.ts         # the adversarial M1 verification gate (npm test)
-```
-
-### Clean separation
-
-- **workflow** (orchestration) never talks to SQLite directly; it calls
-  `recordStep` and `fireEffect`.
-- **journal** owns persistence + portability + fork; it derives the idempotency
-  key and hands it to the step producer.
-- **effect-sink** owns the exactly-once boundary; it *cannot* be called without a
-  derived `IdempotencyKey`.
-- **idempotency** owns the contract; an `IdempotencyKey` can only be produced by
-  `deriveIdempotencyKey(runId, stepName)`.
-
-## Prerequisites
-
-- **Node.js >= 22.5.0** (uses the built-in `node:sqlite` — zero native deps).
-  Developed and verified on Node 26.
-- No Docker, no cloud. Restate ships as native binaries installed as
-  devDependencies; the harness starts a single self-hostable `restate-server`.
-- macOS/Linux (the harness uses `pkill` for defensive cleanup).
-
-## Install & build
+**Prerequisites:** Node.js **>= 22.5.0** (uses built-in `node:sqlite`). macOS or
+Linux recommended for the adversarial harness.
 
 ```bash
 npm install
-npm run build
+npm run build          # optional; demo/test build automatically
+npm run demo           # scripted M1+M2 narrative (real SIGKILL + fork)
+npm run ui             # replay UI → http://127.0.0.1:7878
 ```
 
-## Run the workflow manually
+One-liner:
 
 ```bash
-# Terminal 1: start the SDK service
+./scripts/quickstart.sh
+```
+
+CLI (after `npm run build`):
+
+```bash
+npx durabl --help
+npx durabl runs
+npx durabl replay <runId>
+npx durabl ui --from export.jsonl   # fully offline
+```
+
+**Verify (CI-style):**
+
+```bash
+npm test            # M1 gate (== npm run gate)
+npm run gate:m2     # logical fork gate
+```
+
+## Milestone proof
+
+Full matrix, evidence paths, and reproduce commands:
+[`docs/build-status.md`](docs/build-status.md).
+
+| Milestone | Scope | Gate | Status |
+|-----------|--------|------|--------|
+| **M0** | Feasibility: fork + replay without engine mods | spike | ✅ |
+| **M1** | Portable journal + structural exactly-once | `npm test` | ✅ 10/10 |
+| **M2** | Logical trajectory fork + inspect APIs | `npm run gate:m2` | ✅ 6/6 |
+| **M3** | Replay / time-travel + offline export + UI | `npm run gate:m3` | ✅ 5/5 |
+| **M4** | Model + deploy neutrality (config-only) | `npm run gate:m4` | ✅ 4/4 |
+| **M5** | HITL pause/resume across real restart | `npm run gate:m5` | ✅ 4/4 |
+
+Deep dives: [`docs/m1-slice.md`](docs/m1-slice.md),
+[`docs/m2-trajectory-branching.md`](docs/m2-trajectory-branching.md),
+[`docs/m3-observability-replay.md`](docs/m3-observability-replay.md),
+[`docs/m4-neutrality.md`](docs/m4-neutrality.md),
+[`docs/m5-hitl-export.md`](docs/m5-hitl-export.md).
+
+Phase 0 background: [`docs/phase0/`](docs/phase0/).
+
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph client["Developer surface"]
+    CLI["durabl CLI"]
+    UI["Replay web UI"]
+    API["Programmatic API\n(src/index.ts)"]
+  end
+
+  subgraph durabl["durabl (neutral layer)"]
+    JM["Portable step journal\n(SQLite + JSONL export)"]
+    IDEM["IdempotencyKey contract"]
+    ES["Effect sink\n(exactly-once boundary)"]
+    RP["Replay engine\n(JournalSource)"]
+    FK["fork / seedFork"]
+  end
+
+  subgraph substrate["Substrate (default: Restate)"]
+    RS["restate-server"]
+    SVC["AgentRun / HitlAgentRun\nSDK service"]
+  end
+
+  CLI --> JM
+  CLI --> FK
+  CLI --> RS
+  UI --> RP
+  RP --> JM
+  API --> JM
+  SVC --> JM
+  SVC --> ES
+  SVC --> IDEM
+  FK --> JM
+  RS --> SVC
+```
+
+**Separation of concerns**
+
+- **Workflow** orchestrates durable steps on Restate; it never touches SQLite directly.
+- **Journal** owns persistence, export, and fork seeding.
+- **Effect sink** requires a branded `IdempotencyKey` — the dual-write window is
+  structurally deduped (see M1).
+- **Replay** reads only `JournalSource` (live DB or imported JSONL); no live
+  Restate state required for reconstruction.
+
+## Optional: Restate in Docker
+
+The default path uses **native** `restate-server` from npm (no Docker). For a
+containerized substrate:
+
+```bash
+docker compose --profile docker-demo up -d
+export DURABL_RESTATE_INGRESS=http://127.0.0.1:8080
+export DURABL_RESTATE_ADMIN=http://127.0.0.1:9070
 npm run service
-
-# Terminal 2: start restate-server, register, invoke (see harness for the flow)
+npx restate deployments register http://host.docker.internal:9080
+npm run demo
 ```
 
-In practice the harness wires all of this up; for a manual run consult
-`src/harness/restate-control.ts`.
+Stop: `docker compose --profile docker-demo down`.
 
-## Run the crash / verification harness (single command)
+## Layout
 
-```bash
-npm test          # == npm run gate
+```
+src/
+  idempotency.ts      # branded IdempotencyKey
+  step-model.ts       # neutral journal types (schema v1)
+  journal.ts          # SQLite journal + JSONL export + forkRun
+  effect-sink.ts      # exactly-once effect boundary
+  workflow.ts         # reference agent loop on Restate
+  replay.ts           # reconstruct / state-at
+  fork.ts             # logical fork + forkAndRun
+  cli.ts              # durabl CLI
+  harness/            # adversarial gates + demo
+web/                  # replay UI static assets
 ```
 
-This builds, starts a local `restate-server`, and runs the full adversarial gate:
-real SIGKILL at every step boundary (including the dangerous after-effect window),
-a concurrent-worker race, logical fork, and replay determinism. It exits non-zero
-if any gate fails — suitable for CI.
-
-Run a single gate group:
-
-```bash
-npm run build && node dist/harness/run-gate.js crash        # crash boundaries only
-node dist/harness/run-gate.js concurrency
-node dist/harness/run-gate.js fork
-node dist/harness/run-gate.js replay
-```
-
-The most recent real run is captured verbatim in
-[`docs/m1-evidence/gate-evidence.log`](docs/m1-evidence/gate-evidence.log) and
-summarized in [`docs/m1-slice.md`](docs/m1-slice.md).
-
-## Configuration (env vars; no hardcoded secrets)
+## Configuration
 
 | Variable | Default | Purpose |
-|---|---|---|
+|----------|---------|---------|
 | `DURABL_DATA_DIR` | `$TMPDIR/durabl-m1` | Root for journal/effect/engine data |
 | `DURABL_JOURNAL_DB` | `<root>/journal.db` | Portable step journal |
 | `DURABL_EFFECT_DB` | `<root>/effects.db` | Idempotent effect sink |
@@ -141,9 +155,12 @@ summarized in [`docs/m1-slice.md`](docs/m1-slice.md).
 | `DURABL_RESTATE_INGRESS` | `http://localhost:8080` | Restate ingress |
 | `DURABL_RESTATE_ADMIN` | `http://localhost:9070` | Restate admin |
 
-No credentials are read or logged anywhere; all config is filesystem paths and
-ports (security baseline §1, §5, §7).
+No credentials are read or logged; paths and ports only.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
-Apache-2.0.
+Apache-2.0 — see [`LICENSE`](LICENSE).

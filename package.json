@@ -1,8 +1,7 @@
 {
   "name": "durabl",
   "version": "0.1.0",
-  "private": true,
-  "description": "durabl M1 — neutral, portable, self-hostable agent execution journal with structural per-step idempotency, on Restate (step-journal substrate). The durable foundation for replay/time-travel + logical step-level fork.",
+  "description": "Portable agent execution journal with replay, time-travel, and logical step-level fork — built on Restate as the durable step-journal substrate.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -13,6 +12,33 @@
   "bin": {
     "durabl": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "web",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md"
+  ],
+  "keywords": [
+    "agent",
+    "durability",
+    "fork",
+    "hitl",
+    "idempotency",
+    "journal",
+    "replay",
+    "restate",
+    "time-travel",
+    "workflow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/durabl/durabl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/durabl/durabl/issues"
+  },
+  "homepage": "https://github.com/durabl/durabl#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-web.mjs",
     "clean": "rm -rf dist *.tsbuildinfo",
@@ -23,6 +49,7 @@
     "gate:m3": "npm run build && node --enable-source-maps dist/harness/run-m3-gate.js",
     "gate:m4": "npm run build && node --enable-source-maps dist/harness/run-m4-gate.js",
     "gate:m5": "npm run build && node --enable-source-maps dist/harness/run-m5-gate.js",
+    "compose:up": "docker compose up --build",
     "demo": "npm run build && node --enable-source-maps dist/harness/demo.js",
     "cli": "npm run build && node --enable-source-maps dist/cli.js",
     "ui": "npm run build && node --enable-source-maps dist/cli.js ui",
