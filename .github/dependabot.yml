@@ -1,0 +1,24 @@
+# Dependabot version 2 — npm only
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: deps
+    groups:
+      restate:
+        patterns:
+          - "@restatedev/*"
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
