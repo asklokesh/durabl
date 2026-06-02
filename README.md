@@ -43,13 +43,23 @@ One-liner:
 ./scripts/quickstart.sh
 ```
 
-CLI (after `npm run build`):
+CLI (after `npm run build`; full reference: [`docs/CLI.md`](docs/CLI.md)):
 
 ```bash
 npx durabl --help
+npx durabl <command> --help    # per-command usage
+
+# Journal-only (inspect / replay / export)
 npx durabl runs
+npx durabl inspect <runId>
 npx durabl replay <runId>
 npx durabl ui --from export.jsonl   # fully offline
+
+# Requires Restate ingress (see DURABL_RESTATE_INGRESS)
+npx durabl run <runId> --prompt "…"
+npx durabl fork <source> --at <N> --new <id> --prompt "…"
+npx durabl hitl-run <runId> --prompt "…"
+npx durabl hitl-input <runId> --decision "…"
 ```
 
 **Verify (CI-style):**
