@@ -287,3 +287,57 @@ select.pick {
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Mobile — replay timeline + HITL (tested at 375px) ───── */
+@media (max-width: 640px) {
+  .topbar { flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+  .source-pill { max-width: 100%; }
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+    max-height: 38vh;
+  }
+  .main { padding: 14px; }
+  .detail {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 42vh;
+  }
+  .hitl-panel { margin-bottom: 12px; padding-bottom: 12px; }
+  .hitl-paused-item { padding: 10px 12px; }
+  .hitl-paused-item .run-id { font-size: 11px; }
+  .hitl-banner { margin-bottom: 14px; padding: 14px; border-radius: 10px; }
+  .hitl-banner-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .hitl-banner-sub { font-size: 11px; word-break: break-all; max-width: 100%; }
+  .hitl-form textarea { width: 100%; min-height: 72px; font-size: 16px; }
+  .hitl-form-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+  .hitl-form-actions .btn-primary { width: 100%; text-align: center; }
+  .hitl-form-msg { text-align: center; }
+  .tt-bar { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+  .tt-bar input[type="range"] { flex: 1 1 100%; min-width: 0; order: 3; }
+  .tt-readout { min-width: auto; }
+  .timeline { padding-left: 22px; }
+  .timeline::before { left: 6px; }
+  .step { padding: 12px 10px; margin-bottom: 10px; }
+  .step .node { left: -21px; top: 14px; width: 16px; height: 16px; font-size: 8px; }
+  .step-head { flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; }
+  .step-name { flex: 1 1 100%; font-size: 12px; overflow-wrap: anywhere; }
+  .step-tags { margin-left: 0; flex: 1 1 100%; flex-wrap: wrap; }
+  .step.current::after { position: static; display: block; margin-top: 8px; text-align: right; }
+  .step-out { font-size: 11px; max-height: 120px; overflow-y: auto; }
+  .diverge-marker { font-size: 10px; word-break: break-word; }
+  .run-title { font-size: 16px; }
+  .run-meta-row { gap: 6px; }
+  .chip { font-size: 11px; padding: 4px 9px; }
+}
+@media (max-width: 400px) {
+  .sidebar { max-height: 34vh; }
+  .hitl-pill { font-size: 10px; padding: 3px 8px; }
+  .step { padding: 10px 8px; }
+}
+
