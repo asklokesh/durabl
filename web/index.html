@@ -29,9 +29,10 @@
             <div class="panel-title">Awaiting human input</div>
             <div id="hitlPausedList" class="hitl-paused-list"></div>
           </div>
-          <div class="panel">
-            <div class="panel-title">Runs &amp; fork tree</div>
-            <div id="tree" class="tree"></div>
+          <div class="panel fork-panel">
+            <div class="panel-title">Fork lineage</div>
+            <nav id="lineagePath" class="lineage-path" hidden aria-label="Lineage to selected run"></nav>
+            <div id="tree" class="tree" role="tree" aria-label="Fork tree"></div>
           </div>
         </aside>
 
