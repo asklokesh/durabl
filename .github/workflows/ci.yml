@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Full gate:all uses real Restate + SIGKILL paths; budget ~15m on GitHub-hosted runners.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DURABL_DATA_DIR: ${{ runner.temp }}/durabl-ci-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Restate CLI/server come from @restatedev/restate-server (devDependency); harness starts them.
+      - name: Full adversarial gate suite
+        run: npm run gate:all 2>&1 | tee docs/evidence/gate-all-ci-${{ github.run_id }}.log
