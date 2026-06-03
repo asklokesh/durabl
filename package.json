@@ -55,12 +55,15 @@
     "url": "https://github.com/asklokesh/durabl/issues"
   },
   "homepage": "https://github.com/asklokesh/durabl#readme",
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-web.mjs",
     "clean": "rm -rf dist *.tsbuildinfo",
     "service": "node --enable-source-maps dist/service.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
     "gate": "npm run build && node --enable-source-maps dist/harness/run-gate.js",
     "gate:m2": "npm run build && node --enable-source-maps dist/harness/run-m2-gate.js",
     "gate:m3": "npm run build && node --enable-source-maps dist/harness/run-m3-gate.js",
@@ -68,7 +71,9 @@
     "gate:m5": "npm run build && node --enable-source-maps dist/harness/run-m5-gate.js",
     "gate:live": "npm run build && node --enable-source-maps dist/harness/run-live-providers-gate.js",
     "gate:harden": "npm run build && node --enable-source-maps dist/harness/run-harden-gate.js",
+    "gate:dbos": "bash scripts/gate-dbos.sh",
     "gate:dbos-skip": "bash scripts/gate-dbos-skip.sh",
+    "test:dbos": "npm run build && node --enable-source-maps --test dist/dbos-journal-source.test.js",
     "gate:hitl-ui": "npm run build && node --enable-source-maps dist/harness/run-hitl-ui-gate.js",
     "gate:hitl-web": "npm run gate:hitl-ui",
     "gate:all": "bash scripts/run-all-gates.sh",
@@ -106,7 +111,7 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "eslint": "^10.4.1",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.0",
     "typescript-eslint": "^8.33.0"
   }
 }

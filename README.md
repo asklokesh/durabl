@@ -27,26 +27,29 @@ Investor narrative and live demo script: [`docs/FUNDING.md`](docs/FUNDING.md),
 
 ## Install
 
-**v0.1.0 release channel:** GitHub **release tarball** only — not published to
-npmjs.org. See [`docs/RELEASING.md`](docs/RELEASING.md) for tagging, CI artifacts,
-and install from `.tgz`.
+**v0.1.0 dual channel:** GitHub **release tarball** (always) or **npmjs.org** after
+maintainer publish. See [`docs/RELEASING.md`](docs/RELEASING.md). As of the latest
+release prep, `npm view durabl` returns 404 — use tarball or source until registry
+publish completes.
 
 | Path | When | Steps |
 |------|------|--------|
+| **From npm** | Registry publish live (`npm view durabl version`) | `npm install durabl@0.1.0` |
+| **From tarball** | Tagged release / offline / pre-registry | Download `durabl-<version>.tgz` from GitHub Actions for tag `v*`, then `npm install /path/to/durabl-0.1.0.tgz` |
 | **From source** | Contributors, local dev | `git clone https://github.com/asklokesh/durabl.git && cd durabl && npm install && npm run build` |
-| **From tarball** | Consumers of a tagged release | Download `durabl-<version>.tgz` from the GitHub Actions run for tag `v*`, then `npm install /path/to/durabl-0.1.0.tgz` |
 
-After either path, the `durabl` CLI is on your PATH when installed globally, or
-invoke via `npx durabl` / `node dist/cli.js` from a source checkout.
+After install, the `durabl` CLI is on your PATH when installed globally, or invoke
+via `npx durabl` / `node dist/cli.js` from a source checkout.
 
 ## Quickstart
 
 **Prerequisites:** Node.js **>= 22.5.0** (uses built-in `node:sqlite`). macOS or
 Linux recommended for the adversarial harness.
 
-Complete [Install](#install) first (git clone or release `.tgz`). There is no
-`npm install durabl` on npmjs.org for v0.1.0. The commands below run in that
-tree (or after `npm install /path/to/durabl-*.tgz`).
+Complete [Install](#install) first (registry, tarball, or git clone). If
+`npm view durabl` is 404, use tarball or source — not `npm install durabl`. The
+commands below run in that tree (or after `npm install durabl@0.1.0` /
+`npm install /path/to/durabl-*.tgz`).
 
 ```bash
 npm install
