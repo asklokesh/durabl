@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `5f88326a7cb7408e7a6ccaf026a9ea4672ea0a6e` · **Gate log:** [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) (`ALL GATES PASSED`, exit 0)
+**Branch:** `main` · **HEAD:** `d67e13f` · **Gate log:** [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) (`ALL GATES PASSED`, exit 0)
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 
@@ -135,7 +135,14 @@ All branches below are **ancestors of `main`** at HEAD `5f88326`. Serial merge i
 | `feat/ux-demo` | Interactive demo script | ✅ (prior) |
 | `feat/ux-toasts` | HITL toasts, copy run ID | ✅ (prior) |
 | `feat/integ-index` | Integrations hub + K8s/gh-action docs | ✅ `e735c4e` |
+| `feat/ui-routing` | Hash routes `#/run/:id/step/:n` | ✅ `34872c2` |
+| `feat/integ-dbos` | DBOS wiring doc + `gate:dbos-skip` | ✅ `46a84bd` |
+| `feat/integ-google-ax` | Google Agent Executor mapping | ✅ `5c9f50c` |
+| `feat/integ-mcp` | MCP tool stub (`durabl/mcp`) | ✅ `24cd5e7` |
+| `feat/integ-vercel-ai` | Vercel AI SDK mapping (DEFERRED) | ✅ `d67e13f` |
 | `feat/final-cli` | CLI release polish | ✅ (prior) |
+
+**Branch tips not cherry-picked (already on main under other SHAs):** `feat/backend-logging`, `feat/backend-ratelimit`, `feat/backend-security`, `feat/ui-run-list`, `feat/hitl-web-ui`, `feat/ux-export`.
 
 ---
 
@@ -143,9 +150,9 @@ All branches below are **ancestors of `main`** at HEAD `5f88326`. Serial merge i
 
 | Field | Value |
 |-------|--------|
-| **Integration HEAD** | `5f88326a7cb7408e7a6ccaf026a9ea4672ea0a6e` (gate run @ `50efc3f`) |
-| **Canonical log** | [`docs/evidence/gate-all-20260602-114723.log`](evidence/gate-all-20260602-114723.log) |
-| **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui) |
+| **Integration HEAD** | `d67e13f` |
+| **Canonical log** | [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) |
+| **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui + dbos-skip) |
 | **Exit code** | `0` |
 | Reproduce | `rm -f /tmp/durabl-harness.lock && export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d-%H%M%S).log` |
 
