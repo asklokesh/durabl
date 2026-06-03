@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `f7295d2` · **Gate log:** [`docs/evidence/gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) (`ALL GATES PASSED`, exit 0)
+**Branch:** `main` · **HEAD:** `39173a57c4298df60b51d4bbd209d197beedf4eb` · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`ALL GATES PASSED`, exit 0)
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 

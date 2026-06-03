@@ -1,10 +1,10 @@
 # durabl — Build Status (M0–M5 + parallel tracks)
 
-**Date:** 2026-06-02 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
+**Date:** 2026-06-03 · **Substrate:** Restate `1.6.2` (server/CLI) + SDK `1.14.4`
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** `f7295d2` — branch/worktree cleanup + HEAD docs; code tree through `d67e13f`. **`gate:all`:** PASS per [`docs/evidence/gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) (`ALL GATES PASSED`, exit 0). Run serially; do not set placeholder API keys (H3 would call real endpoints and fail).
+**main HEAD:** `39173a57c4298df60b51d4bbd209d197beedf4eb` — **`gate:all`:** PASS per [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`ALL GATES PASSED`, exit 0). Run serially; do not set placeholder API keys (H3 would call real endpoints and fail).
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -31,7 +31,7 @@ step-journal substrate, never reimplementing the durable engine.
 | **M3** | **Replay / time-travel** read surface over a `JournalSource`; **offline reconstruction from a portable export with the substrate killed**; local web UI | reconstruct-matches-reality, **offline-from-export (substrate killed)**, time-travel, fork-tree+diff, UI-API-offline | ✅ **5/5** | `npm run gate:m3` | `docs/m3-observability-replay.md`, `docs/m3-evidence/` |
 | **M4** | **Neutrality**: same agent across **2 model providers** and **2 deploy targets**, **config-only, no code change**; journal portability across both | provider-switch (no code change), durability-under-switch (SIGKILL), deploy-target switch, journal-portability offline | ✅ **4/4** | `npm run gate:m4` | `docs/m4-neutrality.md`, `docs/m4-evidence/` |
 | **M5** | **HITL pause/resume** across a **real process restart** + export + **web UI API resume** | pause→exit→restart→resume→complete, crash-during-resume, double-submit, export+offline-replay, **hitl-web-ui-api-resume** | ✅ **5/5** | `npm run gate:m5` | `docs/m5-hitl-export.md`, `docs/m5-evidence/` |
-| **Full suite** | Serial M1–M5 + harden + hitl-ui + `gate:dbos-skip` (shared `DURABL_DATA_DIR`, teardown between gates) | typecheck + all milestone/extension gates | ✅ GO | `npm run gate:all` | [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) |
+| **Full suite** | Serial M1–M5 + harden + hitl-ui + `gate:dbos-skip` (shared `DURABL_DATA_DIR`, teardown between gates) | typecheck + all milestone/extension gates | ✅ GO | `npm run gate:all` | [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) |
 
 **Run core milestones (each exits 0 on pass):**
 
