@@ -106,7 +106,7 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "eslint": "^10.4.1",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.33.0"
   }
 }
