@@ -2,7 +2,7 @@
 
 # durabl forward work — autoplan review
 
-**Captured:** 2026-06-03 · **Branch:** `main` · **Commit:** `2633742` (newer than doc baseline `39173a5`; includes HITL ingress fix + OpenRouter on ancestry)
+**Captured:** 2026-06-03 · **Branch:** `main` · **Commit:** `204e6bb` · **Remote:** [asklokesh/durabl](https://github.com/asklokesh/durabl) (`origin`)
 
 **Scope:** Post-ship forward candidates (no code changes in this review). **Mode:** SELECTIVE EXPANSION (CEO). **Voices:** Claude primary; Codex CLI present (`0.132.0`) — auth not exercised in this session → `[subagent-only]` tags on dual-voice tables.
 
@@ -12,7 +12,7 @@
 
 ## 1. Executive summary
 
-durabl on `main` is **ship-ready** for the M0–M5 product contract: serial `npm run gate:all` passes with evidence at `docs/evidence/gate-all-20260603-010109.log` (`ALL GATES PASSED`, exit 0). The journal, fork, offline replay, HITL restart, replay UI, backend HTTP surface, and packaging/docs final-wave are merged.
+durabl on `main` is **ship-ready** for the M0–M5 product contract: serial `npm run gate:all` passes with canonical evidence at `docs/evidence/gate-all-20260603-015005.log` (`ALL GATES PASSED`, exit 0). Prior log `gate-all-20260603-010109.log` remains on disk for comparison. The journal, fork, offline replay, HITL restart, replay UI, backend HTTP surface, and packaging/docs final-wave are merged.
 
 **OpenRouter** landed (`5927c30`, default model `39173a5`) as a fifth provider alongside fake/openai/anthropic — config-ready for real HTTP when `OPENROUTER_API_KEY` is set; gates still skip live LLM without keys.
 
@@ -25,7 +25,7 @@ durabl on `main` is **ship-ready** for the M0–M5 product contract: serial `npm
 | Area | Status | Evidence |
 |------|--------|----------|
 | **M0–M5** | ✅ Gated | `npm test`, `gate:m2`–`m5`, `docs/COMPLETION.md` |
-| **gate:all** | ✅ PASS | `gate-all-20260603-010109.log` |
+| **gate:all** | ✅ PASS | `gate-all-20260603-015005.log` (canonical) |
 | **final-wave** | ✅ on main | ADRs, OpenAPI, CI, fixtures, security, release docs |
 | **UX/UI** | ✅ | Replay UI: fork tree, diff, HITL, theme, hash routes, a11y, e2e (`docs/UI.md`) |
 | **backend merges** | ✅ | Health, auth, rate limit, WS, OTEL hooks (`docs/BACKEND.md`) |
@@ -33,7 +33,7 @@ durabl on `main` is **ship-ready** for the M0–M5 product contract: serial `npm
 | **OpenRouter** | ✅ merged | `src/providers/openrouter-provider.ts`, `.env.example`, tests |
 | **integrations docs** | ✅ | Hub + MCP stub, K8s, gh-action (`docs/integrations/`) |
 
-**Recent tip:** `2633742` — HITL empty ingress tolerance for G5 gate stability.
+**Doc baseline:** `204e6bb`. **Canonical gate evidence:** `015005` log on main. HITL empty-ingress tolerance (`2633742`) and OpenRouter (`5927c30`) on ancestry.
 
 ---
 
@@ -61,7 +61,7 @@ Priority order after review (P1 = do first if user approves forward phase):
 | **P2** | **H3 with real keys** | Run `npm run gate:live` in a keyed environment; document OpenRouter in live matrix; optional CI job with secrets (fork PRs only) | 0.5 d / ~20 min |
 | **P2** | **Operator docs** | Single "production operator" page: compose/k8s, env table, backup/export, harness lock, gate:all cadence | 1 d / ~25 min |
 | **P3** | **npm publish** | Only after API semver + registry policy chosen; `verify-npm-pack.sh` already exists | 1 d / ~30 min |
-| **P3** | **Remote / git push hygiene** | Ensure `origin` tracks public repo; tag discipline `v*` per RELEASING | 1 h / ~5 min |
+| **P3** | **Remote / git push hygiene** | `origin` → `https://github.com/asklokesh/durabl.git`; tag discipline `v*` per RELEASING | 1 h / ~5 min |
 | **P3** | **gbrain sync** | Index durabl for agent search (`/sync-gbrain`); low risk, high DX for future sessions | 15 min / ~10 min |
 
 **Explicitly defer:** DBOS implementation, Python package, hosted SaaS control plane, CRIU/process fork.
@@ -251,7 +251,7 @@ Completeness vs DESIGN.md: **7/10** — functional replay UI; no formal DESIGN.m
 
 ### Step 0 — Scope challenge
 
-Examined: `src/server.ts`, `src/providers/openrouter-provider.ts`, harness gates, `docs/RELEASING.md`, recent `2633742` HITL fix.
+Examined: `src/server.ts`, `src/providers/openrouter-provider.ts`, harness gates, `docs/RELEASING.md`, gate evidence `015005` at baseline `204e6bb`.
 
 **Finding:** Core architecture sound for forward phase — changes are **operational and release-process**, not journal schema changes.
 
@@ -284,7 +284,7 @@ Forward work touches **server bind/TLS proxy**, **CI secrets**, **release script
 | OpenRouter real HTTP | Integration | Partial (`openrouter-provider.test.ts` simulated) | Add keyed smoke in gate:live |
 | npm pack contents | Script | `verify-npm-pack.sh` | Run before publish |
 | Release workflow | CI | `release.yml` | No gate:all on tag — document |
-| HITL empty ingress | Harness | `2633742` | Covered |
+| HITL empty ingress | Harness | ancestry (`2633742`) | Covered in `015005` |
 
 ### Test plan artifact
 
@@ -441,7 +441,7 @@ _None_ — no dual-model agreement that the user's forward candidate list is dir
 
 ### Deferred to TODOS.md
 
-- DBOS product, Python SDK, managed control plane, offline HITL write, M6 SaaS
+See [`docs/TODOS.md`](../TODOS.md) — DBOS product, Python SDK, managed control plane, offline HITL write, M6 SaaS, npm publish (explicit defer), gbrain if blocked.
 
 ### Implementation Tasks (aggregated)
 
@@ -471,4 +471,6 @@ Confirm premises P-A through P-D before any forward implementation.
 
 ---
 
-**STATUS:** `DONE_WITH_CONCERNS` — full pipeline executed Claude-only; premises + final gate require user in parent session.
+**STATUS (autoplan review):** `DONE_WITH_CONCERNS` — CEO / design / eng / DX review complete (Claude-only; Codex not exercised). Premises P-A–P-D and final gate (D1, D2) **still open** in parent session.
+
+**STATUS (forward phase):** `PLANNED — not started` — No P1–P3 implementation (hardening, release-channel alignment, operator docs, npm publish, keyed `gate:live`) has landed since this review. Ship boundary remains M0–M5 + final-wave on `main` at baseline `204e6bb`; canonical gate log `docs/evidence/gate-all-20260603-015005.log`.
