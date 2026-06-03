@@ -27,7 +27,7 @@ import {
 } from "./provider-http.js";
 
 export function openRouterProvider(): ModelProvider {
-  const model = process.env.DURABL_OPENROUTER_MODEL ?? "openai/gpt-4o-mini";
+  const model = process.env.DURABL_OPENROUTER_MODEL ?? "openai/gpt-oss-120b:free";
   const baseUrl = process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1";
   const hasKey = Boolean(process.env.OPENROUTER_API_KEY);
 
