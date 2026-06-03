@@ -23,7 +23,7 @@ Tracked items explicitly **out of** the forward-phase plan in [`docs/plans/autop
 | Item | Defer reason | Revisit when |
 |------|--------------|--------------|
 | **npm publish** | CEO SELECTIVE EXPANSION: defer co-ship with hardening; `RELEASING.md` is tarball-first | Release-channel decision + semver/support policy; run `scripts/verify-npm-pack.sh` |
-| **gbrain sync** | Approved P3 in plan but **not started**; optional DX | Run `/sync-gbrain` when gbrain CLI/MCP available; if blocked (no install, auth, or brain), leave here — not a ship blocker |
+| **gbrain sync** | **BLOCKED** on this machine (`gbrain` CLI not on PATH; no `~/.gbrain/config.json`) | `/setup-gbrain` or `~/.claude/skills/gstack/bin/gstack-gbrain-install` then `gbrain init --pglite --json`; from repo root: `bun run ~/.claude/skills/gstack/bin/gstack-gbrain-sync.ts` (add `--full` for first code index). Not a ship blocker |
 
 ---
 
@@ -37,5 +37,5 @@ Tracked items explicitly **out of** the forward-phase plan in [`docs/plans/autop
 ## References
 
 - Ship / NOT-PLANNED source: `docs/COMPLETION.md` (do not duplicate scope there)
-- Autoplan forward review: `docs/plans/autoplan-forward-20260603.md` · baseline `204e6bb` · gate `docs/evidence/gate-all-20260603-015005.log`
+- Autoplan forward review: `docs/plans/autoplan-forward-20260603.md` · baseline `069020d` · gate `docs/evidence/gate-all-20260603-015005.log`
 - Remote: https://github.com/asklokesh/durabl
