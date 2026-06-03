@@ -263,6 +263,7 @@ src/providers/
   fake-provider.ts      # fake-echo, fake-upper (default / gates)
   openai-provider.ts
   anthropic-provider.ts
+  openrouter-provider.ts
 ```
 
 Workflows depend on `ModelProvider`, not a vendor SDK. Switching providers is

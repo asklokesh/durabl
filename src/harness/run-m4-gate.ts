@@ -93,6 +93,7 @@ const AGENT_SOURCE_FILES = [
   "providers/fake-provider.ts",
   "providers/openai-provider.ts",
   "providers/anthropic-provider.ts",
+  "providers/openrouter-provider.ts",
 ];
 
 function agentSourceHash(): { hash: string; perFile: Record<string, string> } {
@@ -201,7 +202,9 @@ async function g1ModelNeutrality(): Promise<void> {
 
   // Optional: exercise real providers if keys are present (honest reporting).
   const realProviders = PROVIDER_IDS.filter(
-    (id) => (id === "openai" || id === "anthropic") && getModelProvider(id).describe().real,
+    (id) =>
+      (id === "openai" || id === "anthropic" || id === "openrouter") &&
+      getModelProvider(id).describe().real,
   );
 
   const pass = sourceUnchanged && outputsDiffer && bothCompleted && providerTagsInJournal;

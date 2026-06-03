@@ -6,14 +6,15 @@
 
 ## Live provider gate
 
-`npm run gate:live` exercises the **real** OpenAI- and Anthropic-compatible paths when keys are present:
+`npm run gate:live` exercises the **real** OpenAI-, Anthropic-, and OpenRouter-compatible paths when keys are present:
 
 | Env var | Provider id | Behavior without key |
 |---|---|---|
 | `OPENAI_API_KEY` | `openai` | Deterministic `mode:"simulated"` (M4 default) |
 | `ANTHROPIC_API_KEY` | `anthropic` | Deterministic `mode:"simulated"` |
+| `OPENROUTER_API_KEY` | `openrouter` | Deterministic `mode:"simulated"` |
 
-**Skip contract (CI-safe):** if **neither** key is set, the gate prints a clear `SKIP` message and **exits 0**. Missing keys never fail CI.
+**Skip contract (CI-safe):** if **no** provider key is set, the gate prints a clear `SKIP` message and **exits 0**. Missing keys never fail CI.
 
 Per provider with a key, the gate asserts:
 

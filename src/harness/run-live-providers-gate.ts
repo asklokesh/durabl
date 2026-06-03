@@ -3,8 +3,9 @@
 //
 //   npm run gate:live
 //
-// Runs ONLY when OPENAI_API_KEY and/or ANTHROPIC_API_KEY are set. Without any
-// keys: prints a clear SKIP message and exits 0 (CI must not fail for missing keys).
+// Runs ONLY when OPENAI_API_KEY, ANTHROPIC_API_KEY, and/or OPENROUTER_API_KEY
+// are set. Without any keys: prints a clear SKIP message and exits 0 (CI must not
+// fail for missing keys).
 //
 // Per provider with a key:
 //   - one minimal journaled model call (recordStepAsync)
@@ -37,6 +38,10 @@ function hasOpenAiKey(): boolean {
 
 function hasAnthropicKey(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+}
+
+function hasOpenRouterKey(): boolean {
+  return Boolean(process.env.OPENROUTER_API_KEY?.trim());
 }
 
 async function exerciseProvider(providerId: string): Promise<void> {
@@ -117,10 +122,11 @@ async function exerciseProvider(providerId: string): Promise<void> {
 async function main(): Promise<void> {
   const openai = hasOpenAiKey();
   const anthropic = hasAnthropicKey();
+  const openrouter = hasOpenRouterKey();
 
-  if (!openai && !anthropic) {
+  if (!openai && !anthropic && !openrouter) {
     console.log(
-      "\n[SKIP] live-providers-gate: no OPENAI_API_KEY or ANTHROPIC_API_KEY in env — skipping real LLM path (exit 0).\n",
+      "\n[SKIP] live-providers-gate: no OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENROUTER_API_KEY in env — skipping real LLM path (exit 0).\n",
     );
     process.exit(0);
   }
@@ -130,6 +136,7 @@ async function main(): Promise<void> {
   const planned: Array<{ id: string; run: () => Promise<void> }> = [];
   if (openai) planned.push({ id: "openai", run: () => exerciseProvider("openai") });
   if (anthropic) planned.push({ id: "anthropic", run: () => exerciseProvider("anthropic") });
+  if (openrouter) planned.push({ id: "openrouter", run: () => exerciseProvider("openrouter") });
 
   for (const p of planned) {
     try {
@@ -148,8 +155,8 @@ async function main(): Promise<void> {
   }
   console.log("-----------------------------------------------------");
   console.log(
-    `${ran.filter((r) => r.pass).length}/${ran.length} providers passed` +
-      ` (keys: openai=${openai} anthropic=${anthropic})`,
+      `${ran.filter((r) => r.pass).length}/${ran.length} providers passed` +
+      ` (keys: openai=${openai} anthropic=${anthropic} openrouter=${openrouter})`,
   );
   console.log(failed.length === 0 ? "VERDICT: GATE PASSED" : "VERDICT: GATE FAILED");
   console.log("=====================================================\n");

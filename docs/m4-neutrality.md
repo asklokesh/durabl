@@ -26,6 +26,7 @@ src/providers/provider.ts          → ModelProvider interface (neutral request/
 src/providers/fake-provider.ts     → fake-echo (provider A) + fake-upper (provider B): deterministic, CI-safe
 src/providers/openai-provider.ts   → real OpenAI-compatible call when OPENAI_API_KEY present, else simulated
 src/providers/anthropic-provider.ts→ real Anthropic call when ANTHROPIC_API_KEY present, else simulated
+src/providers/openrouter-provider.ts→ real OpenRouter call when OPENROUTER_API_KEY present, else simulated
 src/providers/registry.ts          → getModelProvider() — selects by DURABL_MODEL_PROVIDER (config-only)
 src/deploy-target.ts               → getDeployTarget() — local | docker | external, by DURABL_DEPLOY_TARGET
 src/harness/run-m4-gate.ts         → the M4 neutrality gate (real run, real SIGKILL, real container)
@@ -59,6 +60,7 @@ Registered providers:
 | `fake-upper` | deterministic stand-in **B** (distinct output) | never (CI-safe) |
 | `openai` | OpenAI-compatible (`/chat/completions`) | **iff `OPENAI_API_KEY` present**, else simulated |
 | `anthropic` | Anthropic (`/v1/messages`) | **iff `ANTHROPIC_API_KEY` present**, else simulated |
+| `openrouter` | OpenRouter OpenAI-compatible (`/chat/completions`) | **iff `OPENROUTER_API_KEY` present**, else simulated |
 
 `fake-echo` and `fake-upper` are **genuinely different implementations** (one
 echoes, one upper-cases + tags), so "two providers, config-only" is a real claim:
@@ -228,7 +230,7 @@ This section is deliberately explicit (the brief rates honesty over green).
   `anthropic` providers are **real HTTP client adapters** but ran in their
   deterministic **simulated** fallback because no `OPENAI_API_KEY` /
   `ANTHROPIC_API_KEY` was present (`real_providers_with_keys=[none]` in G1). They
-  are **config-ready**: set the env key and `DURABL_MODEL_PROVIDER=openai|anthropic`
+  are **config-ready**: set the env key and `DURABL_MODEL_PROVIDER=openai|anthropic|openrouter`
   and a real network call happens with **no code change**. We did **not** fabricate
   a real-API result.
 
@@ -262,8 +264,9 @@ npm run gate:m4
 # Switch model provider — CONFIG ONLY, no code change:
 DURABL_MODEL_PROVIDER=fake-echo   npm run service     # provider A
 DURABL_MODEL_PROVIDER=fake-upper  npm run service     # provider B
-DURABL_MODEL_PROVIDER=openai      OPENAI_API_KEY=…    npm run service   # real OpenAI
-DURABL_MODEL_PROVIDER=anthropic   ANTHROPIC_API_KEY=… npm run service   # real Anthropic
+DURABL_MODEL_PROVIDER=openai      OPENAI_API_KEY=…      npm run service   # real OpenAI
+DURABL_MODEL_PROVIDER=anthropic   ANTHROPIC_API_KEY=…   npm run service   # real Anthropic
+DURABL_MODEL_PROVIDER=openrouter  OPENROUTER_API_KEY=…  npm run service   # real OpenRouter
 
 # Switch deploy target — CONFIG ONLY:
 DURABL_DEPLOY_TARGET=local   …      # host binary

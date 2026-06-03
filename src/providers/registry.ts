@@ -11,6 +11,7 @@
 //   fake-upper  deterministic stand-in B (CI-safe, no key) — distinct output
 //   openai      real OpenAI-compatible call when OPENAI_API_KEY present, else sim
 //   anthropic   real Anthropic call when ANTHROPIC_API_KEY present, else sim
+//   openrouter  real OpenRouter call when OPENROUTER_API_KEY present, else sim
 //
 // Default is fake-echo so a bare run is reproducible. Unknown ids fail loudly.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,12 +20,14 @@ import type { ModelProvider } from "./provider.js";
 import { fakeEchoProvider, fakeUpperProvider } from "./fake-provider.js";
 import { openAiProvider } from "./openai-provider.js";
 import { anthropicProvider } from "./anthropic-provider.js";
+import { openRouterProvider } from "./openrouter-provider.js";
 
 const FACTORIES: Record<string, () => ModelProvider> = {
   "fake-echo": fakeEchoProvider,
   "fake-upper": fakeUpperProvider,
   openai: openAiProvider,
   anthropic: anthropicProvider,
+  openrouter: openRouterProvider,
 };
 
 export const PROVIDER_IDS = Object.keys(FACTORIES);

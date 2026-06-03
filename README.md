@@ -207,8 +207,10 @@ toggles). All entries are commented placeholders — no secrets in the template.
 | `DURABL_RESTATE_INGRESS` | `http://localhost:8080` | Restate ingress |
 | `DURABL_RESTATE_ADMIN` | `http://localhost:9070` | Restate admin |
 
-Real provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) live outside `DURABL_*`;
-never commit them. No credentials are read or logged by durabl itself.
+Real provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`) live
+outside `DURABL_*`; never commit them. Set `DURABL_MODEL_PROVIDER=openrouter` with
+`OPENROUTER_API_KEY` (optional `OPENROUTER_BASE_URL`, default `https://openrouter.ai/api/v1`)
+for OpenRouter. No credentials are read or logged by durabl itself.
 
 ## Security
 

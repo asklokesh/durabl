@@ -138,7 +138,7 @@ For any agent loop on Restate:
 M4 neutrality is **config-only provider selection**, not LangGraph/OpenAI Agents
 orchestration:
 
-- Env: `DURABL_MODEL_PROVIDER` (`fake-echo`, `fake-upper`, `openai`, `anthropic`)
+- Env: `DURABL_MODEL_PROVIDER` (`fake-echo`, `fake-upper`, `openai`, `anthropic`, `openrouter`)
 - Registry: `src/providers/registry.ts`
 - Workflow calls `getModelProvider().complete(...)` only inside journaled steps
 

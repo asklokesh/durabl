@@ -9,7 +9,7 @@
 | `npm run gate:m3` | M3 — replay + offline export + UI APIs | 5/5 | same; browse capture optional | **required** |
 | `npm run gate:m4` | M4 — provider + deploy neutrality | 4/4 | Docker image optional (CONFIG-READY-NOT-RUN) | **required** |
 | `npm run gate:m5` | M5 — HITL pause/resume + export | 4/4 | same | **required** |
-| `npm run gate:live` | Live LLM providers | 1 per key present | `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` | **skip (exit 0)** if no keys |
+| `npm run gate:live` | Live LLM providers | 1 per key present | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and/or `OPENROUTER_API_KEY` | **skip (exit 0)** if no keys |
 | `npm run gate:hitl-web` | HITL web UI + `/api/hitl/*` | 3/3 | same as M5 | **required** |
 | `npm run demo` | Scripted M1+M2 narrative | completes | same | manual / smoke |
 | `npm run typecheck` | TypeScript | 0 errors | none | optional pre-PR |
