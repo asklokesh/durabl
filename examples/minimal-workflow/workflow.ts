@@ -2,9 +2,9 @@
 // Mirrors src/workflow.ts with two steps (prepare → side-effecting act).
 
 import * as restate from "@restatedev/restate-sdk";
-import { config } from "../../../dist/config.js";
-import { fireEffect } from "../../../dist/effect-sink.js";
-import { ensureRunMeta, recordStep } from "../../../dist/journal.js";
+import { config } from "#durabl/config.js";
+import { fireEffect } from "#durabl/effect-sink.js";
+import { ensureRunMeta, recordStep } from "#durabl/journal.js";
 
 const STEP = {
   prepare: { seq: 1, name: "step1-prepare" },

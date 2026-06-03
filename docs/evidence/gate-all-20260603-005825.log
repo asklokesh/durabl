@@ -1,0 +1,871 @@
+
+> durabl@0.1.0 gate:all
+> bash scripts/run-all-gates.sh
+
+DURABL_DATA_DIR=/tmp/durabl-gate-75119
+
+> durabl@0.1.0 typecheck
+> tsc -p tsconfig.json --noEmit
+
+
+> durabl@0.1.0 test
+> npm run gate
+
+
+> durabl@0.1.0 gate
+> npm run build && node --enable-source-maps dist/harness/run-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+Starting restate-server (single self-hostable binary)...
+restate-server healthy.
+[restate][2026-06-03T04:58:30.994Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:31.372Z][AgentRun/crash-before_step1-1780462710838/run][inv_1hYsKK5YK6LK4zApiSt8aw8Ep1vM7eZlKY] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step1 run=crash-before_step1-1780462710838 pid=76061
+[2m2026-06-03T04:58:31.377582Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 546ms 274µs 820ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hYsKK5YK6LK4zApiSt8aw8Ep1vM7eZlKY[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step1-1780462710838/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-20
+[2m2026-06-03T04:58:31.927192Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 50ms 142µs 461ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hYsKK5YK6LK4zApiSt8aw8Ep1vM7eZlKY[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step1-1780462710838/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-20
+[2m2026-06-03T04:58:32.980858Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 2s 225ms 941µs 949ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hYsKK5YK6LK4zApiSt8aw8Ep1vM7eZlKY[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step1-1780462710838/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-20
+[restate][2026-06-03T04:58:33.167Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:35.215Z][AgentRun/crash-before_step1-1780462710838/run][inv_1hYsKK5YK6LK4zApiSt8aw8Ep1vM7eZlKY] INFO: Starting invocation.
+[restate][2026-06-03T04:58:35.228Z][AgentRun/crash-before_step1-1780462710838/run][inv_1hYsKK5YK6LK4zApiSt8aw8Ep1vM7eZlKY] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@before:step1
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=1)|prompt=crashy>>"
+[restate][2026-06-03T04:58:35.823Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:36.111Z][AgentRun/crash-after_step1-1780462715688/run][inv_14939kqmT2CK4nvc7uMLAb35TWjFkIkpKj] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after:step1 run=crash-after_step1-1780462715688 pid=76343
+[2m2026-06-03T04:58:36.119877Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 506ms 7µs 71ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_14939kqmT2CK4nvc7uMLAb35TWjFkIkpKj[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step1-1780462715688/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-7
+[2m2026-06-03T04:58:36.628586Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 239ms 650µs 73ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_14939kqmT2CK4nvc7uMLAb35TWjFkIkpKj[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step1-1780462715688/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-7
+[2m2026-06-03T04:58:37.871675Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 2s 492ms 72µs 165ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_14939kqmT2CK4nvc7uMLAb35TWjFkIkpKj[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step1-1780462715688/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-7
+[restate][2026-06-03T04:58:37.901Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:40.370Z][AgentRun/crash-after_step1-1780462715688/run][inv_14939kqmT2CK4nvc7uMLAb35TWjFkIkpKj] INFO: Replaying invocation.
+[restate][2026-06-03T04:58:40.383Z][AgentRun/crash-after_step1-1780462715688/run][inv_14939kqmT2CK4nvc7uMLAb35TWjFkIkpKj] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after:step1
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=2)|prompt=crashy>>"
+[restate][2026-06-03T04:58:40.990Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:41.274Z][AgentRun/crash-before_effect_step2-1780462720835/run][inv_128X7vVBoNM05sznZP47RQVeSHnoUy7l45] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before-effect:step2 run=crash-before_effect_step2-1780462720835 pid=76622
+[2m2026-06-03T04:58:41.284235Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 536ms 825µs 911ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_128X7vVBoNM05sznZP47RQVeSHnoUy7l45[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_effect_step2-1780462720835/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-1
+[2m2026-06-03T04:58:41.824330Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 124ms 927µs 160ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_128X7vVBoNM05sznZP47RQVeSHnoUy7l45[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_effect_step2-1780462720835/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-1
+[2m2026-06-03T04:58:42.952312Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 2s 269ms 42µs 202ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_128X7vVBoNM05sznZP47RQVeSHnoUy7l45[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_effect_step2-1780462720835/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-1
+[restate][2026-06-03T04:58:43.071Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:45.231Z][AgentRun/crash-before_effect_step2-1780462720835/run][inv_128X7vVBoNM05sznZP47RQVeSHnoUy7l45] INFO: Replaying invocation.
+[restate][2026-06-03T04:58:45.244Z][AgentRun/crash-before_effect_step2-1780462720835/run][inv_128X7vVBoNM05sznZP47RQVeSHnoUy7l45] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@before-effect:step2
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=3)|prompt=crashy>>"
+[restate][2026-06-03T04:58:45.848Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:46.138Z][AgentRun/crash-after_effect_step2-1780462725700/run][inv_1kKboGY61blD2S3ClZC7ZJC1ccJlJtxx11] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=crash-after_effect_step2-1780462725700 pid=76888
+[2m2026-06-03T04:58:46.149208Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 609ms 246µs 451ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1kKboGY61blD2S3ClZC7ZJC1ccJlJtxx11[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_effect_step2-1780462725700/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-18
+[2m2026-06-03T04:58:46.762267Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 195ms 778µs 822ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1kKboGY61blD2S3ClZC7ZJC1ccJlJtxx11[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_effect_step2-1780462725700/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-18
+[restate][2026-06-03T04:58:47.933Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:47.966Z][AgentRun/crash-after_effect_step2-1780462725700/run][inv_1kKboGY61blD2S3ClZC7ZJC1ccJlJtxx11] INFO: Replaying invocation.
+[restate][2026-06-03T04:58:47.976Z][AgentRun/crash-after_effect_step2-1780462725700/run][inv_1kKboGY61blD2S3ClZC7ZJC1ccJlJtxx11] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after-effect:step2
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=4)|prompt=crashy>>"
+[restate][2026-06-03T04:58:48.799Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:49.083Z][AgentRun/crash-after_step2-1780462728656/run][inv_1dZbl30QhD2B11KL1N1EXaiLkpClmOAp3B] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after:step2 run=crash-after_step2-1780462728656 pid=77153
+[2m2026-06-03T04:58:49.094015Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 646ms 875µs 915ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1dZbl30QhD2B11KL1N1EXaiLkpClmOAp3B[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step2-1780462728656/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-4
+[2m2026-06-03T04:58:49.743599Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 261ms 29µs 618ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1dZbl30QhD2B11KL1N1EXaiLkpClmOAp3B[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step2-1780462728656/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-4
+[restate][2026-06-03T04:58:50.878Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:51.012Z][AgentRun/crash-after_step2-1780462728656/run][inv_1dZbl30QhD2B11KL1N1EXaiLkpClmOAp3B] INFO: Replaying invocation.
+[restate][2026-06-03T04:58:51.019Z][AgentRun/crash-after_step2-1780462728656/run][inv_1dZbl30QhD2B11KL1N1EXaiLkpClmOAp3B] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after:step2
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=6)|prompt=crashy>>"
+[restate][2026-06-03T04:58:51.750Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:52.033Z][AgentRun/crash-before_step3-1780462731605/run][inv_11MLCYuxi14h4FSUxmzK92dhVdOydq90xh] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step3 run=crash-before_step3-1780462731605 pid=77423
+[2m2026-06-03T04:58:52.042826Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 642ms 214µs 621ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_11MLCYuxi14h4FSUxmzK92dhVdOydq90xh[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step3-1780462731605/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-19
+[2m2026-06-03T04:58:52.687554Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 289ms 557µs 924ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_11MLCYuxi14h4FSUxmzK92dhVdOydq90xh[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step3-1780462731605/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-19
+[restate][2026-06-03T04:58:53.819Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:53.984Z][AgentRun/crash-before_step3-1780462731605/run][inv_11MLCYuxi14h4FSUxmzK92dhVdOydq90xh] INFO: Replaying invocation.
+[restate][2026-06-03T04:58:53.991Z][AgentRun/crash-before_step3-1780462731605/run][inv_11MLCYuxi14h4FSUxmzK92dhVdOydq90xh] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@before:step3
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=7)|prompt=crashy>>"
+[restate][2026-06-03T04:58:54.689Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:54.975Z][AgentRun/crash-after_step3-1780462734543/run][inv_1dGUJ3sqhrLy5djfh5nKCPaPED9miu3Z2s] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after:step3 run=crash-after_step3-1780462734543 pid=77687
+[2m2026-06-03T04:58:54.986928Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 635ms 706µs 390ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1dGUJ3sqhrLy5djfh5nKCPaPED9miu3Z2s[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step3-1780462734543/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-18
+[2m2026-06-03T04:58:55.625538Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 181ms 606µs 14ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1dGUJ3sqhrLy5djfh5nKCPaPED9miu3Z2s[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-after_step3-1780462734543/run[0m[33m
+    restate.deployment.id: dp_13Op8l4X5nmZGO4gZiUGGFX[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-18
+[restate][2026-06-03T04:58:56.764Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:56.814Z][AgentRun/crash-after_step3-1780462734543/run][inv_1dGUJ3sqhrLy5djfh5nKCPaPED9miu3Z2s] INFO: Replaying invocation.
+[restate][2026-06-03T04:58:56.818Z][AgentRun/crash-after_step3-1780462734543/run][inv_1dGUJ3sqhrLy5djfh5nKCPaPED9miu3Z2s] INFO: Invocation completed successfully.
+
+[GATE PASS] crash@after:step3
+  service_really_died=true effect_fires=1 (expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<echo[plan-for(crashy)]@fake-echo:simulated|tool-result(effectId=8)|prompt=crashy>>"
+[restate][2026-06-03T04:58:57.637Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:57.920Z][AgentRun/concurrent-1780462737914/run][inv_13atstAQTXeA6UvsB3YbKImlXZHAkvyZ9O] INFO: Starting invocation.
+[restate][2026-06-03T04:58:57.930Z][AgentRun/concurrent-1780462737914/run][inv_13atstAQTXeA6UvsB3YbKImlXZHAkvyZ9O] INFO: Invocation completed successfully.
+
+[GATE PASS] concurrent-workers
+  workers=8 effect_fires=1(expect 1) journal_len=3(expect 3) distinct_answers=1(expect 1)
+[restate][2026-06-03T04:58:58.275Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:58.566Z][AgentRun/fork-src-1780462738561/run][inv_1jMZTY7wKOfe0tpL5qbKECbZ1o5McdBXqV] INFO: Starting invocation.
+[restate][2026-06-03T04:58:58.576Z][AgentRun/fork-src-1780462738561/run][inv_1jMZTY7wKOfe0tpL5qbKECbZ1o5McdBXqV] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:58:58.580Z][AgentRun/fork-new-1780462738577/run][inv_1bzYZMHAPozW2YC448DWXMFUYJpSEQcacb] INFO: Starting invocation.
+[restate][2026-06-03T04:58:58.583Z][AgentRun/fork-new-1780462738577/run][inv_1bzYZMHAPozW2YC448DWXMFUYJpSEQcacb] INFO: Invocation completed successfully.
+
+[GATE PASS] fork-correctness
+  seeded=2(expect 2) src_effects=1(expect 1) fork_NEW_effects=0(expect 0) step2_output_identical=true diverged_answer=true parent_linked=true src_answer="answer[main]<<echo[plan-for(original)]@fake-echo:simulated|tool-result(effectId=10)|prompt=original>>" fork_answer="answer[what-if]<<echo[plan-for(original)]@fake-echo:simulated|tool-result(effectId=10)|prompt=diverged-prompt>>"
+[restate][2026-06-03T04:58:58.932Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:58:59.218Z][AgentRun/replay-1780462739214/run][inv_17c3Hud46hod2fLDw1M3kAbfCUpAGsQ0oC] INFO: Starting invocation.
+[restate][2026-06-03T04:58:59.228Z][AgentRun/replay-1780462739214/run][inv_17c3Hud46hod2fLDw1M3kAbfCUpAGsQ0oC] INFO: Invocation completed successfully.
+
+[GATE PASS] replay-determinism
+  same_step_sequence=true same_answer=true effects(first=1,second=1; expect 1,1)
+
+================ M1 GATE SUMMARY ================
+PASS  crash@before:step1
+PASS  crash@after:step1
+PASS  crash@before-effect:step2
+PASS  crash@after-effect:step2
+PASS  crash@after:step2
+PASS  crash@before:step3
+PASS  crash@after:step3
+PASS  concurrent-workers
+PASS  fork-correctness
+PASS  replay-determinism
+------------------------------------------------
+10/10 gates passed
+VERDICT: GATE PASSED
+================================================
+
+> durabl@0.1.0 gate:m2
+> npm run build && node --enable-source-maps dist/harness/run-m2-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+Starting restate-server (single self-hostable binary)...
+restate-server healthy.
+[restate][2026-06-03T04:59:05.234Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:05.513Z][AgentRun/m2-src-1780462745506/run][inv_1cGSXqpPbwfD0ynL0bIOIeaSpUxOo7b9Q6] INFO: Starting invocation.
+[restate][2026-06-03T04:59:05.523Z][AgentRun/m2-src-1780462745506/run][inv_1cGSXqpPbwfD0ynL0bIOIeaSpUxOo7b9Q6] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:05.533Z][AgentRun/m2-fork-1780462745525/run][inv_15TZWGXTrV7M6QQeJfEl9KJDQzVdsHk3b5] INFO: Starting invocation.
+[restate][2026-06-03T04:59:05.538Z][AgentRun/m2-fork-1780462745525/run][inv_15TZWGXTrV7M6QQeJfEl9KJDQzVdsHk3b5] INFO: Invocation completed successfully.
+
+[GATE PASS] fork-no-refire
+  seeded=2(expect 2) src_effects=1(expect 1) fork_NEW_effects=0(expect 0) diverged_answer=true first_divergence_seq=3(expect 3) fork_seededSeqs=[1,2](expect 1,2) lineage_ok=true src_answer="answer[main]<<echo[plan-for(original-prompt)]@fake-echo:simulated|tool-result(effectId=12)|prompt=original-prompt>>" fork_answer="answer[what-if]<<echo[plan-for(original-prompt)]@fake-echo:simulated|tool-result(effectId=12)|prompt=what-if-prompt>>"
+[restate][2026-06-03T04:59:05.905Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:06.208Z][AgentRun/m2-ml-root-1780462746202/run][inv_1iVpTaI0xW064pYTm5yRiTcvXsC1iUPErQ] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.218Z][AgentRun/m2-ml-root-1780462746202/run][inv_1iVpTaI0xW064pYTm5yRiTcvXsC1iUPErQ] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.224Z][AgentRun/m2-ml-l1-1780462746219/run][inv_11btwcT1Gc2d0U3EaxB1FbBnmdIY7lJpLH] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.227Z][AgentRun/m2-ml-l1-1780462746219/run][inv_11btwcT1Gc2d0U3EaxB1FbBnmdIY7lJpLH] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.233Z][AgentRun/m2-ml-l2-1780462746228/run][inv_1gYUBlY74eoN2uWuJtTtZ3qqsKuiS3wT1F] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.236Z][AgentRun/m2-ml-l2-1780462746228/run][inv_1gYUBlY74eoN2uWuJtTtZ3qqsKuiS3wT1F] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.241Z][AgentRun/m2-ml-l3-1780462746237/run][inv_1krCY9jxUvcY6GDrfOWrwNMw2P4sYL4hjE] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.244Z][AgentRun/m2-ml-l3-1780462746237/run][inv_1krCY9jxUvcY6GDrfOWrwNMw2P4sYL4hjE] INFO: Invocation completed successfully.
+
+[GATE PASS] multi-level-fork
+  lineage=m2-ml-root-1780462746202->m2-ml-l1-1780462746219->m2-ml-l2-1780462746228->m2-ml-l3-1780462746237 (expect m2-ml-root-1780462746202->l1->l2->l3 shape) chain_ok=true effects[root=1,l1=0,l2=0,l3=0] (expect 1,0,0,0) distinct_answers=3(expect 3) seeded_step2_identical_all_levels=true
+[restate][2026-06-03T04:59:06.612Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:06.890Z][AgentRun/m2-cc-parent-1780462746885/run][inv_1aihOAoSqxTV0v2V22t1XMgbI8ciZIJIi3] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.900Z][AgentRun/m2-cc-parent-1780462746885/run][inv_1aihOAoSqxTV0v2V22t1XMgbI8ciZIJIi3] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.920Z][AgentRun/m2-cc-fork-0-1780462746901/run][inv_19q4jT2rlFx41YxVQLVqsDkLBlNd33PLza] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.922Z][AgentRun/m2-cc-fork-3-1780462746901/run][inv_15XYcdN0S6l10njpH1zJKMQjgGT06jnC0f] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.924Z][AgentRun/m2-cc-fork-1-1780462746901/run][inv_17bVpTuH18Qo6hia7uAllEpyJmZg46AAle] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.926Z][AgentRun/m2-cc-fork-2-1780462746901/run][inv_14OGNVmY6bo02u726Onsoa56IzqhJw9Dg4] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.926Z][AgentRun/m2-cc-fork-5-1780462746901/run][inv_16KLPVsPG79A2AFTA8pwDQoE8EwqyOJHuc] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.929Z][AgentRun/m2-cc-fork-4-1780462746901/run][inv_1anWw3aggjMx76zOiAGHU2jqMzqaRZC6uP] INFO: Starting invocation.
+[restate][2026-06-03T04:59:06.935Z][AgentRun/m2-cc-fork-0-1780462746901/run][inv_19q4jT2rlFx41YxVQLVqsDkLBlNd33PLza] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.936Z][AgentRun/m2-cc-fork-3-1780462746901/run][inv_15XYcdN0S6l10njpH1zJKMQjgGT06jnC0f] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.938Z][AgentRun/m2-cc-fork-1-1780462746901/run][inv_17bVpTuH18Qo6hia7uAllEpyJmZg46AAle] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.939Z][AgentRun/m2-cc-fork-2-1780462746901/run][inv_14OGNVmY6bo02u726Onsoa56IzqhJw9Dg4] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.939Z][AgentRun/m2-cc-fork-5-1780462746901/run][inv_16KLPVsPG79A2AFTA8pwDQoE8EwqyOJHuc] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:06.939Z][AgentRun/m2-cc-fork-4-1780462746901/run][inv_1anWw3aggjMx76zOiAGHU2jqMzqaRZC6uP] INFO: Invocation completed successfully.
+
+[GATE PASS] concurrent-forks
+  forks=6 parent_effects=1(expect 1) per_fork_NEW_effects=[0,0,0,0,0,0](expect all 0) distinct_answers=6(expect 6) all_journals_3steps=true family_total_step2_effects=1(expect 1)
+[restate][2026-06-03T04:59:07.305Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:07.585Z][AgentRun/m2-cdf-src-1780462747581/run][inv_18TgxTMMzpbv5ALW5kXz5KeUi7BWadsz9H] INFO: Starting invocation.
+[restate][2026-06-03T04:59:07.596Z][AgentRun/m2-cdf-src-1780462747581/run][inv_18TgxTMMzpbv5ALW5kXz5KeUi7BWadsz9H] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:08.064Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:08.348Z][AgentRun/m2-cdf-fork-1780462747899/run][inv_1hhRtaAbvwzG6EmPi1CgwJxnJzE9adL6mC] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=m2-cdf-fork-1780462747899 pid=78956
+[2m2026-06-03T04:59:08.356608Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 619ms 783µs 835ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1hhRtaAbvwzG6EmPi1CgwJxnJzE9adL6mC[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/m2-cdf-fork-1780462747899/run[0m[33m
+    restate.deployment.id: dp_13WDgpoWUX6LY4TEqvtOHyV[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-8
+[restate][2026-06-03T04:59:08.947Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:08.984Z][AgentRun/m2-cdf-fork-1780462747899/run][inv_1hhRtaAbvwzG6EmPi1CgwJxnJzE9adL6mC] INFO: Replaying invocation.
+[restate][2026-06-03T04:59:08.995Z][AgentRun/m2-cdf-fork-1780462747899/run][inv_1hhRtaAbvwzG6EmPi1CgwJxnJzE9adL6mC] INFO: Invocation completed successfully.
+
+[GATE PASS] crash-during-fork(new-effect)
+  seeded=1(expect 1) service_really_died=true forked_effect_fires=1(expect 1 exactly-once) source_effects_unchanged=1(expect 1) seq1_seeded_from_source=true journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[crash-fork]<<echo[plan-for(src)]@fake-echo:simulated|tool-result(effectId=16)|prompt=diverge>>"
+[restate][2026-06-03T04:59:09.576Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:09.864Z][AgentRun/m2-cdfs-src-1780462749859/run][inv_1dsZ5lqvo1JJ5XZiiwLNQMD9xYW6TXpv8H] INFO: Starting invocation.
+[restate][2026-06-03T04:59:09.873Z][AgentRun/m2-cdfs-src-1780462749859/run][inv_1dsZ5lqvo1JJ5XZiiwLNQMD9xYW6TXpv8H] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:10.324Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:10.616Z][AgentRun/m2-cdfs-fork-1780462750176/run][inv_1iFFWgbLV1Wg3lxcCarlFg8arLEEfFo2bM] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step3 run=m2-cdfs-fork-1780462750176 pid=79196
+[2m2026-06-03T04:59:10.624735Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 594ms 834µs 103ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1iFFWgbLV1Wg3lxcCarlFg8arLEEfFo2bM[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/m2-cdfs-fork-1780462750176/run[0m[33m
+    restate.deployment.id: dp_13WDgpoWUX6LY4TEqvtOHyV[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-21
+[restate][2026-06-03T04:59:11.220Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+[2m2026-06-03T04:59:11.223070Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 216ms 310µs 97ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1iFFWgbLV1Wg3lxcCarlFg8arLEEfFo2bM[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/m2-cdfs-fork-1780462750176/run[0m[33m
+    restate.deployment.id: dp_13WDgpoWUX6LY4TEqvtOHyV[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-21
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:12.447Z][AgentRun/m2-cdfs-fork-1780462750176/run][inv_1iFFWgbLV1Wg3lxcCarlFg8arLEEfFo2bM] INFO: Replaying invocation.
+[restate][2026-06-03T04:59:12.456Z][AgentRun/m2-cdfs-fork-1780462750176/run][inv_1iFFWgbLV1Wg3lxcCarlFg8arLEEfFo2bM] INFO: Invocation completed successfully.
+
+[GATE PASS] crash-during-fork(seeded-no-refire)
+  seeded=2(expect 2) service_really_died=true fork_NEW_effects=0(expect 0 even across crash) source_effects_unchanged=1(expect 1) journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[crash-seeded]<<echo[plan-for(src)]@fake-echo:simulated|tool-result(effectId=18)|prompt=diverge>>"
+[restate][2026-06-03T04:59:12.814Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:13.096Z][AgentRun/m2-val-src-1780462753091/run][inv_1gMn1996kLGW7L3fIiqOx1kfjapOg8sTuW] INFO: Starting invocation.
+[restate][2026-06-03T04:59:13.105Z][AgentRun/m2-val-src-1780462753091/run][inv_1gMn1996kLGW7L3fIiqOx1kfjapOg8sTuW] INFO: Invocation completed successfully.
+
+[GATE PASS] fork-validation
+  unknown-source=rejected out-of-range-seq=rejected self-fork=rejected collision-target=rejected valid_plan_accepted=true
+
+================ M2 GATE SUMMARY ================
+PASS  fork-no-refire
+PASS  multi-level-fork
+PASS  concurrent-forks
+PASS  crash-during-fork(new-effect)
+PASS  crash-during-fork(seeded-no-refire)
+PASS  fork-validation
+-------------------------------------------------
+6/6 gates passed
+VERDICT: GATE PASSED
+=================================================
+
+> durabl@0.1.0 gate:m3
+> npm run build && node --enable-source-maps dist/harness/run-m3-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+[restate][2026-06-03T04:59:18.957Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:19.244Z][AgentRun/m3-root-1780462758817/run][inv_120UZlRGbsnQ6oFLs2genPtBMAkdNtGfrg] INFO: Starting invocation.
+[restate][2026-06-03T04:59:19.254Z][AgentRun/m3-root-1780462758817/run][inv_120UZlRGbsnQ6oFLs2genPtBMAkdNtGfrg] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:19.261Z][AgentRun/m3-forkA-1780462758817/run][inv_1gOcl2uEFgD92eFQ6eqlS632mT9rroVbXx] INFO: Starting invocation.
+[restate][2026-06-03T04:59:19.265Z][AgentRun/m3-forkA-1780462758817/run][inv_1gOcl2uEFgD92eFQ6eqlS632mT9rroVbXx] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:19.272Z][AgentRun/m3-forkB-1780462758817/run][inv_1lQEBajrQgBb39EeeLoWw0YTp3I1E5ZAWh] INFO: Starting invocation.
+[restate][2026-06-03T04:59:19.277Z][AgentRun/m3-forkB-1780462758817/run][inv_1lQEBajrQgBb39EeeLoWw0YTp3I1E5ZAWh] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:19.283Z][AgentRun/m3-subforkB-1780462758817/run][inv_1cjmjsufGpwM5Zsx77RkhnScJzOxfZh6nH] INFO: Starting invocation.
+[restate][2026-06-03T04:59:19.287Z][AgentRun/m3-subforkB-1780462758817/run][inv_1cjmjsufGpwM5Zsx77RkhnScJzOxfZh6nH] INFO: Invocation completed successfully.
+[GATE PASS] G1 reconstruct-matches-reality
+  reconstructed_from=live-sqlite-journal steps=[step1-plan,step2-tool_call,step3-summarize] effects=1(expect 1) outcome_matches_substrate_result=true replay_divergence=none outcome="answer[main]<<echo[plan-for(original-prompt)]@fake-echo:simulated|tool-result(effectId=20)|prompt=original-prompt>>"
+
+# exported portable bundle (18 lines) → /Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl (committed fixture: /Users/lokesh/git/durabl/test/fixtures/m3-portable-bundle.jsonl)
+
+# substrate killed: restate_health_unreachable=true service_pids_dead=true
+
+[GATE PASS] G2 offline-from-export (portability proof)
+  substrate_dead=true reconstructed_from=imported:portable-bundle.jsonl root_divergence=none forkA_divergence=none forkB_divergence=none subforkB_divergence=none forkB_own_effect=1(expect 1 — fork@1 fires own effect) forkA_seeded_no_refire=2seeded
+
+[GATE PASS] G3 time-travel-correctness
+  at_step2: steps=2(expect 2) currentOutput_matches=true effects_as_of_2=1(expect 1) diverged=[@1:m3-forkB-1780462758817,@2:m3-forkA-1780462758817] at_step1: effects=0(expect 0) diverged_has_forkB=true out_of_range_rejected=true
+
+[GATE PASS] G4 fork-tree-and-diff
+  tree=m3-root-1780462758817->[m3-forkA-1780462758817,m3-forkB-1780462758817], m3-forkB-1780462758817->[m3-subforkB-1780462758817] tree_ok=true diff(root,forkA): first_divergence=3(expect 3) seq_status=[1:same,2:same,3:changed] diff_ok=true
+
+{"ts":"2026-06-03T04:59:21.342Z","level":"info","event":"server.start","url":"http://127.0.0.1:7879","origin":"imported:/Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl","live":false}
+# replay UI serving OFFLINE export at http://127.0.0.1:7879
+
+{"ts":"2026-06-03T04:59:21.345Z","level":"info","event":"http.request","method":"GET","path":"/api/health","status":200,"durationMs":1,"live":false}
+{"ts":"2026-06-03T04:59:21.348Z","level":"info","event":"http.request","method":"GET","path":"/api/runs","status":200,"durationMs":1,"live":false}
+{"ts":"2026-06-03T04:59:21.349Z","level":"info","event":"http.request","method":"GET","path":"/api/replay","status":200,"durationMs":0,"live":false}
+{"ts":"2026-06-03T04:59:21.350Z","level":"info","event":"http.request","method":"GET","path":"/api/tree","status":200,"durationMs":0,"live":false}
+{"ts":"2026-06-03T04:59:21.350Z","level":"info","event":"http.request","method":"GET","path":"/api/diff","status":200,"durationMs":0,"live":false}
+{"ts":"2026-06-03T04:59:21.351Z","level":"info","event":"http.request","method":"GET","path":"/api/state-at","status":200,"durationMs":0,"live":false}
+[GATE PASS] G5 ui-api-offline
+  origin=imported:/Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl origin_imported=true /api/runs=4runs(true) /api/replay steps=3 effects=1 from=imported:/Users/lokesh/git/durabl/docs/m3-evidence/portable-bundle.jsonl(true) /api/tree children=2(true) /api/diff firstDiv=3(true) /api/state-at n=2 steps=2(true) — UI data path fully offline, no substrate
+
+================ M3 GATE SUMMARY ================
+PASS  G1 reconstruct-matches-reality
+PASS  G2 offline-from-export (portability proof)
+PASS  G3 time-travel-correctness
+PASS  G4 fork-tree-and-diff
+PASS  G5 ui-api-offline
+------------------------------------------------
+5/5 gates passed
+VERDICT: GATE PASSED
+================================================
+
+> durabl@0.1.0 gate:m4
+> npm run build && node --enable-source-maps dist/harness/run-m4-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+M4 neutrality gate — starting local restate-server (target A)...
+restate-server healthy.
+
+registered providers: fake-echo, fake-upper, openai, anthropic, openrouter
+[restate][2026-06-03T04:59:27.136Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:27.411Z][AgentRun/m4-g1-A-1780462767404/run][inv_1a35sA3dwgKU7bVD5uj2G9CFTQCVeMFvWH] INFO: Starting invocation.
+[restate][2026-06-03T04:59:27.422Z][AgentRun/m4-g1-A-1780462767404/run][inv_1a35sA3dwgKU7bVD5uj2G9CFTQCVeMFvWH] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:27.881Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:28.171Z][AgentRun/m4-g1-B-1780462768164/run][inv_1gNcg0CthacZ3wqEw45olBPdc2hffKJ6hp] INFO: Starting invocation.
+[restate][2026-06-03T04:59:28.182Z][AgentRun/m4-g1-B-1780462768164/run][inv_1gNcg0CthacZ3wqEw45olBPdc2hffKJ6hp] INFO: Invocation completed successfully.
+
+[GATE PASS] G1 model-neutrality (config-only)
+  providerA=fake-echo(real=false) providerB=fake-upper(real=false) agent_source_sha256_identical=true (e29bc1c87c86…) both_runs_completed=true model_output_differs_per_provider=true provider_recorded_in_journal=true planA="echo[plan-for(neutral-prompt)]@fake-echo:simulated" planB="UPPER<PLAN-FOR(NEUTRAL-PROMPT)>@fake-upper:simulated" real_providers_with_keys=[none]
+[restate][2026-06-03T04:59:28.633Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:28.927Z][AgentRun/m4-g2-1780462768485/run][inv_1jo43eGNh3VC1sABgi2k36nX304iIgZQFR] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=after-effect:step2 run=m4-g2-1780462768485 pid=80725
+[2m2026-06-03T04:59:28.939231Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 506ms 544µs 333ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1jo43eGNh3VC1sABgi2k36nX304iIgZQFR[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/m4-g2-1780462768485/run[0m[33m
+    restate.deployment.id: dp_15WsPkHE5fOSrEnXkdQNPYl[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-6
+[2m2026-06-03T04:59:29.447661Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 120ms 397µs 360ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1jo43eGNh3VC1sABgi2k36nX304iIgZQFR[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/m4-g2-1780462768485/run[0m[33m
+    restate.deployment.id: dp_15WsPkHE5fOSrEnXkdQNPYl[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-6
+[restate][2026-06-03T04:59:29.547Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:30.578Z][AgentRun/m4-g2-1780462768485/run][inv_1jo43eGNh3VC1sABgi2k36nX304iIgZQFR] INFO: Replaying invocation.
+[restate][2026-06-03T04:59:30.591Z][AgentRun/m4-g2-1780462768485/run][inv_1jo43eGNh3VC1sABgi2k36nX304iIgZQFR] INFO: Invocation completed successfully.
+
+[GATE PASS] G2 durability-under-provider-switch (REAL SIGKILL)
+  provider=fake-upper crash_point=after-effect:step2 service_really_died=true effect_fires=1(expect 1 exactly-once) completed=true model_output_replayed_from_journal=true journal_steps=[step1-plan,step2-tool_call,step3-summarize] result="answer[main]<<UPPER<PLAN-FOR(CRASHY-UNDER-B)>@fake-upper:simulated|tool-result(effectId=24)|prompt=crashy-under-B>>"
+[restate][2026-06-03T04:59:30.977Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:31.259Z][AgentRun/m4-g3-local-1780462771254/run][inv_1e86Mt87uClt6NDPUwhU3m0G6osjuaIpt9] INFO: Starting invocation.
+[restate][2026-06-03T04:59:31.270Z][AgentRun/m4-g3-local-1780462771254/run][inv_1e86Mt87uClt6NDPUwhU3m0G6osjuaIpt9] INFO: Invocation completed successfully.
+[2m2026-06-03T04:59:32.428112Z[0m [32mINFO[0m [1;3;32mrestate_server[0m[32m[32m
+  [1;32mStarting Restate Server 1.6.2 (76acff9 aarch64-unknown-linux-gnu 2026-02-13)[0m[32m
+    node_name: "33ee4f91532d"
+    config_source: [default]
+    base_dir: /restate-data/33ee4f91532d/[0m[32m[0m
+[2;3mon[0m main
+[2m2026-06-03T04:59:32.497990Z[0m [32mINFO[0m [1;3;32mrestate_core::network::net_util[0m[32m[32m
+  [1;32mServer listening[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-8
+  [2;3min[0m [1;3mrestate_core::network::net_util::server[0m
+    server_name: message-fabric-server 
+    uds.path: "restate-data/33ee4f91532d/fabric.sock" 
+    server.address: "0.0.0.0" 
+    server.port: 5122
+[2m2026-06-03T04:59:32.498099Z[0m [32mINFO[0m [1;3;32mrestate_node::init[0m[32m[32m
+  [1;32mTrying to join the cluster 'localcluster'[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-8
+[2m2026-06-03T04:59:32.501028Z[0m [32mINFO[0m [1;3;32mrestate_metadata_server::raft::server::member[0m[32m[32m
+  [1;32mRun as member of the metadata cluster[0m[32m
+    configuration: v1; [N1][0m[32m[0m
+[2;3mon[0m rs:worker-6
+  [2;3min[0m [1;3mrestate_metadata_server::raft::server::member::run[0m
+    member_id: N1:e114
+[2m2026-06-03T04:59:32.502986Z[0m [32mINFO[0m [1;3;32mrestate_metadata_server::raft::server::member[0m[32m[32m
+  [1;32mWon metadata cluster leadership[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-6
+  [2;3min[0m [1;3mrestate_metadata_server::raft::server::member::run[0m
+    member_id: N1:e114
+[2m2026-06-03T04:59:32.507972Z[0m [32mINFO[0m [1;3;32mrestate_node[0m[32m[32m
+  [1;32mCluster 'localcluster' has been automatically provisioned[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-5
+[2m2026-06-03T04:59:32.511372Z[0m [32mINFO[0m [1;3;32mrestate_node[0m[32m[32m
+  [1;32mMy Node ID is N1:2[0m[32m
+    node_name: 33ee4f91532d
+    roles: http-ingress | admin | worker | log-server | metadata-server
+    address: http://172.17.0.2:5122/
+    location: 
+    nodes_config_version: v2
+    cluster_name: localcluster
+    cluster_fingerprint: Some(ClusterFingerprint(9931597018543723163))
+    partition_table_version: v1
+    logs_version: v1[0m[32m[0m
+[2;3mon[0m rs:worker-3
+[2m2026-06-03T04:59:32.595644Z[0m [32mINFO[0m [1;3;32mrestate_ingress_http::server[0m[32m[32m
+  [1;32mIngress HTTP listening[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-4
+  [2;3min[0m [1;3mrestate_ingress_http::server::server[0m
+    server_name: http-ingress-server 
+    uds.path: "restate-data/33ee4f91532d/ingress.sock" 
+    server.address: "0.0.0.0" 
+    server.port: 8080
+[2m2026-06-03T04:59:32.595774Z[0m [32mINFO[0m [1;3;32mrestate_node[0m[32m[32m
+  [1;32mRestate node roles [http-ingress | admin | worker | log-server | metadata-server] were started[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-6
+[2m2026-06-03T04:59:32.595832Z[0m [32mINFO[0m [1;3;32mrestate_node::failure_detector[0m[32m[32m
+  [1;32mFailure Detector Started[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-6
+[2m2026-06-03T04:59:32.598617Z[0m [32mINFO[0m [1;3;32mrestate_admin::service[0m[32m[32m
+  [1;32mAdmin API starting on: http://172.17.0.2:9070/[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-3
+[2m2026-06-03T04:59:32.598639Z[0m [32mINFO[0m [1;3;32mrestate_core::network::net_util[0m[32m[32m
+  [1;32mServer listening[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-3
+  [2;3min[0m [1;3mrestate_core::network::net_util::server[0m
+    server_name: admin-api-server 
+    uds.path: "restate-data/33ee4f91532d/admin.sock" 
+    server.address: "0.0.0.0" 
+    server.port: 9070
+[2m2026-06-03T04:59:32.698771Z[0m [32mINFO[0m [1;3;32mrestate_node::failure_detector::node_state[0m[32m[32m
+  [1;32mN1:2 transitioned from Dead to Alive (gossip-age=0)[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-0
+[2m2026-06-03T04:59:32.698842Z[0m [32mINFO[0m [1;3;32mrestate_admin::cluster_controller::service::cluster_controller_state[0m[32m[32m
+  [1;32mCluster controller switching to leader mode[0m[32m[0m[32m[0m
+[2;3mon[0m rs:worker-4
+[restate][2026-06-03T04:59:32.704Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9081
+[2m2026-06-03T04:59:32.757673Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 0 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-0
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 0
+[2m2026-06-03T04:59:32.799216Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 1 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-1
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 1
+[2m2026-06-03T04:59:32.849925Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 2 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-2
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 2
+[2m2026-06-03T04:59:32.853654Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 3 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-3
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 3
+[2m2026-06-03T04:59:32.922577Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 6 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-6
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 6
+[2m2026-06-03T04:59:32.963705Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 4 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-4
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 4
+[2m2026-06-03T04:59:32.963714Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 7 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-7
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 7
+[2m2026-06-03T04:59:32.963718Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 5 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-5
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 5
+[2m2026-06-03T04:59:32.975427Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 8 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-8
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 8
+[2m2026-06-03T04:59:33.024086Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 11 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-11
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 11
+[2m2026-06-03T04:59:33.024101Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 9 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-9
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 9
+[2m2026-06-03T04:59:33.027965Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 13 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-13
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 13
+[2m2026-06-03T04:59:33.027964Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 10 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-10
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 10
+[2m2026-06-03T04:59:33.034161Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 12 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-12
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 12
+[2m2026-06-03T04:59:33.057869Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 14 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-14
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 14
+[2m2026-06-03T04:59:33.057869Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 16 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-16
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 16
+[2m2026-06-03T04:59:33.057886Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 17 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-17
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 17
+[2m2026-06-03T04:59:33.057910Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 15 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-15
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 15
+[2m2026-06-03T04:59:33.081210Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 19 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-19
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 19
+[2m2026-06-03T04:59:33.124819Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 18 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-18
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 18
+[2m2026-06-03T04:59:33.124819Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 20 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-20
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 20
+[2m2026-06-03T04:59:33.124834Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 21 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-21
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 21
+[2m2026-06-03T04:59:33.126774Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 22 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-22
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 22
+[2m2026-06-03T04:59:33.126794Z[0m [32mINFO[0m [1;3;32mrestate_worker::partition[0m[32m[32m
+  [1;32mPartition 23 started[0m[32m[0m[32m[0m
+[2;3mon[0m rt:pp-23
+  [2;3min[0m [1;3mrestate_worker::partition::run[0m
+    partition_id: 23
+[restate][2026-06-03T04:59:33.203Z][AgentRun/m4-g3-docker-1780462773030/run][inv_1bgsDujynoeF2brm5ezpKcnPXLwc00LiwG] INFO: Starting invocation.
+[restate][2026-06-03T04:59:33.221Z][AgentRun/m4-g3-docker-1780462773030/run][inv_1bgsDujynoeF2brm5ezpKcnPXLwc00LiwG] INFO: Invocation completed successfully.
+
+[GATE PASS] G3 deploy-target-neutrality (config-only)
+  targetA=local(launch=external, ingress=http://localhost:8080) ran=true targetB=docker(launch=docker, ingress=http://localhost:8081) ran=true agent_source_sha256_identical=true (e29bc1c87c86…) RAN: containerized restate (restatedev/restate:1.6) on http://localhost:8081; answer="answer[main]<<echo[plan-for(target-neutral)]@fake-echo:simulated|tool-result(effectId=27)|prompt=target-neutral>>"
+[restate][2026-06-03T04:59:34.132Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:34.423Z][AgentRun/m4-port-B-1780462774417/run][inv_13kJZKLvBFEy0jl7CSX95tp8e78ziXYmiT] INFO: Starting invocation.
+[restate][2026-06-03T04:59:34.432Z][AgentRun/m4-port-B-1780462774417/run][inv_13kJZKLvBFEy0jl7CSX95tp8e78ziXYmiT] INFO: Invocation completed successfully.
+
+[GATE PASS] G4 journal-portability (offline, across providers+targets)
+  runs=3 m4-g3-local-1780462771254: offline_divergence=none | m4-g3-docker-1780462773030: offline_divergence=none | m4-port-B-1780462774417: offline_divergence=none
+
+================ M4 GATE SUMMARY ================
+PASS  G1 model-neutrality (config-only)
+PASS  G2 durability-under-provider-switch (REAL SIGKILL)
+PASS  G3 deploy-target-neutrality (config-only)
+PASS  G4 journal-portability (offline, across providers+targets)
+-------------------------------------------------
+4/4 gates passed
+VERDICT: GATE PASSED
+=================================================
+
+> durabl@0.1.0 gate:m5
+> npm run build && node --enable-source-maps dist/harness/run-m5-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+[restate][2026-06-03T04:59:40.765Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:41.058Z][HitlAgentRun/m5-hitl-1780462779775/run][inv_1eCjh6DlpJyS0EdUifvSKMAFfrxjKhrgQI] INFO: Starting invocation.
+[2m2026-06-03T04:59:41.262024Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 588ms 581µs 592ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1eCjh6DlpJyS0EdUifvSKMAFfrxjKhrgQI[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mHitlAgentRun/m5-hitl-1780462779775/run[0m[33m
+    restate.deployment.id: dp_15CTYIbjC0DeVW2Dmg0joKl[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-19
+[2m2026-06-03T04:59:42.365184Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 551ms 975µs 29ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1eCjh6DlpJyS0EdUifvSKMAFfrxjKhrgQI[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mHitlAgentRun/m5-hitl-1780462779775/run[0m[33m
+    restate.deployment.id: dp_15CTYIbjC0DeVW2Dmg0joKl[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-19
+[restate][2026-06-03T04:59:42.433Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:42.726Z][HitlAgentRun/m5-hitl-1780462779775/provideInput][inv_1eCjh6DlpJyS1T5jzBJ92f0I53UcnlaR8t] INFO: Starting invocation.
+[restate][2026-06-03T04:59:42.731Z][HitlAgentRun/m5-hitl-1780462779775/provideInput][inv_1eCjh6DlpJyS1T5jzBJ92f0I53UcnlaR8t] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:42.921Z][HitlAgentRun/m5-hitl-1780462779775/run][inv_1eCjh6DlpJyS0EdUifvSKMAFfrxjKhrgQI] INFO: Replaying invocation.
+[restate][2026-06-03T04:59:42.934Z][HitlAgentRun/m5-hitl-1780462779775/run][inv_1eCjh6DlpJyS0EdUifvSKMAFfrxjKhrgQI] INFO: Invocation completed successfully.
+[GATE PASS] G1 pause→exit→restart→resume→complete
+  paused_from_journal=true effects_while_paused=0(expect 0) substrate_fully_killed=true still_paused_after_kill=true resumed_after_restart=true input_accepted=true prior_side_effects_refired=false post_resume_tool_effects=1(expect 1) human_in_journal=true answer_has_human_decision=true steps=[step1-plan,hitl-pause,hitl-input,step4-tool_call,step5-summarize] result="answer[main]<<echo[plan-for(ship-it)]@fake-echo:simulated|human=APPROVED-by-human|tool-result(effectId=29;approved=APPROVED-by-human)|prompt=ship-it>>"
+
+[restate][2026-06-03T04:59:44.447Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:44.759Z][HitlAgentRun/m5-crash-1780462783518/run][inv_1530VemPNsTE17ELvnECblteH73PvzgcgI] INFO: Starting invocation.
+[restate][2026-06-03T04:59:44.960Z][HitlAgentRun/m5-crash-1780462783518/provideInput][inv_1530VemPNsTE6KunmC9TGg1bSr1YFEJFVn] INFO: Starting invocation.
+[restate][2026-06-03T04:59:44.964Z][HitlAgentRun/m5-crash-1780462783518/provideInput][inv_1530VemPNsTE6KunmC9TGg1bSr1YFEJFVn] INFO: Invocation completed successfully.
+[CRASH] SIGKILL self at point=on-resume:after-effect run=m5-crash-1780462783518 pid=83349
+[2m2026-06-03T04:59:44.971243Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 540ms 373µs 380ns.[0m[33m
+    [1;33merror[0m[33m: unexpected error while reading the response body: error reading a body from connection
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1530VemPNsTE17ELvnECblteH73PvzgcgI[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mHitlAgentRun/m5-crash-1780462783518/run[0m[33m
+    restate.deployment.id: dp_15CTYIbjC0DeVW2Dmg0joKl[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-19
+[2m2026-06-03T04:59:45.513801Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 209ms 909µs 91ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1530VemPNsTE17ELvnECblteH73PvzgcgI[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mHitlAgentRun/m5-crash-1780462783518/run[0m[33m
+    restate.deployment.id: dp_15CTYIbjC0DeVW2Dmg0joKl[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-19
+[restate][2026-06-03T04:59:45.674Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:46.732Z][HitlAgentRun/m5-crash-1780462783518/run][inv_1530VemPNsTE17ELvnECblteH73PvzgcgI] INFO: Replaying invocation.
+[restate][2026-06-03T04:59:46.749Z][HitlAgentRun/m5-crash-1780462783518/run][inv_1530VemPNsTE17ELvnECblteH73PvzgcgI] INFO: Invocation completed successfully.
+[GATE PASS] G2 crash-during-resume → exactly-once
+  paused=true service_really_died_at_on-resume:after-effect=true tool_effects=1(expect 1) resumed=true completed=true result="answer[main]<<echo[plan-for(crash-on-resume)]@fake-echo:simulated|human=APPROVED-crash|tool-result(effectId=30;approved=APPROVED-crash)|prompt=crash-on-resume>>"
+
+[restate][2026-06-03T04:59:48.223Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:48.518Z][HitlAgentRun/m5-double-1780462787323/run][inv_114alIpvN3L27wCYE696WZpFXJtzmqaPMK] INFO: Starting invocation.
+[restate][2026-06-03T04:59:48.719Z][HitlAgentRun/m5-double-1780462787323/provideInput][inv_114alIpvN3L274RfJTmODYhswJucWLP9It] INFO: Starting invocation.
+[restate][2026-06-03T04:59:48.724Z][HitlAgentRun/m5-double-1780462787323/provideInput][inv_114alIpvN3L274RfJTmODYhswJucWLP9It] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:48.730Z][HitlAgentRun/m5-double-1780462787323/provideInput][inv_114alIpvN3L23SB2sW6Zpu4RMj8J1vo3Ul] INFO: Starting invocation.
+[restate][2026-06-03T04:59:48.732Z][HitlAgentRun/m5-double-1780462787323/provideInput][inv_114alIpvN3L23SB2sW6Zpu4RMj8J1vo3Ul] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:48.734Z][HitlAgentRun/m5-double-1780462787323/run][inv_114alIpvN3L27wCYE696WZpFXJtzmqaPMK] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:48.735Z][HitlAgentRun/m5-double-1780462787323/provideInput][inv_114alIpvN3L20BBig5qLiLLlTV0c1Vk84p] INFO: Starting invocation.
+[restate][2026-06-03T04:59:48.736Z][HitlAgentRun/m5-double-1780462787323/provideInput][inv_114alIpvN3L20BBig5qLiLLlTV0c1Vk84p] INFO: Invocation completed successfully.
+[GATE PASS] G3 double-submit → idempotent (resumes once)
+  paused=true first_accepted=true(expect true) dup_accepted=false(expect false) conflicting_accepted=false(expect false) tool_effects=1(expect 1) hitl_input_steps=1(expect 1) journaled_input="APPROVED-first"(expect "APPROVED-first") result="answer[main]<<echo[plan-for(double-submit)]@fake-echo:simulated|human=APPROVED-first|tool-result(effectId=32;approved=APPROVED-first)|prompt=double-submit>>"
+
+[restate][2026-06-03T04:59:50.213Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:50.506Z][HitlAgentRun/m5-export-1780462789298/run][inv_1f2n4M4ORfeg2gd2kdDEfZaLmRRFuIZ74Q] INFO: Starting invocation.
+[restate][2026-06-03T04:59:50.708Z][HitlAgentRun/m5-export-1780462789298/provideInput][inv_1f2n4M4ORfeg1cIyzHDpqrY1Rfuz3G9koF] INFO: Starting invocation.
+[restate][2026-06-03T04:59:50.712Z][HitlAgentRun/m5-export-1780462789298/provideInput][inv_1f2n4M4ORfeg1cIyzHDpqrY1Rfuz3G9koF] INFO: Invocation completed successfully.
+[restate][2026-06-03T04:59:50.721Z][HitlAgentRun/m5-export-1780462789298/run][inv_1f2n4M4ORfeg2gd2kdDEfZaLmRRFuIZ74Q] INFO: Invocation completed successfully.
+# exported HITL run bundle (7 lines) → /Users/lokesh/git/durabl/docs/m5-evidence/hitl-run-bundle.jsonl (committed fixture: /Users/lokesh/git/durabl/test/fixtures/m5-hitl-run-bundle.jsonl)
+
+# substrate killed: dead=true
+
+[GATE PASS] G4 full-journal export → offline HITL replay
+  substrate_dead=true reconstructed_from=imported:hitl-run-bundle.jsonl replay_divergence=none hitl_pause_in_export=true hitl_input_in_export=true offline_effects=1(expect 1) steps=[step1-plan,hitl-pause,hitl-input,step4-tool_call,step5-summarize]
+
+[restate][2026-06-03T04:59:51.885Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T04:59:52.209Z][HitlAgentRun/m5-ui-1780462790986/run][inv_1ckyztZCoUSA7sdwFuFe9yr7h5GbmTvwpZ] INFO: Starting invocation.
+{"ts":"2026-06-03T04:59:52.411Z","level":"info","event":"server.start","url":"http://127.0.0.1:17878","origin":"live-sqlite-journal","live":true}
+{"ts":"2026-06-03T04:59:52.421Z","level":"info","event":"http.request","method":"GET","path":"/api/hitl/paused","status":200,"durationMs":7,"live":true}
+[restate][2026-06-03T04:59:52.426Z][HitlAgentRun/m5-ui-1780462790986/provideInput][inv_1ckyztZCoUSA4rxBGKe3mzw6XGNvCBUVt7] INFO: Starting invocation.
+[restate][2026-06-03T04:59:52.430Z][HitlAgentRun/m5-ui-1780462790986/provideInput][inv_1ckyztZCoUSA4rxBGKe3mzw6XGNvCBUVt7] INFO: Invocation completed successfully.
+{"ts":"2026-06-03T04:59:52.431Z","level":"info","event":"http.request","method":"POST","path":"/api/hitl/input","status":502,"durationMs":8,"live":true}
+[restate][2026-06-03T04:59:52.437Z][HitlAgentRun/m5-ui-1780462790986/run][inv_1ckyztZCoUSA7sdwFuFe9yr7h5GbmTvwpZ] INFO: Invocation completed successfully.
+[GATE FAIL] G5 hitl-web-ui-api-resume
+  paused=true listed=true submit_http=502 accepted=undefined resumed=true tool_effects=1(expect 1)
+
+================ M5 GATE SUMMARY ================
+PASS  G1 pause→exit→restart→resume→complete
+PASS  G2 crash-during-resume → exactly-once
+PASS  G3 double-submit → idempotent (resumes once)
+PASS  G4 full-journal export → offline HITL replay
+FAIL  G5 hitl-web-ui-api-resume
+------------------------------------------------
+4/5 gates passed
+VERDICT: GATE FAILED
+================================================

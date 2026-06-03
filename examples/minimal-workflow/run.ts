@@ -4,10 +4,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { config } from "../../../dist/config.js";
-import { effectsFor } from "../../../dist/effect-sink.js";
-import { trajectory } from "../../../dist/journal.js";
-import { registerDeployment, sleep, startRestateServer, waitForRestate, waitForService } from "../../../dist/harness/restate-control.js";
+import { config } from "#durabl/config.js";
+import { effectsFor } from "#durabl/effect-sink.js";
+import { trajectory } from "#durabl/journal.js";
+import { registerDeployment, sleep, startRestateServer, waitForRestate, waitForService } from "#durabl/harness/restate-control.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKFLOW_JS = join(__dirname, "workflow.js");

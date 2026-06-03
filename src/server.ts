@@ -97,6 +97,14 @@ const MIME: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
 };
 
+function sendApiNotFound(res: ServerResponse, pathname: string): void {
+  sendJson(res, 404, {
+    error: "not_found",
+    message: "Unknown route. See docs/API.md",
+    path: pathname,
+  });
+}
+
 function sendJson(res: ServerResponse, code: number, body: unknown): void {
   const s = JSON.stringify(body);
   res.writeHead(code, {
@@ -640,7 +648,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
         if (url.pathname.startsWith("/api/")) {
           if (!enforceMutatingApiAuth(req, res, url.pathname, sendJson)) return;
           const handled = await handleApi(ctx, url, res, req);
-          if (!handled) sendJson(res, 404, { error: "not found" });
+          if (!handled) sendApiNotFound(res, url.pathname);
           return;
         }
         // static

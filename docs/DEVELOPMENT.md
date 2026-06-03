@@ -14,7 +14,30 @@ gate verification, and harness locking.
 Optional:
 
 - **Docker** — M4 deploy-target gate (`DURABL_DEPLOY_TARGET=docker`) and `docker compose` demo stack.
-- **`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`** — live-provider hardening (`npm run gate:live`).
+- **`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENROUTER_API_KEY`** — live-provider gate (`npm run gate:live`).
+
+## Live provider gate (`gate:live`)
+
+`npm run gate:live` exercises **real** HTTP to configured LLM providers when keys
+are present. Without any provider key, the gate prints `SKIP` and **exits 0**
+(CI-safe). Never commit keys; export them in the shell only.
+
+**OpenRouter example** (no secrets in files):
+
+```bash
+export OPENROUTER_API_KEY='…'          # from your secret store / shell
+export DURABL_MODEL_PROVIDER=openrouter
+# optional: export DURABL_OPENROUTER_MODEL=openai/gpt-oss-120b:free
+# optional: export OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+
+npm run gate:live
+```
+
+With `OPENROUTER_API_KEY` set, the gate asserts real completions, replay
+short-circuit, and export/import parity for the `openrouter` provider. OpenAI and
+Anthropic paths run when their respective keys are set (same gate).
+
+Full matrix: [HARDENING.md](./HARDENING.md), [TEST-MATRIX.md](./TEST-MATRIX.md).
 
 ## Dev container (VS Code / Cursor)
 
@@ -220,7 +243,7 @@ From the host, set `DURABL_RESTATE_INGRESS=http://localhost:8080` when calling i
 |---|---|
 | `DURABL_DATA_DIR` | Restate + effect-sink data root (gate scripts set a per-run temp dir) |
 | `DURABL_HARNESS_LOCK` | Override harness lock path |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Enable live-provider gates |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENROUTER_API_KEY` | Enable live-provider gates |
 
 See `docs/HARDENING.md` and `src/config.ts` for the full config surface.
 
@@ -234,4 +257,5 @@ See `docs/HARDENING.md` and `src/config.ts` for the full config surface.
 
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — PR expectations and conventions.
 - [`QUICKSTART.md`](QUICKSTART.md) — 5-minute path for new contributors.
+- [`OPERATOR.md`](OPERATOR.md) — production bind, auth, backup, deploy.
 - [`m1-slice.md`](m1-slice.md) through [`m5-hitl-export.md`](m5-hitl-export.md) — milestone architecture.

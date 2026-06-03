@@ -4,7 +4,7 @@
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** `39173a57c4298df60b51d4bbd209d197beedf4eb` — **`gate:all`:** PASS per [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`ALL GATES PASSED`, exit 0). Run serially; do not set placeholder API keys (H3 would call real endpoints and fail).
+**main HEAD:** `5d8b8f5` — **`gate:all`:** exit **0**, **ALL GATES PASSED** — authoritative [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (also [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log)). Partial SIGKILL (not primary): [`gate-all-20260603-011624.log`](evidence/gate-all-20260603-011624.log) exit **137**.
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -31,7 +31,7 @@ step-journal substrate, never reimplementing the durable engine.
 | **M3** | **Replay / time-travel** read surface over a `JournalSource`; **offline reconstruction from a portable export with the substrate killed**; local web UI | reconstruct-matches-reality, **offline-from-export (substrate killed)**, time-travel, fork-tree+diff, UI-API-offline | ✅ **5/5** | `npm run gate:m3` | `docs/m3-observability-replay.md`, `docs/m3-evidence/` |
 | **M4** | **Neutrality**: same agent across **2 model providers** and **2 deploy targets**, **config-only, no code change**; journal portability across both | provider-switch (no code change), durability-under-switch (SIGKILL), deploy-target switch, journal-portability offline | ✅ **4/4** | `npm run gate:m4` | `docs/m4-neutrality.md`, `docs/m4-evidence/` |
 | **M5** | **HITL pause/resume** across a **real process restart** + export + **web UI API resume** | pause→exit→restart→resume→complete, crash-during-resume, double-submit, export+offline-replay, **hitl-web-ui-api-resume** | ✅ **5/5** | `npm run gate:m5` | `docs/m5-hitl-export.md`, `docs/m5-evidence/` |
-| **Full suite** | Serial M1–M5 + harden + hitl-ui + `gate:dbos-skip` (shared `DURABL_DATA_DIR`, teardown between gates) | typecheck + all milestone/extension gates | ✅ GO | `npm run gate:all` | [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) |
+| **Full suite** | Serial M1–M5 + harden + hitl-ui + `gate:dbos-skip` (shared `DURABL_DATA_DIR`, teardown between gates) | typecheck + all milestone/extension gates | ✅ **PASS** exit 0 (2026-06-03) | `npm run gate:all` | [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`ALL GATES PASSED`; partial [`011624`](evidence/gate-all-20260603-011624.log) exit 137) |
 
 **Run core milestones (each exits 0 on pass):**
 
@@ -101,7 +101,7 @@ Checklist with commit SHAs and verified vs config-ready: [`docs/COMPLETION.md`](
 
 | Item | Status | Notes |
 |------|--------|--------|
-| M0–M5 + `gate:harden` H1/H2/H3 + `gate:hitl-ui` G2 + `gate:dbos-skip` | **VERIFIED** | `npm run gate:all` @ `f7295d2`; log [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) |
+| M0–M5 + `gate:harden` H1/H2/H3 + `gate:hitl-ui` G2 + `gate:dbos-skip` | **VERIFIED** | `npm run gate:all` @ `263374286168dafced4ddcd40e3bd04b536103f1`; log [`gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) |
 | H3 live LLM (`gate:harden` / `gate:live`) | **CONFIG-READY** | SKIP exit 0 with no API keys; real keys required for live provider exercise |
 | M4 Docker deploy target | **CONFIG-READY** | Skipped when Docker daemon/image absent |
 | **DBOS second substrate** | **NOT-PLANNED** | Interface stub + H2 gate only — not a working DBOS integration |

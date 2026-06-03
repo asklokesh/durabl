@@ -6,6 +6,10 @@
     "lib": [
       "ES2023"
     ],
+    "baseUrl": ".",
+    "paths": {
+      "#durabl/*": ["../../dist/*"]
+    },
     "outDir": "dist",
     "rootDir": ".",
     "strict": true,

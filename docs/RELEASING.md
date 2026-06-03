@@ -1,5 +1,19 @@
 # Releasing durabl
 
+## Release channel (v0.1.0)
+
+**Shipped today:** version tags (`v*`) produce a downloadable **`npm pack` tarball**
+via GitHub Actions. That is the supported install path for end users.
+
+**Not shipped in v0.1.0:** `npm install durabl` from [npmjs.org](https://www.npmjs.com)
+— no registry publish, no `NPM_TOKEN`. A future npm publish is a separate decision
+(documented in forward planning only).
+
+| Audience | Install | Doc |
+|----------|---------|-----|
+| End user / operator | `npm install /path/to/durabl-0.1.0.tgz` | [Install from a tarball](#install-from-a-tarball) below |
+| Contributor | `git clone` + `npm install` + `npm run build` | [README](../README.md#install), [QUICKSTART.md](./QUICKSTART.md) |
+
 This project ships release tarballs via GitHub Actions when you push a version tag.
 No npm registry publish step and no publish secrets are required.
 
@@ -77,3 +91,9 @@ npm install -g /path/to/durabl-0.1.0.tgz
 - Does not publish to npmjs.org (no `NPM_TOKEN` or registry credentials)
 - Does not create GitHub Releases automatically (artifact only)
 - Does not run the full adversarial gate suite (run `npm run gate:all` locally first)
+
+## Related
+
+- First run after install: [QUICKSTART.md](./QUICKSTART.md)
+- Production deploy (bind, keys, backup): [OPERATOR.md](./OPERATOR.md)
+- Maintainer gate cadence: [DEVELOPMENT.md](./DEVELOPMENT.md#gates)

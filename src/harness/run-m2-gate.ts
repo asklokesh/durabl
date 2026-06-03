@@ -32,6 +32,7 @@ import { config } from "../config.js";
 import {
   sleep,
   startAndRegisterService,
+  registerDeploymentWithRetry,
   enterHarnessGate,
   releaseHarnessLock,
   startRestateServerAndWait,
@@ -63,6 +64,16 @@ function isProcAlive(pid: number): boolean {
   } catch {
     return false;
   }
+}
+
+
+async function waitForJournal(runId: string, timeoutMs = 10_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (trajectory(runId).length > 0) return;
+    await sleep(50);
+  }
+  throw new Error(`journal for ${runId} not visible within ${timeoutMs}ms`);
 }
 
 async function invokeSync(runId: string, prompt: string, traj = "main"): Promise<any> {
@@ -290,6 +301,7 @@ async function crashDuringForkNewEffectGate(): Promise<void> {
   let svc = await startAndRegisterService({});
   const source = `m2-cdf-src-${Date.now()}`;
   await invokeSync(source, "src", "main");
+  await waitForJournal(source);
   const srcEffects = countEffects(source, "step2-tool_call");
   killProc(svc.proc);
   await sleep(300);
@@ -409,6 +421,8 @@ async function crashDuringForkSeededGate(): Promise<void> {
 async function forkValidationGate(): Promise<void> {
   const svc = await startAndRegisterService({});
   try {
+    const reg = await registerDeploymentWithRetry(8);
+    if (!reg.ok) throw new Error("register failed before validation gate: " + reg.out);
     const source = `m2-val-src-${Date.now()}`;
     await invokeSync(source, "v", "main");
 

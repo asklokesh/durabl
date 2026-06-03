@@ -1,0 +1,47 @@
+
+> durabl@0.1.0 gate:all
+> bash scripts/run-all-gates.sh
+
+DURABL_DATA_DIR=/tmp/durabl-gate-70506
+
+> durabl@0.1.0 typecheck
+> tsc -p tsconfig.json --noEmit
+
+
+> durabl@0.1.0 test
+> npm run gate
+
+
+> durabl@0.1.0 gate
+> npm run build && node --enable-source-maps dist/harness/run-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+Starting restate-server (single self-hostable binary)...
+restate-server healthy.
+[restate][2026-06-03T05:24:01.634Z] WARN: Accepting requests without validating request signatures; handler access must be restricted
+durabl Restate service listening on 9080
+[restate][2026-06-03T05:24:01.915Z][AgentRun/crash-before_step1-1780464241503/run][inv_1iyfNckv20Ez1nORT0Zg0lImG0JfqtNnpa] INFO: Starting invocation.
+[CRASH] SIGKILL self at point=before:step1 run=crash-before_step1-1780464241503 pid=71382
+[2m2026-06-03T05:24:01.918896Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 559ms 723µs 97ns.[0m[33m
+    [1;33merror[0m[33m: error when calling 'http://localhost:9080/': client error (SendRequest) caused by: connection error caused by: connection reset
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1iyfNckv20Ez1nORT0Zg0lImG0JfqtNnpa[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step1-1780464241503/run[0m[33m
+    restate.deployment.id: dp_16DCSzDgZTln0EndAe2sijv[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-16
+[2m2026-06-03T05:24:02.482635Z[0m [33mWARN[0m [1;3;33mrestate_invoker_impl[0m[33m[33m
+  [1;33mInvocation error, retrying in 1s 17ms 969µs 569ns.[0m[33m
+    [1;33merror[0m[33m: unexpected closed request stream while trying to write a message
+    [1;33mrestate.invocation.id[0m[33m: [3;33minv_1iyfNckv20Ez1nORT0Zg0lImG0JfqtNnpa[0m[33m
+    [1;33mrestate.invocation.target[0m[33m: [3;33mAgentRun/crash-before_step1-1780464241503/run[0m[33m
+    restate.deployment.id: dp_16DCSzDgZTln0EndAe2sijv[0m[33m
+    restate.error.code: RT0010
+    Visit [1;3;33mhttps://docs.restate.dev/references/errors#RT0010[0m[33m for more info and suggestions.[0m
+[2;3mon[0m rt:pp-16
+scripts/run-all-gates.sh: line 48: 70744 Killed: 9                  npm test

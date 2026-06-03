@@ -25,6 +25,20 @@ Investor narrative and live demo script: [`docs/FUNDING.md`](docs/FUNDING.md),
 [`docs/DEMO-NARRATIVE.md`](docs/DEMO-NARRATIVE.md),
 [`docs/RISKS.md`](docs/RISKS.md).
 
+## Install
+
+**v0.1.0 release channel:** GitHub **release tarball** only — not published to
+npmjs.org. See [`docs/RELEASING.md`](docs/RELEASING.md) for tagging, CI artifacts,
+and install from `.tgz`.
+
+| Path | When | Steps |
+|------|------|--------|
+| **From source** | Contributors, local dev | `git clone … && cd durabl && npm install && npm run build` |
+| **From tarball** | Consumers of a tagged release | Download `durabl-<version>.tgz` from the GitHub Actions run for tag `v*`, then `npm install /path/to/durabl-0.1.0.tgz` |
+
+After either path, the `durabl` CLI is on your PATH when installed globally, or
+invoke via `npx durabl` / `node dist/cli.js` from a source checkout.
+
 ## Quickstart
 
 **Prerequisites:** Node.js **>= 22.5.0** (uses built-in `node:sqlite`). macOS or
@@ -66,7 +80,8 @@ npx durabl <command> --help    # per-command usage
 npx durabl runs
 npx durabl inspect <runId>
 npx durabl replay <runId>
-npx durabl ui --from export.jsonl   # fully offline
+npx durabl export-bundle <runId> > bundle.jsonl
+npx durabl ui --from bundle.jsonl   # offline replay (fork tree in bundle)
 
 # Requires Restate ingress (see DURABL_RESTATE_INGRESS)
 npx durabl run <runId> --prompt "…"
@@ -226,6 +241,8 @@ credentials, and self-host data boundaries:
 | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Harness lock, port conflicts, SIGKILL teardown, offline HITL 503 |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Worktrees, serial gates, harness locking |
 | [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | First-run walkthrough |
+| [`docs/RELEASING.md`](docs/RELEASING.md) | Tag releases, tarball install (v0.1.0 channel) |
+| [`docs/OPERATOR.md`](docs/OPERATOR.md) | Production bind, auth, CORS, backup, deploy |
 
 ## Changelog
 

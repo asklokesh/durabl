@@ -42,6 +42,57 @@ const state = {
   forkTrees: new Map(),
 };
 
+function apiErrorMessage(body, status) {
+  if (body && typeof body.message === "string" && body.message.trim()) {
+    return body.message.trim();
+  }
+  const code = body && typeof body.error === "string" ? body.error.trim() : "";
+  const hint = body && typeof body.hint === "string" ? body.hint.trim() : "";
+  if (code && code !== "not_found") {
+    return hint ? `${code} ${hint}` : code;
+  }
+  if (code === "not_found" || status === 404) {
+    return hint || "Unknown API route. See docs/API.md.";
+  }
+  if (hint) {
+    return `Request failed (HTTP ${status}). ${hint}`;
+  }
+  if (status === 503) {
+    return "This action is not available in offline import mode.";
+  }
+  if (status >= 500) {
+    return "Server error — try again or check the journal / export.";
+  }
+  return `Request failed (HTTP ${status}).`;
+}
+
+function formatUserError(err) {
+  if (!(err instanceof Error)) return "Something went wrong loading the replay UI.";
+  const msg = err.message || "";
+  if (/is not defined|ReferenceError/i.test(msg)) {
+    return "The replay UI failed to start. Refresh the page or run npm run build.";
+  }
+  if (/Failed to fetch|NetworkError|load failed/i.test(msg)) {
+    return "Could not reach the replay server. Start it with npm run ui or durabl ui.";
+  }
+  return msg;
+}
+
+function alertUserError(err) {
+  window.alert(formatUserError(err instanceof Error ? err : new Error(String(err))));
+}
+
+window.addEventListener("unhandledrejection", (ev) => {
+  console.error(ev.reason);
+});
+
+window.addEventListener("error", (ev) => {
+  if (ev.error instanceof ReferenceError) {
+    console.error(ev.error);
+    ev.preventDefault();
+  }
+});
+
 async function api(path, opts) {
   const res = await fetch(path, opts);
   const body = await res.json().catch(() => ({}));
@@ -312,7 +363,7 @@ async function submitHitlInput(ev) {
       if (state.selected) await selectRun(state.selected);
     }
   } catch (e) {
-    setHitlFormMsg(e.message || "Submit failed.", "err");
+    setHitlFormMsg(formatUserError(e), "err");
   } finally {
     state.hitlSubmitBusy = false;
     syncHitlSubmitControls();
@@ -324,6 +375,17 @@ function sleep(ms) {
 }
 
 // ── Runs + fork tree ───────────────────────────────────────
+function renderTreeSkeleton() {
+  const host = $("#tree");
+  if (!host) return;
+  host.classList.add("is-loading");
+  host.setAttribute("aria-busy", "true");
+  host.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    host.appendChild(el("div", "skeleton skeleton-tree"));
+  }
+}
+
 async function loadRuns() {
   renderTreeSkeleton();
   try {
@@ -345,7 +407,7 @@ async function loadRuns() {
     const tree = $("#tree");
     tree.classList.remove("is-loading");
     tree.innerHTML = "";
-    tree.appendChild(el("div", "empty err", e.message));
+    tree.appendChild(el("div", "empty err", formatUserError(e)));
     throw e;
   }
 }
@@ -359,7 +421,7 @@ async function loadHitlPaused() {
     state.pausedRuns = data.paused || [];
   } catch (e) {
     state.pausedRuns = [];
-    state.pausedRunsError = e.message || "Could not load paused runs.";
+    state.pausedRunsError = formatUserError(e);
   } finally {
     state.pausedRunsLoading = false;
     renderHitlPausedList();
@@ -489,6 +551,8 @@ function forkTwigSvg() {
 
 async function renderTree() {
   const host = $("#tree");
+  host.classList.remove("is-loading");
+  host.removeAttribute("aria-busy");
   host.innerHTML = "";
   state.forkTrees.clear();
   if (!state.roots.length) {
@@ -968,15 +1032,11 @@ if (importFile) {
     const file = importFile.files && importFile.files[0];
     importFile.value = "";
     if (!file) return;
-    void uploadJsonl(file).catch((e) => {
-      window.alert(e instanceof Error ? e.message : String(e));
-    });
+    void uploadJsonl(file).catch(alertUserError);
   });
 }
 $("#btnExport").addEventListener("click", () => {
-  void downloadExport().catch((e) => {
-    window.alert(e instanceof Error ? e.message : String(e));
-  });
+  void downloadExport().catch(alertUserError);
 });
 
 // ── Boot ───────────────────────────────────────────────────
@@ -995,7 +1055,7 @@ $("#btnExport").addEventListener("click", () => {
           btnImport.disabled = true;
           await uploadJsonl(file);
         } catch (e) {
-          alert(e.message);
+          alertUserError(e);
         } finally {
           btnImport.disabled = false;
         }
@@ -1004,7 +1064,7 @@ $("#btnExport").addEventListener("click", () => {
     const btnExport = $("#btnExport");
     if (btnExport) {
       btnExport.addEventListener("click", () => {
-        void downloadExport().catch((e) => alert(e.message));
+        void downloadExport().catch(alertUserError);
       });
     }
     await loadSource();
@@ -1016,6 +1076,7 @@ $("#btnExport").addEventListener("click", () => {
       });
     }, 3000);
   } catch (e) {
-    document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#f87171">Failed to load: ${e.message}</div>`;
+    const msg = formatUserError(e);
+    document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#f87171">Failed to load: ${msg}</div>`;
   }
 })();

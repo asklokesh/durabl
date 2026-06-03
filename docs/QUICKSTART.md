@@ -39,12 +39,26 @@ Exit code **0**. If the demo ends with `DEMO FAILED` or `DEMO ERROR`, see [DEMO-
 
 ## 1. Install (~2–3 min first time)
 
+**v0.1.0:** releases ship as a GitHub Actions **tarball**, not npmjs.org. Pick one path:
+
+**From source (contributors):**
+
 ```bash
 git clone <your-fork> durabl && cd durabl
 cp .env.example .env   # optional: uncomment DURABL_* vars you need
 npm install
 npm run build
 ```
+
+**From a release tarball (operators / consumers):**
+
+```bash
+# Download durabl-0.1.0.tgz from the Actions run for tag v0.1.0 (see RELEASING.md)
+npm install /path/to/durabl-0.1.0.tgz
+durabl --help
+```
+
+Details: [RELEASING.md](./RELEASING.md). Production settings: [OPERATOR.md](./OPERATOR.md).
 
 See [`.env.example`](../.env.example) for `DURABL_*` knobs (data dir, Restate ports, providers, UI). The template has comments only — no secrets.
 
@@ -131,9 +145,16 @@ npm run ui
 Offline from an export (no Restate running):
 
 ```bash
-node dist/cli.js export-bundle <rootRunId> > run.jsonl
-node dist/cli.js ui --from run.jsonl
+# Checked-in sample bundle (no live server / no prior demo run):
+npm run ui -- --from docs/m3-evidence/portable-bundle.jsonl
+# open http://127.0.0.1:7878 — amber "imported" pill; HITL submit disabled (view-only)
+
+# Your own export (prefer export-bundle for fork-tree lineage):
+node dist/cli.js export-bundle <rootRunId> > run-bundle.jsonl
+npm run ui -- --from run-bundle.jsonl
 ```
+
+Single-run export (no fork tree bundle): `export <runId> > run.jsonl` then `ui --from run.jsonl`.
 
 Replace `<rootRunId>` with a run id from `npm run demo` (e.g. `demo-1780373547547`).
 
@@ -205,3 +226,4 @@ If quickstart fails with `registerDeployment` / `connection refused` on **9080**
 - Demo script (talk track): [DEMO-NARRATIVE.md](./DEMO-NARRATIVE.md)
 - Milestone evidence: [build-status.md](./build-status.md)
 - Architecture: [m1-slice.md](./m1-slice.md), [m3-observability-replay.md](./m3-observability-replay.md), [m5-hitl-export.md](./m5-hitl-export.md)
+- Live LLM smoke (optional keys): [DEVELOPMENT.md](./DEVELOPMENT.md#live-provider-gate-gatelive)

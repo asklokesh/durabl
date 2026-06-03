@@ -1,6 +1,8 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `39173a57c4298df60b51d4bbd209d197beedf4eb` · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`ALL GATES PASSED`, exit 0)
+**Branch:** `main` · **HEAD:** `5d8b8f5` (`5d8b8f5` — design + devex WIP committed) · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`npm run gate:all` exit **0**, **ALL GATES PASSED**)[^gate-partial] · **Shipped in `5d8b8f5`:** forensic teal UI, devex fixes, `DESIGN.md`, `docs/OPERATOR.md`, gate evidence logs
+
+[^gate-partial]: Non-authoritative partial run [`gate-all-20260603-011624.log`](evidence/gate-all-20260603-011624.log) — exit **137** (runner SIGKILL ~25s). Prior full pass also [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log).
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 
@@ -150,8 +152,8 @@ All branches below are **ancestors of `main`** at HEAD `5f88326`. Serial merge i
 
 | Field | Value |
 |-------|--------|
-| **Integration HEAD** | `f7295d2` |
-| **Canonical log** | [`docs/evidence/gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) |
+| **Integration HEAD** | `263374286168dafced4ddcd40e3bd04b536103f1` |
+| **Canonical log** | [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) |
 | **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui + dbos-skip) |
 | **Exit code** | `0` |
 | Reproduce | `rm -f /tmp/durabl-harness.lock && export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d-%H%M%S).log` |
