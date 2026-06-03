@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `d67e13f` · **Gate log:** [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) (`ALL GATES PASSED`, exit 0)
+**Branch:** `main` · **HEAD:** `3b54627` · **Gate log:** [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) (`ALL GATES PASSED`, exit 0)
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 
@@ -150,7 +150,7 @@ All branches below are **ancestors of `main`** at HEAD `5f88326`. Serial merge i
 
 | Field | Value |
 |-------|--------|
-| **Integration HEAD** | `d67e13f` |
+| **Integration HEAD** | `3b54627` (docs closure; gated tree `d67e13f`) |
 | **Canonical log** | [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) |
 | **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui + dbos-skip) |
 | **Exit code** | `0` |
