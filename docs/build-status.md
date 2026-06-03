@@ -4,7 +4,7 @@
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** `5d8b8f5` — **`gate:all`:** exit **0**, **ALL GATES PASSED** — authoritative [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (also [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log)). Partial SIGKILL (not primary): [`gate-all-20260603-011624.log`](evidence/gate-all-20260603-011624.log) exit **137**.
+**main HEAD:** `5e71af9` — **`gate:all`:** exit **0**, **ALL GATES PASSED** — authoritative [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (also [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log)). Partial SIGKILL (not primary): [`gate-all-20260603-011624.log`](evidence/gate-all-20260603-011624.log) exit **137**.
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /

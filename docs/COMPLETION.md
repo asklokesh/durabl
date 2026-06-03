@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `5d8b8f5` (`5d8b8f5` — design + devex WIP committed) · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`npm run gate:all` exit **0**, **ALL GATES PASSED**)[^gate-partial] · **Shipped in `5d8b8f5`:** forensic teal UI, devex fixes, `DESIGN.md`, `docs/OPERATOR.md`, gate evidence logs
+**Branch:** `main` · **HEAD:** `5e71af9` (design + devex landed) · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`npm run gate:all` exit **0**, **ALL GATES PASSED**)[^gate-partial] · **Shipped in `5e71af9`:** forensic teal UI, devex fixes, `DESIGN.md`, `docs/OPERATOR.md`, gate evidence logs
 
 [^gate-partial]: Non-authoritative partial run [`gate-all-20260603-011624.log`](evidence/gate-all-20260603-011624.log) — exit **137** (runner SIGKILL ~25s). Prior full pass also [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log).
 
