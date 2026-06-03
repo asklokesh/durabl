@@ -1,19 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// HITL WEB UI GATE — live paused list + resume via HTTP API (no browse daemon).
-//
-//   npm run gate:hitl-ui
-//
-//   G1 hitl-ui-api-resume:
-//       Covered by M5 G5 (`run-m5-gate.ts`).
-//
-//   G2 hitl-ui-offline-paused-readonly:
-//       Synthetic paused-only JSONL import — paused visible, POST returns 503.
-// ─────────────────────────────────────────────────────────────────────────────
+// HITL WEB UI GATE — G2 offline queue (live resume: M5 G5).
 
-import {
-  enterHarnessGate,
-  releaseHarnessLock,
-} from "./restate-control.js";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { enterHarnessGate, releaseHarnessLock } from "./restate-control.js";
+import { closeOfflineHitlQueueForTests } from "../hitl-offline-queue.js";
 import { startServerHandle } from "../server.js";
 import { FIXTURE_HITL_UI_OFFLINE } from "./fixture-paths.js";
 
@@ -28,13 +19,15 @@ function record(name: string, pass: boolean, detail: string): void {
   console.log(`[GATE ${pass ? "PASS" : "FAIL"}] ${name}\n  ${detail}\n`);
 }
 
-async function g2HitlUiOfflineReadonly(): Promise<void> {
+async function g2HitlUiOfflineQueue(): Promise<void> {
   const runId = "hitl-ui-offline-paused";
   let ui: Awaited<ReturnType<typeof startServerHandle>> | null = null;
+  const dataDir = mkdtempSync(join(tmpdir(), "durabl-g2-hitl-"));
+  const prevDataDir = process.env.DURABL_DATA_DIR;
+  process.env.DURABL_DATA_DIR = dataDir;
+  closeOfflineHitlQueueForTests();
 
   try {
-    const paused = true;
-
     ui = await startServerHandle({ importPath: FIXTURE_HITL_UI_OFFLINE, port: 17879 });
     const pausedRes = await fetch(`${ui.url}/api/hitl/paused`).then((r) => r.json()) as {
       submitEnabled?: boolean;
@@ -43,33 +36,44 @@ async function g2HitlUiOfflineReadonly(): Promise<void> {
     const submitRes = await fetch(`${ui.url}/api/hitl/input`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ runId, decision: "SHOULD-FAIL" }),
+      body: JSON.stringify({ runId, decision: "APPROVED-OFFLINE-G2" }),
     });
-    const submitBody = await submitRes.json() as { error?: string; submitEnabled?: boolean };
+    const submitBody = await submitRes.json() as {
+      queued?: boolean;
+      accepted?: boolean;
+      state?: string;
+    };
+    const pausedAfter = await fetch(`${ui.url}/api/hitl/paused`).then((r) => r.json()) as {
+      paused?: { runId: string }[];
+    };
 
     const pass =
-      paused &&
-      pausedRes.submitEnabled === false &&
+      pausedRes.submitEnabled === true &&
       (pausedRes.paused?.some((p) => p.runId === runId) ?? false) &&
-      submitRes.status === 503 &&
-      submitBody.submitEnabled === false;
+      submitRes.status === 200 &&
+      submitBody.queued === true &&
+      submitBody.state === "resumed" &&
+      !(pausedAfter.paused?.some((p) => p.runId === runId) ?? false);
 
     record(
-      "G2 hitl-ui-offline-paused-readonly",
+      "G2 hitl-ui-offline-paused-queue",
       pass,
-      `had_pause_in_export=${paused} submitEnabled=${pausedRes.submitEnabled} ` +
-        `submit_http=${submitRes.status} error=${submitBody.error?.slice(0, 60) ?? "n/a"}`,
+      `submitEnabled=${pausedRes.submitEnabled} submit_http=${submitRes.status} ` +
+        `queued=${submitBody.queued} state=${submitBody.state}`,
     );
   } finally {
     if (ui) await ui.close();
+    closeOfflineHitlQueueForTests();
+    rmSync(dataDir, { recursive: true, force: true });
+    if (prevDataDir === undefined) delete process.env.DURABL_DATA_DIR;
+    else process.env.DURABL_DATA_DIR = prevDataDir;
   }
 }
 
 async function main(): Promise<void> {
   await enterHarnessGate();
   try {
-    // Live resume is M5 G5; run `npm run gate:hitl-ui` for G2 + full M5.
-    await g2HitlUiOfflineReadonly();
+    await g2HitlUiOfflineQueue();
   } finally {
     /* lock released after summary */
   }
@@ -82,11 +86,10 @@ async function main(): Promise<void> {
   }
   console.log("------------------------------------------------");
   console.log(`${passed}/${results.length} gates passed`);
-  const allPass = passed === results.length;
-  console.log(`VERDICT: ${allPass ? "GATE PASSED" : "GATE FAILED"}`);
+  console.log(`VERDICT: ${passed === results.length ? "GATE PASSED" : "GATE FAILED"}`);
   console.log("================================================");
   releaseHarnessLock();
-  process.exitCode = allPass ? 0 : 1;
+  process.exitCode = passed === results.length ? 0 : 1;
 }
 
 main().catch((e) => {

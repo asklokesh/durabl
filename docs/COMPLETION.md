@@ -112,7 +112,7 @@ All listed branches are **ancestors of integration `main`** (verified 2026-06-02
 | **Live LLM calls (H3)** | **CONFIG-READY** | `gate:live` / H3: SKIP exit 0 without keys; needs real OpenAI/Anthropic keys to exercise |
 | **Docker deploy target (M4)** | **CONFIG-READY** | `gate:m4` CONFIG-READY-NOT-RUN when Docker daemon/image absent |
 | **DBOS second substrate** | **NOT-PLANNED** (stub only) | `journal-source-dbos-stub.ts` + H2 stub gate — not a working DBOS product |
-| **Offline HITL live submit** | **NOT-PLANNED** (by design) | `POST /api/hitl/input` → **503** without live Restate ingress |
+| **Offline HITL queue** | **Verified** | `POST /api/hitl/input` queues locally; `POST /api/hitl/flush` replays via Restate in live mode |
 | **Python SDK** | **NOT-PLANNED** (stub) | `docs/PYTHON-SDK.md` only; TS ships first |
 
 ---

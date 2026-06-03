@@ -59,7 +59,8 @@ Builds on M5 pause/resume journal semantics. See also [`hitl-web-ui.md`](hitl-we
 |-----|------|------------------|
 | `GET /api/hitl/paused` | ✅ | ✅ (from export) |
 | `GET /api/hitl/status?runId=` | ✅ | ✅ |
-| `POST /api/hitl/input` | ✅ (Restate ingress) | **503** — submit disabled |
+| `POST /api/hitl/input` | ✅ (Restate ingress) | ✅ **offline queue** (`hitlSubmitMode: offline-queue`) |
+| `POST /api/hitl/flush` | ✅ (replay queue → ingress) | **503** (live only) |
 
 Live mode: sidebar **Awaiting human input**, decision form calls the same path as `durabl hitl-input`. Double-submit is idempotent.
 
@@ -81,11 +82,12 @@ Live mode: sidebar **Awaiting human input**, decision form calls the same path a
 | Time-travel / step detail | ✅ | ✅ |
 | Trajectory diff | ✅ | ✅ |
 | Paused runs visible | ✅ | ✅ (if export contains `hitl_pause` without `hitl_input`) |
-| HITL submit / resume | ✅ | ❌ **503** |
+| HITL submit (queue locally) | ✅ | ✅ |
+| HITL resume on Restate | ✅ | ❌ (flush in live mode) |
 | `/api/health` `live` | `true` | `false`; origin `imported:…` |
 | Source pill | green (live) | amber (offline) |
 
-**Proof:** M3 gate G3 (substrate killed, replay from export); M5 G4 (HITL export offline); `npm run gate:hitl-ui` G2 (paused read-only offline).
+**Proof:** M3 gate G3 (substrate killed, replay from export); M5 G4 (HITL export offline); `npm run gate:hitl-ui` G2 (offline queue submit).
 
 ---
 

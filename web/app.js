@@ -12,8 +12,7 @@ const el = (tag, cls, txt) => {
 };
 
 const HITL_SUBMIT_OFFLINE_ERROR =
-  "HITL submit requires live mode (SQLite journal + Restate ingress). " +
-  "Offline export can list paused runs but cannot resolve the durable promise.";
+  "Offline queue: decisions are saved locally and replay to Restate when the UI runs in live mode.";
 
 const state = {
   runs: [],
@@ -201,7 +200,7 @@ function updateOfflineBanner(h) {
   banner.textContent =
     h?.hitlSubmitDisabledReason ||
     state.hitlSubmitDisabledReason ||
-    "Viewing imported JSONL — replay only. No live substrate; HITL submit is disabled.";
+    "Viewing imported JSONL — replay and offline HITL queue. Start live mode to flush to Restate.";
 }
 
 function updateExportButton() {
@@ -313,14 +312,17 @@ function setHitlFormMsg(text, kind) {
   msg.textContent = text || "";
 }
 
-function canSubmitHitlNow() {
+function hitlCanSubmit() {
   return Boolean(
     state.selected &&
       state.hitlState === "paused" &&
       state.hitlSubmitEnabled &&
-      state.live &&
       !state.hitlSubmitBusy,
   );
+}
+
+function canSubmitHitlNow() {
+  return hitlCanSubmit();
 }
 
 function syncHitlSubmitControls() {
@@ -352,6 +354,8 @@ async function submitHitlInput(ev) {
     const res = await apiPost("/api/hitl/input", { runId: state.selected, decision });
     if (res.accepted === false && res.state !== "resumed") {
       setHitlFormMsg("Input not accepted (duplicate or already resumed).", "err");
+    } else if (res.queued) {
+      setHitlFormMsg("Queued offline — replay shows resumed; flush in live mode for Restate.", "ok");
     } else {
       setHitlFormMsg(
         res.accepted ? "Accepted — run resuming…" : "Already resumed (idempotent no-op).",

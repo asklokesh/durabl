@@ -72,16 +72,17 @@ test.describe("HITL offline — gate:hitl-ui G2 parity (fetch only)", () => {
     if (uiProc && !uiProc.killed) uiProc.kill("SIGTERM");
   });
 
-  test("lists paused run and rejects POST with 503", async ({ request }) => {
+  test("lists paused run and queues POST offline", async ({ request }) => {
     const pausedRes = await request.get(`${baseUrl}/api/hitl/paused`).then((r) => r.json());
-    expect(pausedRes.submitEnabled).toBe(false);
+    expect(pausedRes.submitEnabled).toBe(true);
     expect(pausedRes.paused?.some((p: { runId: string }) => p.runId === HITL_RUN)).toBe(true);
 
     const submitRes = await request.post(`${baseUrl}/api/hitl/input`, {
-      data: { runId: HITL_RUN, decision: "SHOULD-FAIL" },
+      data: { runId: HITL_RUN, decision: "APPROVED-E2E-OFFLINE" },
     });
-    expect(submitRes.status()).toBe(503);
+    expect(submitRes.status()).toBe(200);
     const body = await submitRes.json();
-    expect(body.submitEnabled).toBe(false);
+    expect(body.queued).toBe(true);
+    expect(body.state).toBe("resumed");
   });
 });
