@@ -33,6 +33,10 @@ export DURABL_MODEL_PROVIDER=openrouter
 npm run gate:live
 ```
 
+If the default free model returns **503** (`no healthy upstream`), set
+`DURABL_OPENROUTER_MODEL=openai/gpt-4o-mini` (verified PASS 2026-06-03; see
+[`docs/evidence/gate-live-20260603-gpt4o-mini.log`](evidence/gate-live-20260603-gpt4o-mini.log)).
+
 With `OPENROUTER_API_KEY` set, the gate asserts real completions, replay
 short-circuit, and export/import parity for the `openrouter` provider. OpenAI and
 Anthropic paths run when their respective keys are set (same gate).
