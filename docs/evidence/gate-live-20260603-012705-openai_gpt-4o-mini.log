@@ -1,0 +1,20 @@
+
+> durabl@0.1.0 gate:live
+> npm run build && node --enable-source-maps dist/harness/run-live-providers-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+
+[GATE PASS] live-openrouter
+  real_call=true mode=real journaled=true replayed=true offline_divergence=none outcome_len=22
+
+================ LIVE PROVIDERS GATE ================
+PASS  live-openrouter
+-----------------------------------------------------
+1/1 providers passed (keys: openai=false anthropic=false openrouter=true)
+VERDICT: GATE PASSED
+=====================================================
+
