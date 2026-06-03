@@ -49,12 +49,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/durabl/durabl.git"
+    "url": "git+https://github.com/asklokesh/durabl.git"
   },
   "bugs": {
-    "url": "https://github.com/durabl/durabl/issues"
+    "url": "https://github.com/asklokesh/durabl/issues"
   },
-  "homepage": "https://github.com/durabl/durabl#readme",
+  "homepage": "https://github.com/asklokesh/durabl#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-web.mjs",
     "clean": "rm -rf dist *.tsbuildinfo",
