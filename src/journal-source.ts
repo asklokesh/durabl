@@ -145,6 +145,7 @@ export function parseExport(jsonl: string): ImportedJournal {
     } catch (e) {
       throw new Error(
         `invalid JSONL at line ${i + 1}: ${e instanceof Error ? e.message : String(e)}`,
+        { cause: e },
       );
     }
     const tag = obj["record"];

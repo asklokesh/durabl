@@ -293,13 +293,9 @@ async function g3DeployNeutrality(): Promise<{ localRun: string; dockerRun: stri
   const sourceUnchanged =
     hashBeforeLocal === hashBeforeDocker && hashBeforeDocker === baseHash;
 
-  let dockerRun: string | null = null;
-  let dockerOk = false;
-  let dockerNote = "";
-
   const runnable = dockerTargetRunnable(dockerTarget.dockerImage!);
   if (!runnable.runnable) {
-    dockerNote =
+    const dockerNote =
       `CONFIG-READY-NOT-RUN: ${runnable.reason}; the config-only switch ` +
       "(DURABL_DEPLOY_TARGET=docker → distinct ingress/admin/ports/launch=docker) " +
       "is demonstrated by the resolved target, but the container was NOT started (honest).";
@@ -318,6 +314,10 @@ async function g3DeployNeutrality(): Promise<{ localRun: string; dockerRun: stri
     );
     return { localRun, dockerRun: null };
   }
+
+  let dockerRun: string;
+  let dockerOk: boolean;
+  let dockerNote: string;
 
   // Docker is available — genuinely run the containerized target.
   const dockerProc = startDockerRestate(dockerTarget);

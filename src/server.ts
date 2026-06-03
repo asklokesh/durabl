@@ -13,7 +13,7 @@
 //     journal/export.
 //   - Replay endpoints are read-only journal reads. M5 HITL resume endpoints
 //     (`POST /api/hitl/input`) proxy to Restate ingress in LIVE mode only;
-//     offline import mode surfaces paused runs from the export but cannot submit.
+//     import queues decisions locally (flush on live reconnect via /api/hitl/flush).
 //   - Optional WebSocket `/api/ws/runs` (live only, DURABL_ENABLE_WS=1) streams
 //     new step + HITL state events — see docs/BACKEND.md.
 //   - No secrets read or logged; config via env vars only.
@@ -53,6 +53,14 @@ import {
   isLiveJournalSource,
   provideInputViaIngress,
 } from "./hitl-source.js";
+import {
+  enqueueOfflineHitl,
+  exportKeyForOrigin,
+  flushOfflineHitlQueue,
+  validateHitlDecision,
+  validateHitlRunId,
+} from "./hitl-offline-queue.js";
+import { overlayOfflineHitlQueue } from "./hitl-offline-overlay.js";
 import { config } from "./config.js";
 import { allowHitlInputSubmit } from "./hitl-input-rate-limit.js";
 import { enforceMutatingApiAuth } from "./api-auth.js";
@@ -70,9 +78,10 @@ import {
 
 const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
 
-export const HITL_SUBMIT_OFFLINE_ERROR =
-  "HITL submit requires live mode (SQLite journal + Restate ingress). " +
-  "Offline export can list paused runs but cannot resolve the durable promise.";
+export const HITL_OFFLINE_QUEUE_HINT =
+  "Offline queue: decisions are saved locally and replay to Restate when the UI runs in live mode.";
+
+export const HITL_SUBMIT_OFFLINE_ERROR = HITL_OFFLINE_QUEUE_HINT;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIRS = [
@@ -157,24 +166,43 @@ function buildSource(opts: ServerOptions): {
   label: string;
   connectionLabel: string;
   exportPath: string | null;
+  exportKey: string | null;
+  hitlOfflineQueue: boolean;
 } {
   if (opts.source) {
-    const source = opts.source;
+    const base = opts.source;
+    if (isLiveJournalSource(base)) {
+      return {
+        source: base,
+        label: base.origin,
+        connectionLabel: connectionLabelForSource(base),
+        exportPath: exportPathFromOrigin(base.origin),
+        exportKey: null,
+        hitlOfflineQueue: false,
+      };
+    }
+    const exportKey = exportKeyForOrigin(base.origin);
     return {
-      source,
-      label: source.origin,
-      connectionLabel: connectionLabelForSource(source),
-      exportPath: exportPathFromOrigin(source.origin),
+      source: overlayOfflineHitlQueue(base, exportKey),
+      label: base.origin,
+      connectionLabel: connectionLabelForSource(base),
+      exportPath: exportPathFromOrigin(base.origin),
+      exportKey,
+      hitlOfflineQueue: true,
     };
   }
   if (opts.importPath) {
     const jsonl = readFileSync(opts.importPath, "utf8");
-    const source = importJournalSource(jsonl, `imported:${opts.importPath}`);
+    const origin = `imported:${opts.importPath}`;
+    const base = importJournalSource(jsonl, origin);
+    const exportKey = exportKeyForOrigin(origin);
     return {
-      source,
-      label: `imported export ${opts.importPath} (OFFLINE — no substrate)`,
+      source: overlayOfflineHitlQueue(base, exportKey),
+      label: `imported export ${opts.importPath} (OFFLINE — queued HITL)`,
       connectionLabel: CONNECTION_LABEL_OFFLINE,
       exportPath: opts.importPath,
+      exportKey,
+      hitlOfflineQueue: true,
     };
   }
   const source = liveJournalSource();
@@ -183,6 +211,8 @@ function buildSource(opts: ServerOptions): {
     label: "live SQLite journal",
     connectionLabel: CONNECTION_LABEL_LIVE,
     exportPath: null,
+    exportKey: null,
+    hitlOfflineQueue: false,
   };
 }
 
@@ -192,54 +222,28 @@ interface Route {
   connectionLabel: string;
   live: boolean;
   exportPath: string | null;
+  exportKey: string | null;
+  hitlOfflineQueue: boolean;
   host: string;
   port: number;
 }
 
-async function restateReady(): Promise<boolean> {
-  try {
-    const res = await fetch(`${config.restateAdmin}/health`, {
-      signal: AbortSignal.timeout(2000),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+function hitlSubmitEnabledFor(ctx: Route): boolean {
+  return ctx.live || ctx.hitlOfflineQueue;
 }
 
-function handleOps(
-  ctx: Route,
-  url: URL,
-  res: ServerResponse,
-): boolean | Promise<boolean> {
-  const p = url.pathname;
-  if (p === "/health") {
-    sendJson(res, 200, { ok: true, live: ctx.live, label: ctx.label });
-    return true;
+function hitlHealthExtras(ctx: Route): Record<string, unknown> {
+  if (ctx.live) return { hitlSubmitMode: "live" as const };
+  if (ctx.hitlOfflineQueue) {
+    return {
+      hitlSubmitMode: "offline-queue" as const,
+      hitlSubmitDisabledReason: HITL_OFFLINE_QUEUE_HINT,
+    };
   }
-  if (p === "/ready") {
-    if (!ctx.live) {
-      sendJson(res, 200, { ready: true, mode: "offline-import" });
-      return true;
-    }
-    return restateReady().then((ready) => {
-      sendJson(res, ready ? 200 : 503, {
-        ready,
-        restateAdmin: config.restateAdmin,
-      });
-      return true;
-    });
-  }
-  if (p === "/metrics") {
-    const body = [
-      "# HELP durabl_ui_up Replay UI server process is up.",
-      "# TYPE durabl_ui_up gauge",
-      "durabl_ui_up 1",
-    ].join("\n");
-    sendText(res, 200, `${body}\n`, "text/plain; version=0.0.4; charset=utf-8");
-    return true;
-  }
-  return false;
+  return {
+    hitlSubmitMode: "disabled" as const,
+    hitlSubmitDisabledReason: "HITL submit unavailable for this journal source.",
+  };
 }
 
 async function restateAdminReachable(): Promise<boolean> {
@@ -336,12 +340,12 @@ function handleApi(
       label: ctx.connectionLabel,
       detail: ctx.label,
       live: ctx.live,
-      hitlSubmitEnabled: ctx.live,
+      hitlSubmitEnabled: hitlSubmitEnabledFor(ctx),
       exportPath: ctx.exportPath,
       uiUrl: requestUiUrl(req, ctx.host, ctx.port),
       wsEnabled,
       wsPath: wsEnabled ? WS_RUNS_PATH : null,
-      ...(ctx.live ? {} : { hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR }),
+      ...hitlHealthExtras(ctx),
     });
     return true;
   }
@@ -377,7 +381,8 @@ function handleApi(
     sendJson(res, 200, {
       source: source.origin,
       live: ctx.live,
-      submitEnabled: ctx.live,
+      submitEnabled: hitlSubmitEnabledFor(ctx),
+      hitlSubmitMode: ctx.live ? "live" : ctx.hitlOfflineQueue ? "offline-queue" : "disabled",
       paused,
     });
     return true;
@@ -385,14 +390,20 @@ function handleApi(
   if (p === "/api/hitl/status") {
     const runId = url.searchParams.get("runId");
     if (!runId) return badReq(res, "runId required");
+    const errRun = validateHitlRunId(runId);
+    if (errRun) return badReq(res, errRun);
     const state = hitlStateFromSource(source, runId);
     sendJson(res, 200, {
       runId,
       state,
       live: ctx.live,
-      submitEnabled: ctx.live && state === "paused",
+      submitEnabled: hitlSubmitEnabledFor(ctx) && state === "paused",
+      hitlSubmitMode: ctx.live ? "live" : ctx.hitlOfflineQueue ? "offline-queue" : "disabled",
     });
     return true;
+  }
+  if (p === "/api/hitl/flush" && req.method === "POST") {
+    return handleHitlFlush(ctx, res);
   }
   if (p === "/api/hitl/input" && req.method === "POST") {
     return handleHitlInput(ctx, req, res);
@@ -501,8 +512,11 @@ async function handleImport(
   if (!jsonl) return badReq(res, "empty JSONL body");
   try {
     const origin = `imported:upload:${Date.now()}`;
-    ctx.source = importJournalSource(jsonl, origin);
-    ctx.label = "browser upload (OFFLINE — no substrate)";
+    const base = importJournalSource(jsonl, origin);
+    ctx.exportKey = exportKeyForOrigin(origin);
+    ctx.source = overlayOfflineHitlQueue(base, ctx.exportKey);
+    ctx.hitlOfflineQueue = true;
+    ctx.label = "browser upload (OFFLINE — queued HITL)";
     ctx.live = false;
     ctx.exportPath = null;
     sendJson(res, 200, {
@@ -510,8 +524,9 @@ async function handleImport(
       origin: ctx.source.origin,
       label: ctx.label,
       live: false,
-      hitlSubmitEnabled: false,
-      hitlSubmitDisabledReason: HITL_SUBMIT_OFFLINE_ERROR,
+      hitlSubmitEnabled: true,
+      hitlSubmitMode: "offline-queue",
+      hitlSubmitDisabledReason: HITL_OFFLINE_QUEUE_HINT,
       runs: ctx.source.allRunIds().length,
     });
   } catch (e) {
@@ -545,18 +560,30 @@ async function handleForkPost(
   return true;
 }
 
+async function handleHitlFlush(ctx: Route, res: ServerResponse): Promise<boolean> {
+  if (!ctx.live) {
+    sendJson(res, 503, {
+      error: "HITL queue flush requires live mode",
+      submitEnabled: false,
+    });
+    return true;
+  }
+  try {
+    const result = await flushOfflineHitlQueue(
+      (runId) => hitlStateFromSource(ctx.source, runId) === "paused",
+    );
+    sendJson(res, 200, { ok: true, ...result });
+  } catch {
+    sendJson(res, 500, { error: "queue flush failed" });
+  }
+  return true;
+}
+
 async function handleHitlInput(
   ctx: Route,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<boolean> {
-  if (!ctx.live) {
-    sendJson(res, 503, {
-      error: HITL_SUBMIT_OFFLINE_ERROR,
-      submitEnabled: false,
-    });
-    return true;
-  }
   let body: unknown;
   try {
     body = await readJsonBody(req);
@@ -565,9 +592,55 @@ async function handleHitlInput(
   }
   const o = body as Record<string, unknown>;
   const runId = typeof o.runId === "string" ? o.runId : "";
-  const decision = typeof o.decision === "string" ? o.decision.trim() : "";
-  if (!runId) return badReq(res, "runId required");
-  if (!decision) return badReq(res, "decision required");
+  const decision = typeof o.decision === "string" ? o.decision : "";
+  const errRun = validateHitlRunId(runId);
+  if (errRun) return badReq(res, errRun);
+  const errDec = validateHitlDecision(decision);
+  if (errDec) return badReq(res, errDec);
+  const trimmed = decision.trim();
+
+  if (!ctx.live) {
+    if (!ctx.hitlOfflineQueue || !ctx.exportKey) {
+      sendJson(res, 503, {
+        error: "HITL submit unavailable",
+        submitEnabled: false,
+      });
+      return true;
+    }
+    if (!allowHitlInputSubmit(runId)) {
+      sendJson(res, 429, { error: "too many requests" });
+      return true;
+    }
+    const state = hitlStateFromSource(ctx.source, runId);
+    if (state === "none") {
+      sendJson(res, 404, { error: "run has no HITL pause", runId, state });
+      return true;
+    }
+    if (state === "resumed") {
+      sendJson(res, 200, {
+        runId,
+        accepted: false,
+        queued: false,
+        state: "resumed",
+        note: "human input already recorded (export or queue)",
+      });
+      return true;
+    }
+    try {
+      enqueueOfflineHitl(ctx.exportKey, runId, trimmed);
+      sendJson(res, 200, {
+        runId,
+        accepted: true,
+        queued: true,
+        state: hitlStateFromSource(ctx.source, runId),
+        hitlSubmitMode: "offline-queue",
+        note: "Saved to offline queue; call POST /api/hitl/flush in live mode to resume on Restate.",
+      });
+    } catch {
+      sendJson(res, 400, { error: "invalid request" });
+    }
+    return true;
+  }
 
   if (!allowHitlInputSubmit(runId)) {
     sendJson(res, 429, { error: "too many requests" });
@@ -590,14 +663,16 @@ async function handleHitlInput(
   }
 
   try {
-    const result = await provideInputViaIngress(runId, decision);
+    const result = await provideInputViaIngress(runId, trimmed);
     sendJson(res, 200, {
       ...result,
+      queued: false,
+      hitlSubmitMode: "live",
       state: hitlStateFromSource(ctx.source, runId),
     });
-  } catch (e) {
+  } catch {
     sendJson(res, 502, {
-      error: e instanceof Error ? e.message : String(e),
+      error: "upstream unavailable",
       runId,
       hint: "ensure Restate ingress is reachable (DURABL_RESTATE_INGRESS)",
     });
@@ -616,11 +691,27 @@ export interface ServerHandle {
 }
 
 export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandle> {
-  const { source, label, connectionLabel, exportPath } = buildSource(opts);
-  const live = isLiveJournalSource(source);
+  const built = buildSource(opts);
+  const live = isLiveJournalSource(built.source);
   const host = process.env.DURABL_UI_HOST ?? "127.0.0.1";
   const port = opts.port ?? Number(process.env.DURABL_UI_PORT ?? 7878);
-  const ctx: Route = { source, label, connectionLabel, live, exportPath, host, port };
+  const ctx: Route = {
+    source: built.source,
+    label: built.label,
+    connectionLabel: built.connectionLabel,
+    live,
+    exportPath: built.exportPath,
+    exportKey: built.exportKey,
+    hitlOfflineQueue: built.hitlOfflineQueue,
+    host,
+    port,
+  };
+
+  if (live) {
+    void flushOfflineHitlQueue(
+      (runId) => hitlStateFromSource(ctx.source, runId) === "paused",
+    ).catch(() => undefined);
+  }
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const started = performance.now();
@@ -685,7 +776,7 @@ export function startServerHandle(opts: ServerOptions = {}): Promise<ServerHandl
     server.listen(port, host, () => {
 
       const url = `http://${host}:${port}`;
-      logServerStart({ url, origin: source.origin, live });
+      logServerStart({ url, origin: ctx.source.origin, live });
       resolve({
         url,
         close: () =>

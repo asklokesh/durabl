@@ -3,7 +3,15 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "web/**", "docs/**", "scripts/**"],
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "web/**",
+      "docs/**",
+      "scripts/**",
+      "examples/**/dist/**",
+      "python/**",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

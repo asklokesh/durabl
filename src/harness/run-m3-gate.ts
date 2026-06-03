@@ -114,7 +114,7 @@ async function main(): Promise<void> {
   const forkA = `m3-forkA-${ts}`;
   const forkB = `m3-forkB-${ts}`;
   const subFork = `m3-subforkB-${ts}`;
-  let bundle = "";
+  let bundle!: string;
 
   try {
     const svc = await startAndRegisterService();
