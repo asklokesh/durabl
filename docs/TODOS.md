@@ -20,6 +20,10 @@ Tracked items explicitly **out of** the forward-phase plan in [`docs/plans/autop
 
 ## Explicitly deferred (forward phase)
 
+| **TypeScript 6** | Dependabot PR #3: `tsc` fails on TS6 without coordinated `@types/node` + config; stay on TS 5.x until upstream/typescript-eslint guidance | After TS6 + eslint10 lockfile validated in CI |
+
+
+
 | Item | Defer reason | Revisit when |
 |------|--------------|--------------|
 | **npm publish** | CEO SELECTIVE EXPANSION: defer co-ship with hardening; `RELEASING.md` is tarball-first | Release-channel decision + semver/support policy; run `scripts/verify-npm-pack.sh` |
