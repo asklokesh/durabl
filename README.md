@@ -44,6 +44,10 @@ invoke via `npx durabl` / `node dist/cli.js` from a source checkout.
 **Prerequisites:** Node.js **>= 22.5.0** (uses built-in `node:sqlite`). macOS or
 Linux recommended for the adversarial harness.
 
+Complete [Install](#install) first (git clone or release `.tgz`). There is no
+`npm install durabl` on npmjs.org for v0.1.0. The commands below run in that
+tree (or after `npm install /path/to/durabl-*.tgz`).
+
 ```bash
 npm install
 npm run build          # optional; demo/test build automatically

@@ -39,7 +39,9 @@ Exit code **0**. If the demo ends with `DEMO FAILED` or `DEMO ERROR`, see [DEMO-
 
 ## 1. Install (~2–3 min first time)
 
-**v0.1.0:** releases ship as a GitHub Actions **tarball**, not npmjs.org. Pick one path:
+**v0.1.0:** releases ship as a GitHub Actions **tarball**, not npmjs.org.
+`npm install durabl` / `npm view durabl` on the public registry return **404** — expected.
+Pick one path:
 
 **From source (contributors):**
 

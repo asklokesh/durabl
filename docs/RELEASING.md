@@ -14,6 +14,15 @@ via GitHub Actions. That is the supported install path for end users.
 | End user / operator | `npm install /path/to/durabl-0.1.0.tgz` | [Install from a tarball](#install-from-a-tarball) below |
 | Contributor | `git clone https://github.com/asklokesh/durabl.git` + `npm install` + `npm run build` | [README](../README.md#install), [QUICKSTART.md](./QUICKSTART.md) |
 
+### v0.1 operator install (single path)
+
+1. Push or find tag `v0.1.0` (see [Cut a release](#cut-a-release)).
+2. Open the GitHub Actions run for that tag → download artifact `npm-pack-v0.1.0`.
+3. `npm install -g /path/to/durabl-0.1.0.tgz` (or project-local without `-g`).
+4. `durabl --help`, then [QUICKSTART.md](./QUICKSTART.md) (`bash scripts/quickstart.sh` optional smoke).
+
+Do **not** use `npm install durabl` — the package name is not on npmjs.org.
+
 This project ships release tarballs via GitHub Actions when you push a version tag.
 No npm registry publish step and no publish secrets are required.
 
@@ -34,7 +43,7 @@ Fast gate before tagging:
 
 ```bash
 bash scripts/verify-release.sh
-npm run build && npm pack --dry-run
+npm run verify:npm-pack    # build + npm pack --dry-run + contents check
 ```
 
 Before a milestone merge or public release, run the full gate suite locally:

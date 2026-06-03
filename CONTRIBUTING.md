@@ -39,11 +39,12 @@ npm run smoke
 
 Runs `scripts/smoke-quickstart.sh` → `scripts/quickstart.sh` with `DURABL_SMOKE=1` and an isolated `DURABL_DATA_DIR`. Use before opening a PR when you only touched docs or packaging; run the relevant `gate:*` scripts for harness changes.
 
-## npm package (pre-publish)
+## Release tarball (verify pack contents)
 
-Before tagging or publishing to npm, confirm the tarball matches what consumers
-install (compiled `dist/`, root `web/` for the replay UI, no `src/` or harness
-leaks):
+v0.1 ships a GitHub Actions **`npm pack` tarball**, not npmjs.org — see
+[`docs/RELEASING.md`](docs/RELEASING.md). Before tagging, confirm the pack matches
+what operators install (compiled `dist/`, root `web/` for the replay UI, no `src/`
+or harness leaks):
 
 ```bash
 npm run verify:npm-pack
