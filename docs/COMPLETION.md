@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `3b54627` · **Gate log:** [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) (`ALL GATES PASSED`, exit 0)
+**Branch:** `main` · **HEAD:** `f7295d2` · **Gate log:** [`docs/evidence/gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) (`ALL GATES PASSED`, exit 0)
 
 This checklist records what was **verified with real gates** vs **config-ready** (skipped or stubbed by design).
 
@@ -150,8 +150,8 @@ All branches below are **ancestors of `main`** at HEAD `5f88326`. Serial merge i
 
 | Field | Value |
 |-------|--------|
-| **Integration HEAD** | `3b54627` (docs closure; gated tree `d67e13f`) |
-| **Canonical log** | [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) |
+| **Integration HEAD** | `f7295d2` |
+| **Canonical log** | [`docs/evidence/gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) |
 | **Verdict** | `ALL GATES PASSED` (typecheck + M1–M5 + harden + hitl-ui + dbos-skip) |
 | **Exit code** | `0` |
 | Reproduce | `rm -f /tmp/durabl-harness.lock && export DURABL_DATA_DIR=/tmp/durabl-gate-$$ && npm run gate:all 2>&1 \| tee docs/evidence/gate-all-$(date +%Y%m%d-%H%M%S).log` |

@@ -4,7 +4,7 @@
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** `3b54627` — integration closure docs; code tree through `d67e13f` (M0–M5 + UX/UI + integ docs/MCP stub + UI hash routes). **`gate:all`:** PASS per [`docs/evidence/gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) (`ALL GATES PASSED`, exit 0). Run serially; do not set placeholder API keys (H3 would call real endpoints and fail).
+**main HEAD:** `f7295d2` — branch/worktree cleanup + HEAD docs; code tree through `d67e13f`. **`gate:all`:** PASS per [`docs/evidence/gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) (`ALL GATES PASSED`, exit 0). Run serially; do not set placeholder API keys (H3 would call real endpoints and fail).
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
@@ -101,7 +101,7 @@ Checklist with commit SHAs and verified vs config-ready: [`docs/COMPLETION.md`](
 
 | Item | Status | Notes |
 |------|--------|--------|
-| M0–M5 + `gate:harden` H1/H2/H3 + `gate:hitl-ui` G2 + `gate:dbos-skip` | **VERIFIED** | `npm run gate:all` @ `d67e13f` (main `3b54627`); log [`gate-all-20260602-204751.log`](evidence/gate-all-20260602-204751.log) |
+| M0–M5 + `gate:harden` H1/H2/H3 + `gate:hitl-ui` G2 + `gate:dbos-skip` | **VERIFIED** | `npm run gate:all` @ `f7295d2`; log [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log) |
 | H3 live LLM (`gate:harden` / `gate:live`) | **CONFIG-READY** | SKIP exit 0 with no API keys; real keys required for live provider exercise |
 | M4 Docker deploy target | **CONFIG-READY** | Skipped when Docker daemon/image absent |
 | **DBOS second substrate** | **NOT-PLANNED** | Interface stub + H2 gate only — not a working DBOS integration |
