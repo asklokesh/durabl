@@ -12,7 +12,7 @@ via GitHub Actions. That is the supported install path for end users.
 | Audience | Install | Doc |
 |----------|---------|-----|
 | End user / operator | `npm install /path/to/durabl-0.1.0.tgz` | [Install from a tarball](#install-from-a-tarball) below |
-| Contributor | `git clone` + `npm install` + `npm run build` | [README](../README.md#install), [QUICKSTART.md](./QUICKSTART.md) |
+| Contributor | `git clone https://github.com/asklokesh/durabl.git` + `npm install` + `npm run build` | [README](../README.md#install), [QUICKSTART.md](./QUICKSTART.md) |
 
 This project ships release tarballs via GitHub Actions when you push a version tag.
 No npm registry publish step and no publish secrets are required.

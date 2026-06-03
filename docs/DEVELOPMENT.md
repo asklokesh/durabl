@@ -61,7 +61,7 @@ Forwarded ports (defaults):
 ## Single checkout
 
 ```bash
-git clone <fork> durabl && cd durabl
+git clone https://github.com/asklokesh/durabl.git && cd durabl
 nvm use          # if using nvm
 npm install
 npm run build

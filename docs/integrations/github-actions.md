@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run durabl gates
-        uses: durabl/durabl/.github/actions/run-gates@main
+        uses: asklokesh/durabl/.github/actions/run-gates@main
 ```
 
 Pin `@main` to a tag or commit SHA for reproducible CI.
@@ -46,7 +46,7 @@ Pin `@main` to a tag or commit SHA for reproducible CI.
 Example with overrides:
 
 ```yaml
-- uses: durabl/durabl/.github/actions/run-gates@v0.1.0
+- uses: asklokesh/durabl/.github/actions/run-gates@v0.1.0
   with:
     node-version: "22"
     working-directory: packages/durabl-app

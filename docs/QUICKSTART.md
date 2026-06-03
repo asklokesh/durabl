@@ -44,7 +44,7 @@ Exit code **0**. If the demo ends with `DEMO FAILED` or `DEMO ERROR`, see [DEMO-
 **From source (contributors):**
 
 ```bash
-git clone <your-fork> durabl && cd durabl
+git clone https://github.com/asklokesh/durabl.git && cd durabl
 cp .env.example .env   # optional: uncomment DURABL_* vars you need
 npm install
 npm run build

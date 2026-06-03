@@ -33,7 +33,7 @@ and install from `.tgz`.
 
 | Path | When | Steps |
 |------|------|--------|
-| **From source** | Contributors, local dev | `git clone … && cd durabl && npm install && npm run build` |
+| **From source** | Contributors, local dev | `git clone https://github.com/asklokesh/durabl.git && cd durabl && npm install && npm run build` |
 | **From tarball** | Consumers of a tagged release | Download `durabl-<version>.tgz` from the GitHub Actions run for tag `v*`, then `npm install /path/to/durabl-0.1.0.tgz` |
 
 After either path, the `durabl` CLI is on your PATH when installed globally, or

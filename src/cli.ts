@@ -182,7 +182,7 @@ Human-in-the-loop (Restate ingress):
   paused
 
 Environment: DURABL_DATA_DIR, DURABL_JOURNAL_DB, DURABL_RESTATE_INGRESS, …
-Docs: https://github.com/durabl/durabl/blob/main/docs/CLI.md
+Docs: https://github.com/asklokesh/durabl/blob/main/docs/CLI.md
 `;
 
 const COMMAND_HELP: Record<string, string> = {
