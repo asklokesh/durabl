@@ -11,10 +11,10 @@ Tracked items explicitly **out of** the forward-phase plan in [`docs/plans/autop
 | Item | Status | Notes |
 |------|--------|-------|
 | **DBOS substrate (product)** | NOT-PLANNED | Stub + `gate:dbos-skip` only; no DBOS integration work |
-| **Python SDK** | NOT-PLANNED | `docs/PYTHON-SDK.md` stub; TypeScript ships first |
-| **Managed control plane** | NOT-PLANNED | Narrative in `FUNDING.md` only; no hosted SaaS build |
+| **Python SDK (full parity)** | NOT-PLANNED | MVP shipped in `python/` (read path + HTTP client); write/fork/Restate/PyPI remain |
+| **Managed control plane** | documented MVP | [`docs/architecture/control-plane.md`](architecture/control-plane.md); no hosted service |
 | **Offline HITL write** | NOT-PLANNED (by design) | `POST /api/hitl/input` → 503 offline; would require architecture change |
-| **M6 multi-tenant SaaS** | NOT-PLANNED | Out of v0.1 boundary per autoplan CEO review |
+| **M6 multi-tenant SaaS** | documented MVP | [`docs/architecture/m6-saas.md`](architecture/m6-saas.md); `DURABL_TENANT_ID` stub only |
 
 ---
 
@@ -26,7 +26,7 @@ Tracked items explicitly **out of** the forward-phase plan in [`docs/plans/autop
 
 | Item | Defer reason | Revisit when |
 |------|--------------|--------------|
-| **npm publish** | CEO SELECTIVE EXPANSION: defer co-ship with hardening; `RELEASING.md` is tarball-first | Release-channel decision + semver/support policy; run `scripts/verify-npm-pack.sh` |
+| **npm publish** | **BLOCKED:** `NPM_TOKEN` unset; `npm whoami` → 401; `npm view durabl` → 404. Pack path ready (`private` removed, `publishConfig.access` public, `verify:npm-pack` PASS). Maintainer: set `NPM_TOKEN` or `npm login`, then `npm publish --access public` per [RELEASING.md](./RELEASING.md#publish-to-npmjsorg) | After first `npm view durabl version` shows `0.1.0`; align README registry row |
 | **gbrain sync** | **BLOCKED** on this machine (`gbrain` CLI not on PATH; no `~/.gbrain/config.json`) | `/setup-gbrain` or `~/.claude/skills/gstack/bin/gstack-gbrain-install` then `gbrain init --pglite --json`; from repo root: `bun run ~/.claude/skills/gstack/bin/gstack-gbrain-sync.ts` (add `--full` for first code index). Not a ship blocker |
 
 ---

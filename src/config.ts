@@ -72,6 +72,12 @@ export const config = {
    * Unset → tracing hooks are no-ops with zero network I/O.
    */
   otelEndpoint: process.env.DURABL_OTEL_ENDPOINT ?? "",
+  /**
+   * Reserved for M6 multi-tenant routing. Unset → single-tenant self-host (default).
+   * Non-empty value is accepted but does not change journal or API behavior yet.
+   * See `docs/architecture/m6-saas.md`.
+   */
+  tenantId: process.env.DURABL_TENANT_ID?.trim() ?? "",
 } as const;
 
 export const DATA_ROOT = ROOT;

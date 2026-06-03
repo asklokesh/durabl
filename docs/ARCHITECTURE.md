@@ -405,6 +405,8 @@ web/
 
 | Topic | Doc |
 |-------|-----|
+| Managed control plane (future) | [`architecture/control-plane.md`](architecture/control-plane.md) |
+| M6 multi-tenant SaaS (future) | [`architecture/m6-saas.md`](architecture/m6-saas.md) |
 | M1 journal + exactly-once | [`m1-slice.md`](m1-slice.md) |
 | M2 fork | [`m2-trajectory-branching.md`](m2-trajectory-branching.md) |
 | M3 replay + UI | [`m3-observability-replay.md`](m3-observability-replay.md) |

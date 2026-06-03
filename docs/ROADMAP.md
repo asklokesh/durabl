@@ -31,6 +31,8 @@ Extension tracks on `main`: live-provider gate (`gate:live`), hardening, HITL we
 
 ## M6 — Managed control plane (honest: not started)
 
+**Architecture (documented MVP, no implementation):** [`architecture/control-plane.md`](architecture/control-plane.md) · [`architecture/m6-saas.md`](architecture/m6-saas.md)
+
 **Goal:** Revenue and ops for teams that want durabl’s journal semantics without
 running Restate + SQLite + UI themselves.
 

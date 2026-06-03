@@ -108,4 +108,4 @@ Checklist with commit SHAs and verified vs config-ready: [`docs/COMPLETION.md`](
 | **Offline HITL live submit** | **NOT-PLANNED** | Export lists paused runs; resume requires live Restate (`503` offline) |
 | **Python SDK** | **NOT-PLANNED** | Stub/docs only; TS first ([`PYTHON-SDK.md`](PYTHON-SDK.md)) |
 | Reimplementing durable engine / CRIU fork | **NOT-PLANNED** | Phase 0 rejection — step-journal fork only |
-| Managed hosted control plane | **NOT-PLANNED** | Narrative only ([`FUNDING.md`](FUNDING.md)) |
+| Managed hosted control plane | **documented MVP** | No hosted service — [`architecture/control-plane.md`](architecture/control-plane.md), [`architecture/m6-saas.md`](architecture/m6-saas.md) |

@@ -84,7 +84,7 @@ Not the engine (~80% commoditized per Phase 0). The remaining slivers:
 | Motion | What ships | Role |
 |---|---|---|
 | **OSS core (Apache-2.0)** | Journal schema, Restate reference integration, CLI (`inspect`, `fork`, `replay`, `export-bundle`, `ui`), adversarial gates | Trust, adoption, “show me the SIGKILL demo” |
-| **Managed (future)** | Hosted journal ingest, retention policies, RBAC, team replay UI, export compliance | Revenue; ops burden we absorb |
+| **Managed (future)** | Hosted journal ingest, retention policies, RBAC, team replay UI, export compliance | Revenue; ops burden we absorb — architecture only: [`architecture/control-plane.md`](architecture/control-plane.md), [`architecture/m6-saas.md`](architecture/m6-saas.md) (**not live**) |
 | **Services / design partners** | Help wire durabl journal into existing Restate/Temporal/DBOS deployments | Learn ICP; prove portability claims |
 
 **Beachhead narrative for sales:** “Your agent’s *truth* is a portable journal in your infra; replay and fork are first-class, offline-capable, and substrate-optional for reads.”
@@ -134,4 +134,4 @@ All gates use real `restate-server`, real SIGKILL on crash paths, assertions fro
 - **Use of capital:** GTM + managed control plane + second substrate adapter (e.g. DBOS/Postgres path), **not** rebuilding Restate.
 - **Kill criteria:** If buyers standardize on AX journal format + tooling, or Langfuse adds execution-grade fork with portability, wedge compresses — monitor quarterly.
 
-**Related:** [`docs/RISKS.md`](RISKS.md) · [`docs/DEMO-NARRATIVE.md`](DEMO-NARRATIVE.md) · Phase 0 [`validation-report.md`](phase0/validation-report.md)
+**Related:** [`docs/RISKS.md`](RISKS.md) · [`docs/DEMO-NARRATIVE.md`](DEMO-NARRATIVE.md) · Phase 0 [`validation-report.md`](phase0/validation-report.md) · Managed (docs only): [`architecture/control-plane.md`](architecture/control-plane.md) · M6 SaaS: [`architecture/m6-saas.md`](architecture/m6-saas.md)
