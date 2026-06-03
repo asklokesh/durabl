@@ -42,3 +42,4 @@ playwright/.cache/
 !tests/fixtures/
 !tests/fixtures/**
 
+.openrouter
