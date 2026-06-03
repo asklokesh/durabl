@@ -28,19 +28,55 @@ export function isLiveJournalSource(source: JournalSource): boolean {
   return source.origin === "live-sqlite-journal";
 }
 
+function parseProvideInputResponse(
+  runId: string,
+  text: string,
+): { runId: string; accepted: boolean } {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { runId, accepted: true };
+  }
+  const parsed = JSON.parse(trimmed) as { runId?: unknown; accepted?: unknown };
+  return {
+    runId: typeof parsed.runId === "string" ? parsed.runId : runId,
+    accepted: parsed.accepted !== false,
+  };
+}
+
+function isTransientIngressError(msg: string): boolean {
+  return /RT0010|reading the response body|ECONNRESET|fetch failed|terminated|aborted/i.test(msg);
+}
+
 /** Resolve human input via Restate (same path as `durabl hitl-input`). */
 export async function provideInputViaIngress(
   runId: string,
   decision: string,
   ingress = config.restateIngress,
 ): Promise<{ runId: string; accepted: boolean }> {
-  const res = await ingressFetch(`${ingress}/HitlAgentRun/${runId}/provideInput`, {
+  const url = `${ingress}/HitlAgentRun/${runId}/provideInput`;
+  const init: RequestInit = {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ decision } satisfies HitlInput),
-  });
-  if (!res.ok) {
-    throw new Error(`provideInput ${runId} -> ${res.status}: ${await res.text()}`);
+  };
+
+  let last: unknown;
+  for (const delayMs of [0, 75, 200]) {
+    if (delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    try {
+      const res = await ingressFetch(url, init);
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(`provideInput ${runId} -> ${res.status}: ${text}`);
+      }
+      return parseProvideInputResponse(runId, text);
+    } catch (e) {
+      last = e;
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!isTransientIngressError(msg)) break;
+    }
   }
-  return res.json() as Promise<{ runId: string; accepted: boolean }>;
+  throw last instanceof Error ? last : new Error(String(last));
 }
