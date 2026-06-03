@@ -1,6 +1,6 @@
 # durabl — Completion checklist (M0–M5 + final-wave)
 
-**Branch:** `main` · **HEAD:** `6a91691` · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`gate:all` exit **0**, **ALL GATES PASSED**)[^gate-partial] · **Gate live:** [`docs/evidence/gate-live-20260603-gpt4o-mini.log`](evidence/gate-live-20260603-gpt4o-mini.log) (`gate:live` PASS, `DURABL_OPENROUTER_MODEL=openai/gpt-4o-mini`) · **Repo:** https://github.com/asklokesh/durabl
+**Branch:** `main` · **HEAD:** `3c63274` · **Gate log:** [`docs/evidence/gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) (`gate:all` exit **0**, **ALL GATES PASSED**)[^gate-partial] · **Gate live:** [`docs/evidence/gate-live-20260603-gpt4o-mini.log`](evidence/gate-live-20260603-gpt4o-mini.log) (`gate:live` PASS, `DURABL_OPENROUTER_MODEL=openai/gpt-4o-mini`) · **Repo:** https://github.com/asklokesh/durabl
 
 [^gate-partial]: Non-authoritative partial run [`gate-all-20260603-011624.log`](evidence/gate-all-20260603-011624.log) — exit **137** (runner SIGKILL ~25s). Prior full pass also [`gate-all-20260602-234458.log`](evidence/gate-all-20260602-234458.log).
 
