@@ -34,6 +34,7 @@ docs/m3-evidence/screenshots/
 !docs/evidence/gate-all-*.log
 !docs/evidence/gate-live-*.log
 .gstack/
+.gbrain-source
 
 # Playwright e2e (committed fixtures under tests/fixtures/)
 test-results/
