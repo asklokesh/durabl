@@ -10,29 +10,26 @@ Tracked items explicitly **out of** the forward-phase plan in [`docs/plans/autop
 
 | Item | Status | Notes |
 |------|--------|-------|
-| **DBOS substrate (product)** | NOT-PLANNED | Stub + `gate:dbos-skip` only; no DBOS integration work |
+| **DBOS substrate (product)** | **PARTIAL** | File-export `JournalSource` (`dbosJournalSourceFromPath`) + `gate:dbos` / `test:dbos`; Postgres + DBOS SDK live reads **NOT RUN** |
 | **Python SDK (full parity)** | NOT-PLANNED | MVP shipped in `python/` (read path + HTTP client); write/fork/Restate/PyPI remain |
 | **Managed control plane** | documented MVP | [`docs/architecture/control-plane.md`](architecture/control-plane.md); no hosted service |
-| **Offline HITL write** | NOT-PLANNED (by design) | `POST /api/hitl/input` → 503 offline; would require architecture change |
+| **Offline HITL write** | **DONE** | `POST /api/hitl/input` queues locally; `POST /api/hitl/flush` replays on live reconnect |
 | **M6 multi-tenant SaaS** | documented MVP | [`docs/architecture/m6-saas.md`](architecture/m6-saas.md); `DURABL_TENANT_ID` stub only |
 
 ---
 
 ## Explicitly deferred (forward phase)
 
-| **TypeScript 6** | Dependabot PR #3: `tsc` fails on TS6 without coordinated `@types/node` + config; stay on TS 5.x until upstream/typescript-eslint guidance | After TS6 + eslint10 lockfile validated in CI |
-
-
-
 | Item | Defer reason | Revisit when |
 |------|--------------|--------------|
 | **npm publish** | **BLOCKED:** `NPM_TOKEN` unset; `npm whoami` → 401; `npm publish` → PUT 404; `npm view durabl` → 404. Pack path ready (`private` removed, `publishConfig.access` public, `verify:npm-pack` PASS). Maintainer: set `NPM_TOKEN` or `npm login`, then `npm publish --access public` per [RELEASING.md](./RELEASING.md#publish-to-npmjsorg) | After first `npm view durabl version` shows `0.1.0`; align README registry row |
-| **gbrain sync** | **BLOCKED** on this machine (`gbrain` CLI not on PATH; no `~/.gbrain/config.json`) | `/setup-gbrain` or `~/.claude/skills/gstack/bin/gstack-gbrain-install` then `gbrain init --pglite --json`; from repo root: `bun run ~/.claude/skills/gstack/bin/gstack-gbrain-sync.ts` (add `--full` for first code index). Not a ship blocker |
+| **gbrain sync** | **PARTIAL** (2026-06-03): CLI `gbrain 0.42.21.0` installed; PGLite at `~/.gbrain/brain.pglite`; memory ingest OK (636 pages); code import OK with `gbrain sync --strategy code --source gstack-code-durabl-1e0321bd --no-embed` (245 files); worktree pin `.gbrain-source` (gitignored). **Blocked step:** `gstack-gbrain-sync` code stage exits 1 — `Embedding model "zeroentropyai:zembed-1" requires ZEROENTROPY_API_KEY` (no `OPENAI_API_KEY` / `VOYAGE_API_KEY` / `ZEROENTROPY_API_KEY` in env). **Unblock:** `export ZEROENTROPY_API_KEY=…` (or set another provider + `gbrain config set embedding_model …`), then `gbrain embed --stale` and re-run `bun run ~/.claude/skills/gstack/bin/gstack-gbrain-sync.ts`. Init used `--no-embedding` because no keys were set. Not a ship blocker |
 
 ---
 
 ## Related (optional, not deferred to this list)
 
+- **TypeScript 6:** **DONE** — `typescript@^6`, `@types/node@^25`, `eslint@^10`; root `tsconfig` sets `"types": ["node"]` (TS6 no longer auto-includes `@types/*`); `npm run lint` added; M1 gate + typecheck pass locally
 - **Live LLM keys / `gate:live`:** CONFIG-READY; SKIP exit 0 without keys (forward P2, not NOT-PLANNED)
 - **CRIU / process fork / second substrate:** Explicitly defer per autoplan §4
 
