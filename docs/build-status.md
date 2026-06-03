@@ -4,7 +4,7 @@
 (step-journal, single self-hostable binary, no Docker/cloud needed) · **Runtime:**
 Node 26 (built-in `node:sqlite`, zero native deps) · **License:** Apache-2.0 ·
 
-**main HEAD:** `6a91691` — **`gate:all`:** exit **0**, [`gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) · **`gate:live`:** PASS [`gate-live-20260603-gpt4o-mini.log`](evidence/gate-live-20260603-gpt4o-mini.log) (`openai/gpt-4o-mini`) · **Remote:** https://github.com/asklokesh/durabl
+**main HEAD:** `c544380` — **`gate:all`:** exit **0**, [`gate-all-20260603-010109.log`](evidence/gate-all-20260603-010109.log) · **`gate:live`:** PASS [`gate-live-20260603-gpt4o-mini.log`](evidence/gate-live-20260603-gpt4o-mini.log) (`openai/gpt-4o-mini`) · **Remote:** https://github.com/asklokesh/durabl
 
 The product (per Phase 0 re-scope, `docs/phase0/validation-report.md`): a
 **neutral, portable, self-hostable agent execution journal** with **replay /
