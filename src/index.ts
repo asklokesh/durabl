@@ -153,8 +153,14 @@ export {
   type ProviderHttpPolicy,
 } from "./providers/provider-http.js";
 export {
+  dbosJournalSource,
+  dbosJournalSourceFromExport,
+  dbosJournalSourceFromPath,
   dbosJournalSourceStub,
   dbosJournalSourceAvailable,
+  dbosExportJournalSourceAvailable,
+  dbosJournalOrigin,
+  readDbosJournalSourceConfigFromEnv,
   resolveJournalSourceHint,
   type DbosJournalSourceConfig,
 } from "./journal-source-dbos-stub.js";

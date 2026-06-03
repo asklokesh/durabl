@@ -29,6 +29,10 @@ import {
   importJournalSource,
   type JournalSource,
 } from "./journal-source.js";
+import {
+  dbosJournalSource,
+  dbosJournalSourceAvailable,
+} from "./journal-source-dbos-stub.js";
 import { reconstruct, stateAt } from "./replay.js";
 import { startServerHandle } from "./server.js";
 import { installSignalHandlers, registerGracefulShutdown } from "./lifecycle.js";
@@ -137,6 +141,9 @@ function sourceFromFlags(flags: Record<string, string | boolean>): JournalSource
   if (typeof flags.from === "string") {
     const jsonl = readFileSync(flags.from, "utf8");
     return importJournalSource(jsonl, `imported:${flags.from}`);
+  }
+  if (process.env.DURABL_JOURNAL_SOURCE === "dbos" && dbosJournalSourceAvailable()) {
+    return dbosJournalSource();
   }
   return liveJournalSource();
 }

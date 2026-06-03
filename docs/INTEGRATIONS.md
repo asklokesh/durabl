@@ -20,7 +20,7 @@ owns orchestration; durabl owns **what got recorded**, **replay**, **fork**, and
 | Reference 3-step agent loop | **Shipped** | `src/workflow.ts` (`AgentRun`) |
 | HITL pause/resume | **Shipped** | `src/hitl-workflow.ts` (`HitlAgentRun`) |
 | Model providers (config-only) | **Shipped** (fake / OpenAI / Anthropic) | `src/providers/*`, `DURABL_MODEL_PROVIDER` |
-| Second substrate (DBOS) | **Stub only** — contract doc, no runtime | `docs/SECOND-SUBSTRATE.md` |
+| Second substrate (DBOS) | **Partial** — file-export adapter + `gate:dbos`; Postgres NOT RUN | `docs/SECOND-SUBSTRATE.md` |
 
 Gates and evidence: [`docs/build-status.md`](build-status.md).
 
@@ -158,7 +158,7 @@ this repo yet. Do not expect drop-in LangGraph or Pydantic AI wiring today.
 | **OpenAI Agents SDK** | Align with Restate’s durable-agents pattern; durabl journal as portable export/replay layer | **Planned** — no SDK wrapper |
 | **Pydantic AI** | Same as above (DBOS documents a similar wrap-LLM-in-step pattern) | **Planned** — no Python package |
 | **Python SDK** | LangGraph / OpenAI-Agents / Pydantic-AI loops as first-class | **Planned** ([`docs/phase0/build-plan.md`](phase0/build-plan.md)) |
-| **DBOS** | Second substrate via `JournalSource` | **Stub** ([`docs/SECOND-SUBSTRATE.md`](SECOND-SUBSTRATE.md)) |
+| **DBOS** | Second substrate via `JournalSource` | **Partial** — JSONL export adapter ([`docs/integrations/dbos.md`](integrations/dbos.md)) |
 
 ### What “integration” will mean when we build it
 
