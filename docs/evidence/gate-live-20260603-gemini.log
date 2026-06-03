@@ -1,0 +1,20 @@
+
+> durabl@0.1.0 gate:live
+> npm run build && node --enable-source-maps dist/harness/run-live-providers-gate.js
+
+
+> durabl@0.1.0 build
+> tsc -p tsconfig.json && node scripts/copy-web.mjs
+
+[build] copied web/ → dist/web
+
+[GATE FAIL] live-openrouter
+  openrouter HTTP 404: {"error":{"message":"No endpoints found for google/gemini-2.0-flash-001.","code":404},"user_id":"user_311qevqPwU7oE4pMcJ1GdwlDcRp"}
+
+================ LIVE PROVIDERS GATE ================
+FAIL  live-openrouter
+-----------------------------------------------------
+0/1 providers passed (keys: openai=false anthropic=false openrouter=true)
+VERDICT: GATE FAILED
+=====================================================
+

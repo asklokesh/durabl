@@ -32,6 +32,7 @@ docs/m3-evidence/screenshots/
 !docs/m5-evidence/*.log
 !docs/evidence/
 !docs/evidence/gate-all-*.log
+!docs/evidence/gate-live-*.log
 .gstack/
 
 # Playwright e2e (committed fixtures under tests/fixtures/)
